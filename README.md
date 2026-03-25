@@ -130,6 +130,51 @@ oh-my-openpod/
 │   ├── .zshrc              # Zsh 配置
 │   ├── .p10k.zsh           # Powerlevel10k 配置
 │   └── .zsh_plugins.txt    # 插件列表
+├── VERSION                 # 当前开发版本号
 └── vendor/
-    └── antidote/           # Zsh 插件管理器 (git submodule)
+    └── antidote/           # Zsh 插件管理器 (git submodule, 固定到 v2.0.2)
+```
+
+## 版本管理与发布流程
+
+当前版本号记录在 `VERSION` 文件中，开发中的版本以 `-dev` 后缀标识。
+
+**版本状态示例：**
+
+| `VERSION` 内容 | 含义 |
+|----------------|------|
+| `0.1.0-dev` | 0.1.0 开发中，尚未发布 |
+| `0.1.0` | 已发布的正式版本 |
+| `0.2.0-dev` | 0.2.0 开发中 |
+
+**发布一个版本：**
+
+```bash
+# 1. 将 VERSION 改为正式版本号（去掉 -dev）
+echo "0.1.0" > VERSION
+git add VERSION
+git commit -m "chore: release v0.1.0"
+
+# 2. 打 git tag（触发 Docker Hub 自动构建）
+git tag v0.1.0
+git push origin main --tags
+```
+
+**发布后开始下一个版本的开发：**
+
+```bash
+echo "0.2.0-dev" > VERSION
+git add VERSION
+git commit -m "chore: begin development of v0.2.0"
+```
+
+**升级 Antidote 版本：**
+
+```bash
+cd vendor/antidote
+git fetch --tags
+git checkout <new-tag>   # 例如 v2.1.0
+cd ../..
+git add vendor/antidote .gitmodules
+git commit -m "chore: bump antidote to <new-tag>"
 ```

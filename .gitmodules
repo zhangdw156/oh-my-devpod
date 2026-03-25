@@ -1,3 +1,4 @@
 [submodule "vendor/antidote"]
 	path = vendor/antidote
 	url = https://github.com/mattmc3/antidote.git
+	# pinned to v2.0.2 — to upgrade: cd vendor/antidote && git fetch --tags && git checkout <new-tag>
