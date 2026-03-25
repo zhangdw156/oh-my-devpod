@@ -1,16 +1,44 @@
-# oh-my-openpod
+<p align="center">
+  <img src="https://img.shields.io/badge/Ubuntu-24.04-E95420?style=for-the-badge&logo=ubuntu&logoColor=white" alt="Ubuntu 24.04"/>
+  <img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker"/>
+  <img src="https://img.shields.io/badge/Zsh-Powerlevel10k-4EAA25?style=for-the-badge&logo=gnubash&logoColor=white" alt="Zsh"/>
+  <img src="https://img.shields.io/github/v/tag/zhangdw156/oh-my-openpod?style=for-the-badge&label=version&color=blue" alt="Version"/>
+  <img src="https://img.shields.io/github/license/zhangdw156/oh-my-openpod?style=for-the-badge" alt="License"/>
+  <img src="https://img.shields.io/github/stars/zhangdw156/oh-my-openpod?style=for-the-badge&color=yellow" alt="Stars"/>
+</p>
 
-一键搭建 **OpenCode + Git + uv + Zsh (Powerlevel10k)** 开发容器。  
-克隆仓库，两条命令即可在任何装有 Docker 的机器上拥有一致的 AI 编程环境。
+<h1 align="center">oh-my-openpod</h1>
 
-## 内置工具
+<p align="center">
+  <strong>AI 编程开发容器，开箱即用</strong><br/>
+  在任意机器上一键拉起 OpenCode + uv + Git + Zsh 环境，挂载你的项目目录即可开始工作。
+</p>
 
-| 工具 | 说明 |
-|------|------|
-| [OpenCode](https://github.com/anomalyco/opencode) | 终端 AI 编程助手 |
-| [uv](https://github.com/astral-sh/uv) | 极速 Python 包管理器 |
-| Git / curl / fzf / exa / bat | 常用命令行工具 |
-| Zsh + Powerlevel10k + Antidote | 美观高效的 Shell 环境 |
+<p align="center">
+  <a href="./README_EN.md">English</a> | 中文
+</p>
+
+---
+
+## 为什么需要 oh-my-openpod？
+
+> 换了一台机器，花了半天配环境？服务器上没有趁手的 Shell？想用 AI 辅助编程却懒得装？
+
+oh-my-openpod 把 **AI 编程助手 + Python 工具链 + 美观 Shell** 打包成一个 Docker 容器：
+
+- **2 条命令启动**，无需手动安装任何依赖
+- **挂载你的项目目录**，在容器内直接编辑、运行、提交
+- **一致的开发体验**，本地、服务器、CI 环境完全相同
+
+## 内置工具一览
+
+| 类别 | 工具 | 说明 |
+|------|------|------|
+| **AI** | [OpenCode](https://github.com/opencode-ai/opencode) | 终端 AI 编程助手，支持自定义 Provider |
+| **Python** | [uv](https://github.com/astral-sh/uv) | 极速 Python 包管理器 & 虚拟环境管理 |
+| **Shell** | Zsh + [Powerlevel10k](https://github.com/romkatv/powerlevel10k) + [Antidote](https://github.com/mattmc3/antidote) | 语法高亮、自动补全、Git 状态提示 |
+| **CLI** | Git / curl / fzf / eza / bat | 现代化命令行工具集 |
+| **系统** | Ubuntu 24.04 LTS (glibc) | 稳定底座，兼容主流 Python C 扩展 |
 
 ## 快速开始
 
@@ -21,78 +49,72 @@ git clone --recurse-submodules https://github.com/zhangdw156/oh-my-openpod.git
 cd oh-my-openpod
 ```
 
-> 如果已经克隆但忘记加 `--recurse-submodules`，补执行一次：
-> ```bash
-> git submodule update --init --recursive
-> ```
-
-### 2. 配置环境变量和 OpenCode（可选）
+<details>
+<summary>已经克隆但忘记加 <code>--recurse-submodules</code>？</summary>
 
 ```bash
-cp .env.example .env
-# 编辑 .env，填入你的 API Key 等配置
+git submodule update --init --recursive
 ```
+</details>
 
-配置 OpenCode 的 AI Provider：
+### 2. 配置（可选）
 
 ```bash
-cp opencode.json.example opencode.json
-# 编辑 opencode.json，填入你的 Provider 信息
+cp .env.example .env        # 填入 API Key、自定义挂载路径等
+cp opencode.json.example opencode.json  # 配置 AI Provider
 ```
 
-然后在 `.env` 中指向你的配置文件：
+`.env` 支持官方 API 和自部署的 OpenAI / Anthropic 兼容接口，详见 [.env.example](.env.example)。
 
-```
-OPENCODE_CONFIG=./opencode.json
-```
-
-### 3. 构建并启动
+### 3. 构建 & 启动
 
 ```bash
-# 构建镜像 + 启动容器（挂载 ~/projects 到 /workspace）
+# 默认挂载 ~/projects
 docker compose up -d --build
 
-# 进入容器
-docker compose exec openpod zsh
-```
-
-如需挂载其他目录，设置 `PROJECT_DIR` 环境变量：
-
-```bash
+# 挂载指定项目
 PROJECT_DIR=/path/to/your/project docker compose up -d --build
 ```
 
-或者写入 `.env` 文件：
-
-```
-PROJECT_DIR=/home/me/code
-```
-
-### 4. 在容器内使用
+### 4. 进入容器，开始工作
 
 ```bash
-# 使用 opencode
-opencode
-
-# 使用 uv
-uv init myproject
-uv add requests
-
-# 使用 git
-git clone https://github.com/...
+docker compose exec openpod zsh
 ```
 
-## 自定义 Zsh 配置
+```
+root@hostname /workspace main ❯ opencode   # AI 编程助手
+root@hostname /workspace main ❯ uv run ... # Python 项目
+root@hostname /workspace main ❯ git status  # Git 操作
+```
 
-Zsh 配置文件位于 `config/` 目录：
+## 支持自部署 AI 服务
 
-- `config/.zshrc` — Zsh 主配置
-- `config/.p10k.zsh` — Powerlevel10k 主题配置
-- `config/.zsh_plugins.txt` — Antidote 插件列表
+通过 `.env` + `opencode.json` 配置，可以对接：
 
-修改后重新构建镜像即可生效：
+- **OpenAI 兼容接口**：vLLM / Ollama / LiteLLM / 硅基流动 等
+- **Anthropic 兼容接口**：自部署 Claude / AWS Bedrock 代理 等
+- **官方服务**：OpenAI / Anthropic 官方 API
 
 ```bash
+# .env 示例
+CUSTOM_OPENAI_BASE_URL=https://your-host/v1
+CUSTOM_OPENAI_API_KEY=your-api-key
+CUSTOM_OPENAI_MODEL=your-model-name
+```
+
+## 自定义 Zsh
+
+配置文件位于 `config/` 目录，修改后重新构建即可：
+
+| 文件 | 说明 |
+|------|------|
+| `config/.zshrc` | Zsh 主配置 |
+| `config/.p10k.zsh` | Powerlevel10k 主题 |
+| `config/.zsh_plugins.txt` | Antidote 插件列表 |
+
+```bash
+# 修改配置后
 docker compose up -d --build
 ```
 
@@ -100,14 +122,22 @@ docker compose up -d --build
 
 ```
 oh-my-openpod/
-├── Dockerfile              # 容器镜像定义
-├── docker-compose.yml      # 编排配置
+├── Dockerfile              # 容器镜像定义 (Ubuntu 24.04)
+├── docker-compose.yml      # 编排配置 & 版本号
 ├── .env.example            # 环境变量模板
-├── opencode.json.example   # OpenCode 配置模板
-├── README.md               # 用户文档
-├── DEVELOPMENT.md          # 开发者文档
-└── config/
-    ├── .zshrc              # Zsh 配置
-    ├── .p10k.zsh           # Powerlevel10k 配置
-    └── .zsh_plugins.txt    # 插件列表
+├── opencode.json.example   # OpenCode AI Provider 配置模板
+├── config/
+│   ├── .zshrc              # Zsh 配置
+│   ├── .p10k.zsh           # Powerlevel10k 配置
+│   └── .zsh_plugins.txt    # 插件列表
+└── vendor/
+    └── antidote/           # Zsh 插件管理器 (git submodule)
 ```
+
+## 参与贡献
+
+欢迎提交 Issue 和 Pull Request！开发文档详见 [DEVELOPMENT.md](DEVELOPMENT.md)。
+
+## License
+
+[MIT](LICENSE)
