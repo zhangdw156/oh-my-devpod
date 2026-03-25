@@ -17,6 +17,9 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 ENV TERM=xterm-256color
 ENV SHELL=/bin/zsh
 
+# ---------- 3.1 允许 git 操作挂载目录（容器 root 与宿主机 UID 不同）----------
+RUN git config --global --add safe.directory '*'
+
 # ---------- 4. 安装 Antidote (zsh 插件管理器，版本由 git submodule 管理) ----------
 COPY vendor/antidote /opt/antidote
 
