@@ -1,6 +1,8 @@
 services:
   openpod:
-    build: .
+    build:
+      context: .
+      network: host
     image: oh-my-openpod:latest
     container_name: oh-my-openpod
     stdin_open: true
