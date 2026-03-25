@@ -25,6 +25,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 # ---------- 4. 环境变量 ----------
 ENV TERM=xterm-256color
 ENV SHELL=/bin/zsh
+ENV UV_LINK_MODE=copy
 
 # ---------- 5. 允许 git 操作挂载目录（容器 root 与宿主机 UID 不同）----------
 RUN git config --global --add safe.directory '*'
