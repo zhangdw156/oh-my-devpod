@@ -1,10 +1,6 @@
-# 基于官方 OpenCode 镜像
 FROM ghcr.io/anomalyco/opencode AS base
 
-# --------------------------
-# 1. 安装基础依赖 (Alpine 版)
-# --------------------------
-# 如果 OpenCode 基础镜像是 Debian/Ubuntu 系，请将下方 apk 替换为 apt-get
+# ---------- 1. 安装基础依赖 (Alpine) ----------
 RUN apk add --no-cache \
     zsh \
     git \
@@ -14,34 +10,24 @@ RUN apk add --no-cache \
     bat \
     tzdata
 
-# --------------------------
-# 2. 环境变量
-# --------------------------
+# ---------- 2. 安装 uv (Python 包管理器) ----------
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
+
+# ---------- 3. 环境变量 ----------
 ENV TERM=xterm-256color
 ENV SHELL=/bin/zsh
 
-# --------------------------
-# 3. 安装 Antidote
-# --------------------------
+# ---------- 4. 安装 Antidote (zsh 插件管理器) ----------
 RUN git clone --depth=1 https://github.com/mattmc3/antidote.git /opt/antidote
 
-# --------------------------
-# 4. 复制配置文件
-# --------------------------
+# ---------- 5. 复制配置文件 ----------
 COPY config/.zshrc /root/.zshrc
 COPY config/.p10k.zsh /root/.p10k.zsh
 COPY config/.zsh_plugins.txt /root/.zsh_plugins.txt
 
-# --------------------------
-# 5. 预下载插件 (构建时执行，加速启动)
-# --------------------------
-RUN echo 'source /opt/antidote/antidote.zsh' >> /root/.zshrc_temp && \
-    echo 'antidote load /root/.zsh_plugins.txt' >> /root/.zshrc_temp && \
-    zsh -c "source /root/.zshrc_temp" && \
-    rm /root/.zshrc_temp
+# ---------- 6. 预下载插件 (构建时执行，加速启动) ----------
+RUN zsh -c "source /opt/antidote/antidote.zsh && antidote load /root/.zsh_plugins.txt" || true
 
-# --------------------------
-# 6. 启动设置
-# --------------------------
+# ---------- 7. 启动设置 ----------
 WORKDIR /workspace
 ENTRYPOINT ["/bin/zsh"]

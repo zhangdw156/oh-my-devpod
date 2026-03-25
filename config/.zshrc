@@ -6,7 +6,7 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
 fi
 
 # 1. 配置 Antidote 的路径
-source /usr/share/zsh-antidote/antidote.zsh
+source /opt/antidote/antidote.zsh
 
 # 2. 初始化插件
 # 定义插件清单的位置
@@ -21,7 +21,3 @@ antidote load
 
 export PATH=$PATH:~/bin
 alias cc=clear
-
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
