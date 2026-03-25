@@ -17,8 +17,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Ubuntu 下 bat 的二进制名为 batcat，建立软链保持用法一致
 RUN ln -sf /usr/bin/batcat /usr/local/bin/bat
 
-# ---------- 2. 安装 opencode ----------
+# ---------- 2. 安装 opencode（Alpine musl 构建，需要连同依赖库一起拷贝）----------
 COPY --from=ghcr.io/anomalyco/opencode /usr/local/bin/opencode /usr/local/bin/opencode
+COPY --from=ghcr.io/anomalyco/opencode /usr/lib/libstdc++.so.6 /usr/lib/musl-compat/libstdc++.so.6
+COPY --from=ghcr.io/anomalyco/opencode /usr/lib/libgcc_s.so.1 /usr/lib/musl-compat/libgcc_s.so.1
+RUN echo "/lib:/usr/local/lib:/usr/lib:/usr/lib/musl-compat" > /etc/ld-musl-x86_64.path
 
 # ---------- 3. 安装 uv (Python 包管理器) ----------
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
