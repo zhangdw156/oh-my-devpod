@@ -17,9 +17,15 @@
 ### 1. 克隆仓库
 
 ```bash
-git clone https://github.com/<your-username>/oh-my-openpod.git
+# --recurse-submodules 会同步拉取 vendor/antidote
+git clone --recurse-submodules https://github.com/<your-username>/oh-my-openpod.git
 cd oh-my-openpod
 ```
+
+> 如果已经克隆但忘记加 `--recurse-submodules`，补执行一次：
+> ```bash
+> git submodule update --init --recursive
+> ```
 
 ### 2. 配置环境变量和 OpenCode（可选）
 
@@ -77,6 +83,25 @@ uv add requests
 git clone https://github.com/...
 ```
 
+## 更新 Antidote 版本
+
+Antidote 以 git submodule 的形式固定在 `vendor/antidote`，版本由 `.gitmodules` 追踪。
+
+```bash
+# 拉取 antidote 最新版本并更新 submodule 引用
+git submodule update --remote vendor/antidote
+
+# 提交新的版本锁定
+git add vendor/antidote
+git commit -m "chore: bump antidote to latest"
+```
+
+重新构建镜像即可使用新版本：
+
+```bash
+docker compose up -d --build
+```
+
 ## 自定义 Zsh 配置
 
 Zsh 配置文件位于 `config/` 目录：
@@ -98,10 +123,13 @@ oh-my-openpod/
 ├── Dockerfile              # 容器镜像定义
 ├── docker-compose.yml      # 编排配置
 ├── .env.example            # 环境变量模板
+├── .gitmodules             # submodule 版本锁定
 ├── opencode.json.example   # OpenCode 配置模板
 ├── README.md
-└── config/
-    ├── .zshrc              # Zsh 配置
-    ├── .p10k.zsh           # Powerlevel10k 配置
-    └── .zsh_plugins.txt    # 插件列表
+├── config/
+│   ├── .zshrc              # Zsh 配置
+│   ├── .p10k.zsh           # Powerlevel10k 配置
+│   └── .zsh_plugins.txt    # 插件列表
+└── vendor/
+    └── antidote/           # Zsh 插件管理器 (git submodule)
 ```
