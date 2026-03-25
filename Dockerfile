@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tzdata \
     libsndfile1 \
     ca-certificates \
+    musl \
     && rm -rf /var/lib/apt/lists/*
 
 # Ubuntu 下 bat 的二进制名为 batcat，建立软链保持用法一致
