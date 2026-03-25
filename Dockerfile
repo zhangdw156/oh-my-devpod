@@ -17,8 +17,8 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 ENV TERM=xterm-256color
 ENV SHELL=/bin/zsh
 
-# ---------- 4. 安装 Antidote (zsh 插件管理器) ----------
-RUN git clone --depth=1 https://github.com/mattmc3/antidote.git /opt/antidote
+# ---------- 4. 安装 Antidote (zsh 插件管理器，版本由 git submodule 管理) ----------
+COPY vendor/antidote /opt/antidote
 
 # ---------- 5. 复制配置文件 ----------
 COPY config/.zshrc /root/.zshrc
