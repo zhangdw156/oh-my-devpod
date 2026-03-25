@@ -17,7 +17,7 @@
 ### 1. 克隆仓库
 
 ```bash
-git clone --recurse-submodules https://github.com/<your-username>/oh-my-openpod.git
+git clone --recurse-submodules https://github.com/zhangdw156/oh-my-openpod.git
 cd oh-my-openpod
 ```
 
