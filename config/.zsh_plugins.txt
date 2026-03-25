@@ -1,0 +1,16 @@
+# 1. 必装的神级插件
+zsh-users/zsh-syntax-highlighting
+zsh-users/zsh-autosuggestions
+zsh-users/zsh-history-substring-search
+
+# 2. 如果你想用 Oh-My-Zsh (OMZ) 的功能
+# 加载 OMZ 的核心库 (lib)
+ohmyzsh/ohmyzsh path:lib
+# 加载 OMZ 的 git 插件
+ohmyzsh/ohmyzsh path:plugins/git
+# 加载 OMZ 的 extract 插件
+ohmyzsh/ohmyzsh path:plugins/extract
+
+# 3. 加载提示符 (Theme)
+# 例如著名的 Powerlevel10k
+romkatv/powerlevel10k

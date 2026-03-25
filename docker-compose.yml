@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  openpod:
+    build: .
+    image: oh-my-openpod:latest
+    container_name: oh-my-openpod
+    stdin_open: true
+    tty: true
+    working_dir: /workspace
+    volumes:
+      # 挂载你的项目目录 (将 ~/projects 改为你实际存放代码的路径)
+      - ~/projects:/workspace
+      
+      # (可选) 如果你想实时修改配置，取消下面的注释
+      # - ./config/.zshrc:/root/.zshrc
+      # - ./config/.p10k.zsh:/root/.p10k.zsh
+    network_mode: host
+    restart: "no"
