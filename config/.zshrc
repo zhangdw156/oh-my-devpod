@@ -5,15 +5,10 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
-# 1. 配置 Antidote 的路径
+autoload -Uz compinit && compinit
+
 source /opt/antidote/antidote.zsh
-
-# 2. 初始化插件
-# 定义插件清单的位置
 zsh_plugins=${ZDOTDIR:-~}/.zsh_plugins.txt
-
-# 使用 Antidote 加载插件
-# 原理：Antidote 会读取 txt 文件，生成一个静态的 .zsh 文件并 source 它
 antidote load
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
