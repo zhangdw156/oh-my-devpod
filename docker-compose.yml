@@ -3,7 +3,9 @@ services:
     build:
       context: .
       network: host
-    image: oh-my-openpod:latest
+      args:
+        VERSION: ${VERSION:-dev}
+    image: oh-my-openpod:${VERSION:-latest}
     container_name: oh-my-openpod
     stdin_open: true
     tty: true

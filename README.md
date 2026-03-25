@@ -50,7 +50,7 @@ OPENCODE_CONFIG=./opencode.json
 
 ```bash
 # 构建镜像 + 启动容器（挂载 ~/projects 到 /workspace）
-docker compose up -d --build
+VERSION=$(cat VERSION) docker compose up -d --build
 
 # 进入容器
 docker compose exec openpod zsh
@@ -59,7 +59,7 @@ docker compose exec openpod zsh
 如需挂载其他目录，设置 `PROJECT_DIR` 环境变量：
 
 ```bash
-PROJECT_DIR=/path/to/your/project docker compose up -d --build
+VERSION=$(cat VERSION) PROJECT_DIR=/path/to/your/project docker compose up -d --build
 ```
 
 或者写入 `.env` 文件：

@@ -1,5 +1,8 @@
 FROM ubuntu:24.04 AS base
 
+ARG VERSION=dev
+LABEL org.opencontainers.image.version="${VERSION}"
+
 # ---------- 1. 安装基础依赖 ----------
 RUN apt-get update && apt-get install -y --no-install-recommends \
     zsh \
