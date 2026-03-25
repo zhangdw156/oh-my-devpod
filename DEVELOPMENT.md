@@ -5,11 +5,10 @@
 ```
 oh-my-openpod/
 ├── Dockerfile
-├── docker-compose.yml
+├── docker-compose.yml          # 版本号在 image 字段中维护
 ├── .env.example
 ├── .gitmodules
 ├── opencode.json.example
-├── VERSION                     # 当前版本号
 ├── README.md                   # 用户文档
 ├── DEVELOPMENT.md              # 开发者文档（本文件）
 ├── config/
@@ -22,20 +21,24 @@ oh-my-openpod/
 
 ## 版本管理
 
-当前版本号记录在 `VERSION` 文件中，开发中的版本以 `-dev` 后缀标识。
+版本号唯一维护在 `docker-compose.yml` 的 `image` 字段中：
 
-| `VERSION` 内容 | 含义 |
-|----------------|------|
-| `0.1.0-dev` | 0.1.0 开发中，尚未发布 |
-| `0.1.0` | 已发布的正式版本 |
-| `0.2.0-dev` | 0.2.0 开发中 |
+```yaml
+image: oh-my-openpod:0.1.0-dev   # 开发中
+image: oh-my-openpod:0.1.0       # 正式发布
+```
+
+| 版本格式 | 含义 |
+|----------|------|
+| `x.y.z-dev` | 开发中，尚未发布 |
+| `x.y.z` | 已发布的正式版本 |
 
 ## 发布流程
 
 ```bash
-# 1. 将 VERSION 改为正式版本号（去掉 -dev）
-echo "0.1.0" > VERSION
-git add VERSION
+# 1. 修改 docker-compose.yml 中 image 的 tag（去掉 -dev）
+#    image: oh-my-openpod:0.1.0
+git add docker-compose.yml
 git commit -m "chore: release v0.1.0"
 
 # 2. 打 git tag
@@ -43,8 +46,8 @@ git tag v0.1.0
 git push origin main --tags
 
 # 3. 开始下一个版本的开发
-echo "0.2.0-dev" > VERSION
-git add VERSION
+#    image: oh-my-openpod:0.2.0-dev
+git add docker-compose.yml
 git commit -m "chore: begin development of v0.2.0"
 ```
 
