@@ -40,15 +40,21 @@ image: oh-my-openpod:0.1.0       # 正式发布
 #    image: oh-my-openpod:0.1.0
 git add docker-compose.yml
 git commit -m "chore: release v0.1.0"
+git push origin main
 
-# 2. 打 git tag
+# 2. 推送到 main 后，GitHub Actions 会自动构建并发布：
+#    ghcr.io/zhangdw156/oh-my-openpod:0.1.0
+#    ghcr.io/zhangdw156/oh-my-openpod:latest
+
+# 3. 如需保留源码版本标签，可额外打 git tag
 git tag v0.1.0
-git push origin main --tags
+git push origin v0.1.0
 
-# 3. 开始下一个版本的开发
+# 4. 开始下一个版本的开发
 #    image: oh-my-openpod:0.2.0-dev
 git add docker-compose.yml
 git commit -m "chore: begin development of v0.2.0"
+git push origin main
 ```
 
 ## 管理 Submodule
