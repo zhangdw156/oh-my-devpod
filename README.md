@@ -66,7 +66,7 @@ cp opencode.json.example opencode.json  # 配置 AI Provider
 
 `.env` 支持官方 API 和自部署的 OpenAI / Anthropic 兼容接口，详见 [.env.example](.env.example)。
 
-### 3. 构建 & 启动
+### 3. 方式 A：本地构建并启动
 
 ```bash
 # 默认挂载 ~/projects
@@ -76,7 +76,38 @@ docker compose up -d --build
 PROJECT_DIR=/path/to/your/project docker compose up -d --build
 ```
 
-### 4. 进入容器，开始工作
+### 4. 方式 B：直接使用 GHCR 预构建镜像
+
+如果你不想在本地构建，也可以直接使用发布到 GitHub Container Registry 的镜像：
+
+```bash
+# 拉取最新正式版
+docker pull ghcr.io/zhangdw156/oh-my-openpod:latest
+
+# 或拉取指定版本
+docker pull ghcr.io/zhangdw156/oh-my-openpod:0.1.0
+
+# 直接启动并进入容器
+docker run --rm -it \
+  --name oh-my-openpod \
+  --network host \
+  -v "${PROJECT_DIR:-$HOME/projects}:/workspace" \
+  -v "$(pwd)/opencode.json:/root/.config/opencode/config.json:ro" \
+  --env-file .env \
+  ghcr.io/zhangdw156/oh-my-openpod:latest
+```
+
+对于服务器环境，更推荐这种方式：无需拉取 submodule，也不用在机器上重新 build。
+
+镜像地址：
+
+```text
+ghcr.io/zhangdw156/oh-my-openpod
+```
+
+### 5. 进入容器，开始工作
+
+如果你使用的是 `docker compose` 方式，可以这样进入容器：
 
 ```bash
 docker compose exec openpod zsh
