@@ -66,7 +66,7 @@ cp opencode.json.example opencode.json  # Configure AI provider
 
 `.env` supports both official APIs and self-hosted OpenAI / Anthropic compatible endpoints. See [.env.example](.env.example) for details.
 
-### 3. Build & Start
+### 3. Option A: Build Locally and Start
 
 ```bash
 # Default: mounts ~/projects
@@ -76,7 +76,38 @@ docker compose up -d --build
 PROJECT_DIR=/path/to/your/project docker compose up -d --build
 ```
 
-### 4. Enter the Container
+### 4. Option B: Use the Prebuilt GHCR Image
+
+If you do not want to build locally, you can use the image published to GitHub Container Registry directly:
+
+```bash
+# Pull the latest stable image
+docker pull ghcr.io/zhangdw156/oh-my-openpod:latest
+
+# Or pull a specific version
+docker pull ghcr.io/zhangdw156/oh-my-openpod:0.1.0
+
+# Start and enter the container directly
+docker run --rm -it \
+  --name oh-my-openpod \
+  --network host \
+  -v "${PROJECT_DIR:-$HOME/projects}:/workspace" \
+  -v "$(pwd)/opencode.json:/root/.config/opencode/config.json:ro" \
+  --env-file .env \
+  ghcr.io/zhangdw156/oh-my-openpod:latest
+```
+
+This is usually the better choice on servers because it avoids local builds and submodule setup.
+
+Image URL:
+
+```text
+ghcr.io/zhangdw156/oh-my-openpod
+```
+
+### 5. Enter the Container
+
+If you are using the `docker compose` workflow, enter the container with:
 
 ```bash
 docker compose exec openpod zsh
