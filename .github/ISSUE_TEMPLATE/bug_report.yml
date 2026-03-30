@@ -1,0 +1,82 @@
+name: Bug Report / Bug 反馈
+description: Report a reproducible problem in the container image, docs, or workflow.
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug.
+
+        Please include enough detail for us to reproduce the issue inside `oh-my-openpod`.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary / 问题概述
+      description: What went wrong?
+      placeholder: A short description of the problem.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version / 版本
+      description: Image tag, commit SHA, or branch name.
+      placeholder: "Example: ghcr.io/zhangdw156/oh-my-openpod:latest"
+    validations:
+      required: true
+  - type: dropdown
+    id: install_path
+    attributes:
+      label: How are you running it? / 使用方式
+      options:
+        - docker compose
+        - docker run
+        - local Docker build
+        - GHCR prebuilt image
+        - other
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce / 复现步骤
+      description: List the exact steps or commands used.
+      placeholder: |
+        1. Run ...
+        2. Enter the container ...
+        3. Execute ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Result / 期望结果
+      placeholder: What should have happened?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Result / 实际结果
+      placeholder: What happened instead? Include error output if relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment / 环境信息
+      description: Host OS, architecture, Docker version, shell, mounted project type, etc.
+      placeholder: |
+        Host OS:
+        CPU arch:
+        Docker version:
+        Project type:
+    validations:
+      required: false
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional Context / 补充信息
+      placeholder: Logs, screenshots, links, or possible root cause.
+    validations:
+      required: false
