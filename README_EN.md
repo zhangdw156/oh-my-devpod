@@ -46,17 +46,9 @@ oh-my-openpod packages **AI coding assistant + Python toolchain + beautiful Shel
 ### 1. Clone
 
 ```bash
-git clone --recurse-submodules https://github.com/zhangdw156/oh-my-openpod.git
+git clone https://github.com/zhangdw156/oh-my-openpod.git
 cd oh-my-openpod
 ```
-
-<details>
-<summary>Forgot <code>--recurse-submodules</code>?</summary>
-
-```bash
-git submodule update --init --recursive
-```
-</details>
 
 ### 2. Configure (Optional)
 
@@ -76,6 +68,11 @@ docker compose up -d --build
 # Mount a specific project
 PROJECT_DIR=/path/to/your/project docker compose up -d --build
 ```
+
+Local image builds still need GitHub access during the build in order to:
+
+- download Antidote and Zellij
+- prefetch the plugin repositories listed in `.zsh_plugins.txt`
 
 ### 4. Option B: Use the Prebuilt GHCR Image
 
@@ -98,7 +95,7 @@ docker run --rm -it \
   ghcr.io/zhangdw156/oh-my-openpod:latest
 ```
 
-This is usually the better choice on servers because it avoids local builds and submodule setup.
+This is usually the better choice on servers because it avoids local builds and the GitHub access needed during image construction.
 
 Image URL:
 
@@ -159,7 +156,8 @@ oh-my-openpod/
 ├── Dockerfile              # Image definition (Ubuntu 24.04)
 ├── docker-compose.yml      # Orchestration & version
 ├── build/
-│   └── install-zellij.sh   # Install a pinned Zellij release
+│   ├── install-antidote.sh # Install Antidote
+│   └── install-zellij.sh   # Install Zellij
 ├── .env.example            # Environment variable template
 ├── opencode.json.example   # OpenCode AI provider config template
 ├── config/
@@ -167,7 +165,7 @@ oh-my-openpod/
 │   ├── .p10k.zsh           # Powerlevel10k config
 │   └── .zsh_plugins.txt    # Plugin list
 └── vendor/
-    └── antidote/           # Zsh plugin manager (git submodule)
+    └── .gitkeep            # Reserved for future vendored dependencies
 ```
 
 ## Contributing

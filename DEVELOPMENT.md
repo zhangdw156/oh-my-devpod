@@ -7,7 +7,6 @@ oh-my-openpod/
 ├── Dockerfile
 ├── docker-compose.yml          # 版本号在 image 字段中维护
 ├── .env.example
-├── .gitmodules
 ├── .github/
 │   ├── ISSUE_TEMPLATE/
 │   └── workflows/
@@ -15,13 +14,14 @@ oh-my-openpod/
 ├── README.md                   # 用户文档
 ├── DEVELOPMENT.md              # 开发者文档（本文件）
 ├── build/
+│   ├── install-antidote.sh
 │   └── install-zellij.sh
 ├── config/
 │   ├── .zshrc
 │   ├── .p10k.zsh
 │   └── .zsh_plugins.txt
-└── vendor/                     # 第三方依赖（git submodule）
-    └── antidote/               # Zsh 插件管理器，固定到 v2.0.2
+└── vendor/                     # 预留给未来的 vendored 第三方依赖
+    └── .gitkeep
 ```
 
 ## 版本管理
@@ -29,8 +29,8 @@ oh-my-openpod/
 版本号唯一维护在 `docker-compose.yml` 的 `image` 字段中：
 
 ```yaml
-image: oh-my-openpod:0.3.0-dev   # 开发中
-image: oh-my-openpod:0.2.0       # 正式发布
+image: oh-my-openpod:x.y.z-dev   # 开发中
+image: oh-my-openpod:x.y.z       # 正式发布
 ```
 
 | 版本格式 | 含义 |
@@ -52,65 +52,46 @@ image: oh-my-openpod:0.2.0       # 正式发布
 - `GHCR_TOKEN` 需要具备至少 `write:packages`；这是保证个人账号下 GHCR 包稳定可写的一次性配置
 - 发布镜像显式关闭 `provenance`，避免 GHCR 页面出现额外的 `unknown/unknown` attestation 条目
 
+## 依赖安装约定
+
+- `build/` 目录存放镜像构建期使用的安装脚本，例如 `install-antidote.sh` 和 `install-zellij.sh`
+- `config/` 目录存放要复制进镜像的 shell 配置文件
+- `vendor/` 目录保留，但只留给未来确实不适合通过 build 安装脚本获取的 vendored 依赖
+- `install-antidote.sh` 和 `install-zellij.sh` 默认跟随各自上游的最新正式 release，也可以通过构建参数覆盖到特定版本
+- 本地 `docker build` 仍需要构建环境能访问 GitHub，因为 Antidote、Zellij 和 Zsh 插件都在构建期下载
+
 ## 发布流程
 
 ```bash
 # 1. 从 main 新建发布分支
 git checkout main
 git pull --ff-only origin main
-git checkout -b release/0.2.0
+git checkout -b release/x.y.z
 
 # 2. 修改 docker-compose.yml 中 image 的 tag（去掉 -dev）
-#    image: oh-my-openpod:0.2.0
+#    image: oh-my-openpod:x.y.z
 git add docker-compose.yml
-git commit -m "release: cut 0.2.0"
-git push -u origin release/0.2.0
+git commit -m "release: cut x.y.z"
+git push -u origin release/x.y.z
 
 # 3. 提 PR 合并到 main
 #    合并后，GitHub Actions 会自动构建并发布：
-#    ghcr.io/zhangdw156/oh-my-openpod:0.2.0
+#    ghcr.io/zhangdw156/oh-my-openpod:x.y.z
 #    ghcr.io/zhangdw156/oh-my-openpod:latest
 
 # 4. 发布成功后，给 release commit 打 tag 并创建 GitHub Release
 git checkout main
 git pull --ff-only origin main
-git tag v0.2.0
-git push origin v0.2.0
+git tag vx.y.z
+git push origin vx.y.z
 
 # 5. 开始下一个版本的开发
-git checkout -b chore/bump-version-to-0.3.0-dev
-#    image: oh-my-openpod:0.3.0-dev
+git checkout -b chore/bump-version-to-next-dev
+#    image: oh-my-openpod:<next-version>-dev
 git add docker-compose.yml
-git commit -m "chore: bump version to 0.3.0-dev"
-git push -u origin chore/bump-version-to-0.3.0-dev
+git commit -m "chore: bump version to <next-version>-dev"
+git push -u origin chore/bump-version-to-next-dev
 
 # 6. 提 PR 合并到 main
 #    这次 workflow 会自动跳过镜像发布，因为 tag 以 -dev 结尾
-```
-
-## 管理 Submodule
-
-所有第三方依赖统一放在 `vendor/` 目录下，通过 git submodule 管理版本。
-
-### 升级 Antidote
-
-```bash
-cd vendor/antidote
-git fetch --tags
-git checkout <new-tag>   # 例如 v2.1.0
-cd ../..
-
-# 更新 .gitmodules 中的 branch 字段以保持一致
-# [submodule "vendor/antidote"]
-#     branch = <new-tag>
-
-git add vendor/antidote .gitmodules
-git commit -m "chore: bump antidote to <new-tag>"
-```
-
-### 添加新的 Submodule
-
-```bash
-git submodule add <repo-url> vendor/<name>
-git commit -m "chore: add <name> as submodule"
 ```

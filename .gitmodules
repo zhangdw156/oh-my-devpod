@@ -1,4 +1,0 @@
-[submodule "vendor/antidote"]
-	path = vendor/antidote
-	url = https://github.com/mattmc3/antidote.git
-	branch = v2.0.2
