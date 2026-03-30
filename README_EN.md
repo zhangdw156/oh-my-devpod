@@ -37,6 +37,7 @@ oh-my-openpod packages **AI coding assistant + Python toolchain + beautiful Shel
 | **AI** | [OpenCode](https://github.com/opencode-ai/opencode) | Terminal AI coding assistant with custom provider support |
 | **Python** | [uv](https://github.com/astral-sh/uv) | Blazingly fast Python package & virtualenv manager |
 | **Shell** | Zsh + [Powerlevel10k](https://github.com/romkatv/powerlevel10k) + [Antidote](https://github.com/mattmc3/antidote) | Syntax highlighting, auto-suggestions, Git status |
+| **Terminal** | [Zellij](https://github.com/zellij-org/zellij) | Terminal multiplexer for long-lived dev sessions |
 | **CLI** | Git / curl / fzf / eza / bat | Modern command-line toolkit |
 | **Base** | Ubuntu 24.04 LTS (glibc) | Stable base with full compatibility for Python C extensions |
 
@@ -115,9 +116,12 @@ docker compose exec openpod zsh
 
 ```
 root@hostname /workspace main ❯ opencode   # AI coding assistant
+root@hostname /workspace main ❯ zellij     # terminal multiplexer session
 root@hostname /workspace main ❯ uv run ... # Python projects
 root@hostname /workspace main ❯ git status  # Git operations
 ```
+
+`zellij` is preinstalled, but it does not auto-start. Run `zellij` manually when you want a multiplexed session.
 
 ## Self-Hosted AI Support
 
@@ -154,6 +158,8 @@ docker compose up -d --build
 oh-my-openpod/
 ├── Dockerfile              # Image definition (Ubuntu 24.04)
 ├── docker-compose.yml      # Orchestration & version
+├── build/
+│   └── install-zellij.sh   # Install a pinned Zellij release
 ├── .env.example            # Environment variable template
 ├── opencode.json.example   # OpenCode AI provider config template
 ├── config/
