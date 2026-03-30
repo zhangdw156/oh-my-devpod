@@ -4,6 +4,7 @@ FROM ubuntu:24.04 AS base
 RUN apt-get update && apt-get install -y --no-install-recommends \
     zsh \
     git \
+    vim \
     curl \
     fzf \
     bat \
