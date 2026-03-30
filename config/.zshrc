@@ -15,3 +15,4 @@ antidote load
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
 alias cc=clear
+alias zj=zellij
