@@ -45,7 +45,7 @@ jobs:
           image_name="ghcr.io/${owner}/${repo}"
 
           publish="true"
-          if [[ "$version" == *-dev ]]; then
+          if [[ "$version" == *-dev || "$version" =~ \.dev[0-9]+$ ]]; then
             publish="false"
           fi
 
@@ -106,7 +106,7 @@ jobs:
         shell: bash
         run: |
           if [[ "${PUBLISH}" != "true" ]]; then
-            echo "Skipped publishing because docker-compose.yml uses dev tag \`${VERSION}\`." >> "$GITHUB_STEP_SUMMARY"
+            echo "Skipped publishing because docker-compose.yml uses a development version \`${VERSION}\`." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
 
