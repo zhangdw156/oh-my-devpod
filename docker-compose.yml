@@ -3,7 +3,7 @@ services:
     build:
       context: .
       network: host
-    image: oh-my-openpod:0.3.0
+    image: oh-my-openpod:0.4.0-dev
     container_name: oh-my-openpod
     stdin_open: true
     tty: true
