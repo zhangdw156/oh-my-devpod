@@ -29,13 +29,13 @@ oh-my-openpod/
 版本号唯一维护在 `docker-compose.yml` 的 `image` 字段中：
 
 ```yaml
-image: oh-my-openpod:x.y.z-dev   # 开发中
+image: oh-my-openpod:x.y.z.dev0  # 开发中
 image: oh-my-openpod:x.y.z       # 正式发布
 ```
 
 | 版本格式 | 含义 |
 |----------|------|
-| `x.y.z-dev` | 开发中，尚未发布 |
+| `x.y.z.devN` | 开发中，尚未发布 |
 | `x.y.z` | 已发布的正式版本 |
 
 ## Issue 约定
@@ -68,7 +68,7 @@ git checkout main
 git pull --ff-only origin main
 git checkout -b release/x.y.z
 
-# 2. 修改 docker-compose.yml 中 image 的 tag（去掉 -dev）
+# 2. 修改 docker-compose.yml 中 image 的 tag（去掉开发后缀）
 #    image: oh-my-openpod:x.y.z
 git add docker-compose.yml
 git commit -m "release: cut x.y.z"
@@ -87,11 +87,11 @@ git push origin vx.y.z
 
 # 5. 开始下一个版本的开发
 git checkout -b chore/bump-version-to-next-dev
-#    image: oh-my-openpod:<next-version>-dev
+#    image: oh-my-openpod:<next-version>.dev0
 git add docker-compose.yml
-git commit -m "chore: bump version to <next-version>-dev"
+git commit -m "chore: bump version to <next-version>.dev0"
 git push -u origin chore/bump-version-to-next-dev
 
 # 6. 提 PR 合并到 main
-#    这次 workflow 会自动跳过镜像发布，因为 tag 以 -dev 结尾
+#    这次 workflow 会自动跳过镜像发布，因为版本使用 .devN 开发后缀
 ```
