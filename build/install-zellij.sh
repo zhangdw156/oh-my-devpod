@@ -34,9 +34,10 @@ archive_name="${asset_name}.tar.gz"
 checksum_name="${asset_name}.sha256sum"
 
 if [[ "${version}" == "latest" ]]; then
-  release_url="https://github.com/zellij-org/zellij/releases/latest/download"
+  release_json="$("${curl_retry[@]}" https://api.github.com/repos/zellij-org/zellij/releases/latest)"
+  version="$(printf '%s' "${release_json}" | sed -nE 's/.*"tag_name":[[:space:]]*"([^"]+)".*/\1/p' | head -n 1)"
 else
-  release_url="https://github.com/zellij-org/zellij/releases/download/${version}"
+  release_json=""
 fi
 
 tmp_dir="$(mktemp -d)"
@@ -44,6 +45,8 @@ cleanup() {
   rm -rf "${tmp_dir}"
 }
 trap cleanup EXIT
+
+release_url="https://github.com/zellij-org/zellij/releases/download/${version}"
 
 "${curl_retry[@]}" "${release_url}/${archive_name}" -o "${tmp_dir}/${archive_name}"
 "${curl_retry[@]}" "${release_url}/${checksum_name}" -o "${tmp_dir}/${checksum_name}"

@@ -38,7 +38,8 @@ oh-my-openpod packages **AI coding assistant + Python toolchain + beautiful Shel
 | **Python** | [uv](https://github.com/astral-sh/uv) | Blazingly fast Python package & virtualenv manager |
 | **Shell** | Zsh + [Powerlevel10k](https://github.com/romkatv/powerlevel10k) + [Antidote](https://github.com/mattmc3/antidote) | Syntax highlighting, auto-suggestions, Git status |
 | **Terminal** | [Zellij](https://github.com/zellij-org/zellij) | Terminal multiplexer for long-lived dev sessions |
-| **CLI** | Git / curl / fzf / eza / bat | Modern command-line toolkit |
+| **TUI** | [Yazi](https://yazi-rs.github.io/) | Modern terminal file manager with fast previews and navigation |
+| **CLI** | Git / curl / fzf / eza / bat / fd / rg / file / vim | Modern command-line toolkit |
 | **Base** | Ubuntu 24.04 LTS (glibc) | Stable base with full compatibility for Python C extensions |
 
 ## Quick Start
@@ -71,7 +72,7 @@ PROJECT_DIR=/path/to/your/project docker compose up -d --build
 
 Local image builds still need GitHub access during the build in order to:
 
-- download Antidote and Zellij
+- download Antidote, Yazi, and Zellij
 - prefetch the plugin repositories listed in `.zsh_plugins.txt`
 
 ### 4. Option B: Use the Prebuilt GHCR Image
@@ -114,11 +115,13 @@ docker compose exec openpod zsh
 ```
 root@hostname /workspace main ❯ opencode   # AI coding assistant
 root@hostname /workspace main ❯ zellij     # terminal multiplexer session
+root@hostname /workspace main ❯ y          # Yazi file manager with cwd sync
 root@hostname /workspace main ❯ uv run ... # Python projects
 root@hostname /workspace main ❯ git status  # Git operations
 ```
 
 `zellij` is preinstalled, but it does not auto-start. Run `zellij` manually when you want a multiplexed session.
+`y` is a shell wrapper around `yazi`; when you quit Yazi, it syncs the selected working directory back to the shell.
 
 ## Self-Hosted AI Support
 
@@ -157,6 +160,7 @@ oh-my-openpod/
 ├── docker-compose.yml      # Orchestration & version
 ├── build/
 │   ├── install-antidote.sh # Install Antidote
+│   ├── install-yazi.sh     # Install Yazi
 │   └── install-zellij.sh   # Install Zellij
 ├── .env.example            # Environment variable template
 ├── opencode.json.example   # OpenCode AI provider config template

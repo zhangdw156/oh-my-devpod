@@ -16,3 +16,11 @@ antidote load
 
 alias cc=clear
 alias zj=zellij
+
+function y() {
+  local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
+  command yazi "$@" --cwd-file="$tmp"
+  cwd="$(command cat -- "$tmp" 2>/dev/null)"
+  [ "$cwd" != "$PWD" ] && [ -d "$cwd" ] && builtin cd -- "$cwd"
+  rm -f -- "$tmp"
+}

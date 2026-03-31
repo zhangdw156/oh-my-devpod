@@ -15,6 +15,7 @@ oh-my-openpod/
 ├── DEVELOPMENT.md              # 开发者文档（本文件）
 ├── build/
 │   ├── install-antidote.sh
+│   ├── install-yazi.sh
 │   └── install-zellij.sh
 ├── config/
 │   ├── .zshrc
@@ -54,11 +55,11 @@ image: oh-my-openpod:x.y.z       # 正式发布
 
 ## 依赖安装约定
 
-- `build/` 目录存放镜像构建期使用的安装脚本，例如 `install-antidote.sh` 和 `install-zellij.sh`
+- `build/` 目录存放镜像构建期使用的安装脚本，例如 `install-antidote.sh`、`install-yazi.sh` 和 `install-zellij.sh`
 - `config/` 目录存放要复制进镜像的 shell 配置文件
 - `vendor/` 目录保留，但只留给未来确实不适合通过 build 安装脚本获取的 vendored 依赖
 - `install-antidote.sh` 和 `install-zellij.sh` 默认跟随各自上游的最新正式 release，也可以通过构建参数覆盖到特定版本
-- 本地 `docker build` 仍需要构建环境能访问 GitHub，因为 Antidote、Zellij 和 Zsh 插件都在构建期下载
+- 本地 `docker build` 仍需要构建环境能访问 GitHub，因为 Antidote、Yazi、Zellij 和 Zsh 插件都在构建期下载
 
 ## 发布流程
 
