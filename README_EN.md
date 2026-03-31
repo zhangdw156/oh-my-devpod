@@ -73,7 +73,7 @@ PROJECT_DIR=/path/to/your/project docker compose up -d --build
 
 Local image builds still need GitHub access during the build in order to:
 
-- download Antidote, Yazi, and Zellij
+- download Antidote, btop, Yazi, and Zellij
 - prefetch the plugin repositories listed in `.zsh_plugins.txt`
 
 ### 4. Option B: Use the Prebuilt GHCR Image
@@ -162,6 +162,7 @@ oh-my-openpod/
 ├── docker-compose.yml      # Orchestration & version
 ├── build/
 │   ├── install-antidote.sh # Install Antidote
+│   ├── install-btop.sh     # Install btop
 │   ├── install-yazi.sh     # Install Yazi
 │   └── install-zellij.sh   # Install Zellij
 ├── .env.example            # Environment variable template

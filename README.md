@@ -73,7 +73,7 @@ PROJECT_DIR=/path/to/your/project docker compose up -d --build
 
 本地构建仍需要构建环境能访问 GitHub：
 
-- 下载 Antidote、Yazi 和 Zellij
+- 下载 Antidote、btop、Yazi 和 Zellij
 - 预拉取 `.zsh_plugins.txt` 中列出的插件仓库
 
 ### 4. 方式 B：直接使用 GHCR 预构建镜像
@@ -163,6 +163,7 @@ oh-my-openpod/
 ├── docker-compose.yml      # 编排配置 & 版本号
 ├── build/
 │   ├── install-antidote.sh # 安装 Antidote
+│   ├── install-btop.sh     # 安装 btop
 │   ├── install-yazi.sh     # 安装 Yazi
 │   └── install-zellij.sh   # 安装 Zellij
 ├── .env.example            # 环境变量模板
