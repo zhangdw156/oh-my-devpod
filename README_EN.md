@@ -38,9 +38,9 @@ oh-my-openpod packages **AI coding assistant + Python toolchain + beautiful Shel
 | **Python** | [uv](https://github.com/astral-sh/uv) | Blazingly fast Python package & virtualenv manager |
 | **Shell** | Zsh + [Powerlevel10k](https://github.com/romkatv/powerlevel10k) + [Antidote](https://github.com/mattmc3/antidote) | Syntax highlighting, auto-suggestions, Git status |
 | **Terminal** | [Zellij](https://github.com/zellij-org/zellij) | Terminal multiplexer for long-lived dev sessions |
-| **TUI** | [Yazi](https://yazi-rs.github.io/) | Modern terminal file manager with fast previews and navigation |
+| **TUI** | [Yazi](https://yazi-rs.github.io/) | Modern terminal file manager for directory browsing and basic file inspection |
 | **Monitor** | [btop](https://github.com/aristocratos/btop) | Terminal resource monitor for CPU, memory, and process activity |
-| **CLI** | Git / curl / fzf / eza / bat / fd / rg / file / vim | Modern command-line toolkit |
+| **CLI** | Git / curl / rg / file / vim | Lightweight but practical command-line toolkit |
 | **Base** | Ubuntu 24.04 LTS (glibc) | Stable base with full compatibility for Python C extensions |
 
 ## Quick Start

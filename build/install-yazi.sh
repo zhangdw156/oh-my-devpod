@@ -44,7 +44,10 @@ cleanup() {
 trap cleanup EXIT
 
 "${curl_retry[@]}" "${release_url}/${asset_name}" -o "${tmp_dir}/yazi.deb"
-dpkg -i "${tmp_dir}/yazi.deb"
+
+# Extract the upstream package payload directly so we can keep Yazi's
+# core navigation binaries without pulling in every optional preview helper.
+dpkg-deb -x "${tmp_dir}/yazi.deb" /
 
 test -x /usr/bin/yazi
 test -x /usr/bin/ya

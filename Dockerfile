@@ -2,33 +2,17 @@ FROM ubuntu:24.04 AS base
 
 # ---------- 1. 安装基础依赖 ----------
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    7zip \
     bzip2 \
     zsh \
     git \
     vim \
     curl \
-    fzf \
-    bat \
-    eza \
-    ffmpeg \
     file \
-    fd-find \
-    imagemagick \
-    jq \
-    poppler-utils \
     ripgrep \
     tzdata \
-    xclip \
-    zoxide \
-    libsndfile1 \
     ca-certificates \
     musl \
     && rm -rf /var/lib/apt/lists/*
-
-# Ubuntu 下部分工具二进制名不同，建立软链保持常见用法一致
-RUN ln -sf /usr/bin/batcat /usr/local/bin/bat
-RUN ln -sf /usr/bin/fdfind /usr/local/bin/fd
 
 # ---------- 2. 安装 opencode（Alpine musl 构建，需要连同依赖库一起拷贝）----------
 COPY --from=ghcr.io/anomalyco/opencode /usr/local/bin/opencode /usr/local/bin/opencode
