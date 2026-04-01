@@ -63,11 +63,13 @@ cp opencode.json.example opencode.json  # Configure AI provider
 
 ### 3. Option A: Build Locally and Start
 
+If you need `.env`, a custom OpenCode config, and so on, complete [step 2 “Configure (Optional)”](#2-configure-optional) before running the commands below.
+
 ```bash
-# Default: mounts ~/projects
+# Default: mounts the current directory (repository root)
 docker compose up -d --build
 
-# Mount a specific project
+# Mount a different directory
 PROJECT_DIR=/path/to/your/project docker compose up -d --build
 ```
 
@@ -85,12 +87,25 @@ docker pull ghcr.io/zhangdw156/oh-my-openpod:latest
 
 # Or pull a specific version
 docker pull ghcr.io/zhangdw156/oh-my-openpod:0.1.0
+```
 
-# Start and enter the container directly
+**Minimal**: mount the current directory to `/workspace` only (quick try; works without `.env` or a custom `opencode.json`).
+
+```bash
 docker run --rm -it \
   --name openpod \
   --network host \
-  -v "${PROJECT_DIR:-$HOME/projects}:/workspace" \
+  -v .:/workspace \
+  ghcr.io/zhangdw156/oh-my-openpod:latest
+```
+
+**Full**: when you need `--env-file .env` and a custom OpenCode config, first run `cp .env.example .env` and `cp opencode.json.example opencode.json` from [step 2](#2-configure-optional), edit them, then run:
+
+```bash
+docker run --rm -it \
+  --name openpod \
+  --network host \
+  -v "${PROJECT_DIR:-.}:/workspace" \
   -v "$(pwd)/opencode.json:/root/.config/opencode/config.json:ro" \
   --env-file .env \
   ghcr.io/zhangdw156/oh-my-openpod:latest

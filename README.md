@@ -63,11 +63,13 @@ cp opencode.json.example opencode.json  # 配置 AI Provider
 
 ### 3. 方式 A：本地构建并启动
 
+若需使用 `.env`、自定义 OpenCode 配置等，请先完成 [第 2 步「配置（可选）」](#2-配置可选) 再执行下方命令。
+
 ```bash
-# 默认挂载 ~/projects
+# 默认挂载当前目录（仓库根目录）
 docker compose up -d --build
 
-# 挂载指定项目
+# 挂载其它目录
 PROJECT_DIR=/path/to/your/project docker compose up -d --build
 ```
 
@@ -85,12 +87,25 @@ docker pull ghcr.io/zhangdw156/oh-my-openpod:latest
 
 # 或拉取指定版本
 docker pull ghcr.io/zhangdw156/oh-my-openpod:0.1.0
+```
 
-# 直接启动并进入容器
+**最简**：只把当前目录挂到 `/workspace`（适合快速试用；无 `.env` / 自定义 `opencode.json` 时也可用）。
+
+```bash
 docker run --rm -it \
   --name openpod \
   --network host \
-  -v "${PROJECT_DIR:-$HOME/projects}:/workspace" \
+  -v .:/workspace \
+  ghcr.io/zhangdw156/oh-my-openpod:latest
+```
+
+**完整**：需要 `--env-file .env`、自定义 OpenCode 配置时，请先按 [第 2 步](#2-配置可选) 执行 `cp .env.example .env`、`cp opencode.json.example opencode.json` 并编辑好，再运行：
+
+```bash
+docker run --rm -it \
+  --name openpod \
+  --network host \
+  -v "${PROJECT_DIR:-.}:/workspace" \
   -v "$(pwd)/opencode.json:/root/.config/opencode/config.json:ro" \
   --env-file .env \
   ghcr.io/zhangdw156/oh-my-openpod:latest
