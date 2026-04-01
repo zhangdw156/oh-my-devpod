@@ -88,7 +88,7 @@ docker pull ghcr.io/zhangdw156/oh-my-openpod:0.1.0
 
 # 直接启动并进入容器
 docker run --rm -it \
-  --name oh-my-openpod \
+  --name openpod \
   --network host \
   -v "${PROJECT_DIR:-$HOME/projects}:/workspace" \
   -v "$(pwd)/opencode.json:/root/.config/opencode/config.json:ro" \
@@ -103,6 +103,8 @@ docker run --rm -it \
 ```text
 ghcr.io/zhangdw156/oh-my-openpod
 ```
+
+默认运行容器名使用更短的 `openpod`；项目名和镜像名仍然保持为 `oh-my-openpod`。
 
 ### 5. 进入容器，开始工作
 

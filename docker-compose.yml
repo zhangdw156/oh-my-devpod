@@ -4,7 +4,7 @@ services:
       context: .
       network: host
     image: oh-my-openpod:0.4.0.dev4
-    container_name: oh-my-openpod
+    container_name: openpod
     stdin_open: true
     tty: true
     working_dir: /workspace
