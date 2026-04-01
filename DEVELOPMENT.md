@@ -10,7 +10,6 @@ oh-my-openpod/
 ├── .github/
 │   ├── ISSUE_TEMPLATE/
 │   └── workflows/
-├── opencode.json.example
 ├── README.md                   # 用户文档
 ├── DEVELOPMENT.md              # 开发者文档（本文件）
 ├── build/
@@ -24,7 +23,8 @@ oh-my-openpod/
 ├── config/
 │   ├── .zshrc
 │   ├── .p10k.zsh
-│   └── .zsh_plugins.txt
+│   ├── .zsh_plugins.txt
+│   └── opencode.json          # 镜像内置的 OpenCode 全局默认配置
 └── vendor/
     ├── manifest.lock.json
     ├── opencode/
@@ -67,7 +67,7 @@ image: oh-my-openpod:x.y.z       # 正式发布
 
 - `build/` 目录存放镜像构建期使用的安装脚本，例如 `install-antidote.sh`、`install-btop.sh`、`install-yazi.sh` 和 `install-zellij.sh`
 - `build/update-vendor-assets.sh` 用于刷新仓库内维护的 release 包、Zsh 插件快照和 OpenCode 插件包快照
-- `config/` 目录存放要复制进镜像的 shell 配置文件
+- `config/` 目录存放要复制进镜像的配置文件，包括 shell 配置和内置的 `opencode.json`
 - `vendor/releases/` 存放构建脚本使用的固定 release 包，`vendor/zsh/` 存放默认 shell 使用的插件源码快照
 - `vendor/opencode/packages/` 存放需要保留原始包结构的 OpenCode 插件包快照
 - `vendor/opencode/skills/` 预留给仓库直接维护的 OpenCode 全局 skills
@@ -79,7 +79,10 @@ image: oh-my-openpod:x.y.z       # 正式发布
 - `superpowers` 以完整包快照的形式维护在 `vendor/opencode/packages/superpowers/`
 - 不要只抽取 `.opencode/plugins/superpowers.js` 或只复制 `skills/`，因为上游插件会基于自身入口文件相对路径解析 `../../skills`
 - 镜像构建时会在 `/root/.config/opencode/plugins/superpowers.js` 创建指向 vendored 包入口的软链接
-- `opencode.json.example` 只把 `/opt/vendor/opencode/skills` 加入 `skills.paths`；`superpowers` 自带的 skills 由插件自身在运行时注册
+- 镜像构建时还会在 `/root/.config/opencode/skills` 创建指向 `/opt/vendor/opencode/skills` 的软链接，避免项目级 `opencode.json` 覆盖掉仓库维护的全局 skills
+- 镜像还会把 `config/opencode.json` 复制到 `/root/.config/opencode/config.json`，作为 OpenCode 的全局默认配置
+- `config/opencode.json` 只保留镜像级 provider 默认值；不要在其中手动添加 `superpowers/skills`，因为插件会在运行时注册它自己的 bundled skills
+- `docker-compose.yml` 不再从宿主机挂载全局 OpenCode 配置；项目级自定义应放在挂载到 `/workspace` 的项目根目录 `opencode.json`
 
 ## 发布流程
 

@@ -2,13 +2,11 @@
   "$schema": "https://opencode.ai/config.json",
 
   // ----------------------------------------------------------------
-  // 镜像已通过 /root/.config/opencode/plugins 预置 vendored superpowers 插件。
-  // 这里保留 /opt/vendor/opencode/skills 作为仓库维护的全局 skills 根目录。
+  // openpod 镜像内置的 OpenCode 全局默认配置：
+  // - 通过 .env 提供变量的 provider 定义
+  // - 仓库维护的全局 skills 通过 /root/.config/opencode/skills 软链接暴露
+  // superpowers 自带 skills 由其插件在运行时自动注册，这里不要重复添加。
   // ----------------------------------------------------------------
-  "skills": {
-    "paths": ["/opt/vendor/opencode/skills"]
-  },
-
   "provider": {
 
     // ----------------------------------------------------------------

@@ -56,14 +56,20 @@ cd oh-my-openpod
 
 ```bash
 cp .env.example .env        # 填入 API Key、自定义挂载路径等
-cp opencode.json.example opencode.json  # 配置 AI Provider
 ```
+
+镜像默认已经内置 OpenCode 全局配置文件 `/root/.config/opencode/config.json`，其中包含：
+
+- 基于 `.env` 变量展开的 provider 定义
+- 通过 `/root/.config/opencode/skills -> /opt/vendor/opencode/skills` 暴露的仓库维护全局 skills
+
+如果你在用 openpod 开发某个项目，并且希望给该项目单独配置 OpenCode，请直接在项目根目录创建 `opencode.json`。
 
 `.env` 支持官方 API 和自部署的 OpenAI / Anthropic 兼容接口，详见 [.env.example](.env.example)。
 
 ### 3. 方式 A：本地构建并启动
 
-若需使用 `.env`、自定义 OpenCode 配置等，请先完成 [第 2 步「配置（可选）」](#2-配置可选) 再执行下方命令。
+若需使用 `.env`，请先完成 [第 2 步「配置（可选）」](#2-配置可选) 再执行下方命令。
 
 ```bash
 # 默认挂载当前目录（仓库根目录）
@@ -99,16 +105,15 @@ docker run --rm -it \
   ghcr.io/zhangdw156/oh-my-openpod:latest
 ```
 
-**完整**：需要 `--env-file .env`、自定义 OpenCode 配置时，请先按 [第 2 步](#2-配置可选) 执行 `cp .env.example .env`、`cp opencode.json.example opencode.json` 并编辑好，再运行：
+**完整**：需要 `--env-file .env` 时，请先按 [第 2 步](#2-配置可选) 执行 `cp .env.example .env` 并编辑好，再运行：
 
-如果你希望同时启用仓库维护的全局 skills，推荐使用这条路径，并保留示例配置里的 `skills.paths`。
+如果你的项目根目录本身带有 `opencode.json`，把该项目挂到 `/workspace` 后即可让 OpenCode 使用项目级配置；镜像内置的全局默认配置仍然保留在 `/root/.config/opencode/config.json`。
 
 ```bash
 docker run --rm -it \
   --name openpod \
   --network host \
   -v "${PROJECT_DIR:-.}:/workspace" \
-  -v "$(pwd)/opencode.json:/root/.config/opencode/config.json:ro" \
   --env-file .env \
   ghcr.io/zhangdw156/oh-my-openpod:latest
 ```
@@ -145,15 +150,15 @@ root@hostname /workspace main ❯ git status  # Git 操作
 
 ## 支持自部署 AI 服务
 
-通过 `.env` + `opencode.json` 配置，可以对接：
+通过 `.env` 配置，可以对接：
 
 - **OpenAI 兼容接口**：vLLM / Ollama / LiteLLM / 硅基流动 等
 - **Anthropic 兼容接口**：自部署 Claude / AWS Bedrock 代理 等
 - **官方服务**：OpenAI / Anthropic 官方 API
 
-镜像还会预置 vendored 的 `superpowers` OpenCode 插件，并把仓库维护的全局 skills 根目录固定为 `/opt/vendor/opencode/skills`。
+镜像会内置 OpenCode 全局默认配置 `/root/.config/opencode/config.json`，并预置 vendored 的 `superpowers` OpenCode 插件；仓库维护的全局 skills 会通过 `/root/.config/opencode/skills -> /opt/vendor/opencode/skills` 暴露给 OpenCode。
 
-如果你复制 `opencode.json.example` 作为自己的配置，请保留其中的 `skills.paths` 配置；如果你完全替换配置文件，也需要自行保留这条目录配置，才能继续发现仓库内维护的全局 skills。
+如果你在挂载到 `/workspace` 的项目根目录里放置 `opencode.json`，可以为该项目追加项目级配置。
 
 `superpowers` 自带 skills 不需要手动加入 `skills.paths`，因为插件会在运行时自动注册它自己的 `skills/` 目录。
 
@@ -194,11 +199,11 @@ oh-my-openpod/
 ├── docs/
 │   └── vendor-assets.md    # Vendored 资产来源与维护说明
 ├── .env.example            # 环境变量模板
-├── opencode.json.example   # OpenCode AI Provider 配置模板
 ├── config/
 │   ├── .zshrc              # Zsh 配置
 │   ├── .p10k.zsh           # Powerlevel10k 配置
-│   └── .zsh_plugins.txt    # Vendored 插件清单
+│   ├── .zsh_plugins.txt    # Vendored 插件清单
+│   └── opencode.json       # 镜像内置 OpenCode 全局默认配置
 └── vendor/
     ├── manifest.lock.json  # Vendored 资产清单
     ├── opencode/

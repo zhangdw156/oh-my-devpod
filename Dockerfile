@@ -17,9 +17,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # ---------- 2. 复制 vendored 构建资产 ----------
 COPY vendor /opt/vendor
 
-# ---------- 3. 预置 OpenCode vendored plugin 入口 ----------
+# ---------- 3. 预置 OpenCode vendored plugin 入口与全局 skills ----------
 RUN mkdir -p /root/.config/opencode/plugins \
-    && ln -sf /opt/vendor/opencode/packages/superpowers/.opencode/plugins/superpowers.js /root/.config/opencode/plugins/superpowers.js
+    && ln -sf /opt/vendor/opencode/packages/superpowers/.opencode/plugins/superpowers.js /root/.config/opencode/plugins/superpowers.js \
+    && ln -sfn /opt/vendor/opencode/skills /root/.config/opencode/skills
 
 # ---------- 4. 安装 opencode（Alpine musl 构建，需要连同依赖库一起拷贝）----------
 COPY --from=ghcr.io/anomalyco/opencode /usr/local/bin/opencode /usr/local/bin/opencode
@@ -63,6 +64,7 @@ RUN git config --global --add safe.directory '*'
 # ---------- 12. 复制配置文件 ----------
 COPY config/.zshrc /root/.zshrc
 COPY config/.p10k.zsh /root/.p10k.zsh
+COPY config/opencode.json /root/.config/opencode/config.json
 
 # ---------- 13. 启动设置 ----------
 WORKDIR /workspace

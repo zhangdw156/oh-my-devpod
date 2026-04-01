@@ -56,14 +56,20 @@ cd oh-my-openpod
 
 ```bash
 cp .env.example .env        # Fill in API keys, custom mount path, etc.
-cp opencode.json.example opencode.json  # Configure AI provider
 ```
+
+The image already bakes in a default global OpenCode config at `/root/.config/opencode/config.json`, including:
+
+- provider definitions that expand values from `.env`
+- repository-managed global skills exposed through `/root/.config/opencode/skills -> /opt/vendor/opencode/skills`
+
+If you are using openpod to work on a project and want project-specific OpenCode settings, create `opencode.json` in that project root.
 
 `.env` supports both official APIs and self-hosted OpenAI / Anthropic compatible endpoints. See [.env.example](.env.example) for details.
 
 ### 3. Option A: Build Locally and Start
 
-If you need `.env`, a custom OpenCode config, and so on, complete [step 2 “Configure (Optional)”](#2-configure-optional) before running the commands below.
+If you need `.env`, complete [step 2 “Configure (Optional)”](#2-configure-optional) before running the commands below.
 
 ```bash
 # Default: mounts the current directory (repository root)
@@ -99,16 +105,15 @@ docker run --rm -it \
   ghcr.io/zhangdw156/oh-my-openpod:latest
 ```
 
-**Full**: when you need `--env-file .env` and a custom OpenCode config, first run `cp .env.example .env` and `cp opencode.json.example opencode.json` from [step 2](#2-configure-optional), edit them, then run:
+**Full**: when you need `--env-file .env`, first run `cp .env.example .env` from [step 2](#2-configure-optional), edit it, then run:
 
-If you also want the repository-managed global skills, use this path and keep the `skills.paths` entry from the example config.
+If your project root already contains `opencode.json`, mounting that project at `/workspace` lets OpenCode pick up project-level config while the image keeps its baked global defaults at `/root/.config/opencode/config.json`.
 
 ```bash
 docker run --rm -it \
   --name openpod \
   --network host \
   -v "${PROJECT_DIR:-.}:/workspace" \
-  -v "$(pwd)/opencode.json:/root/.config/opencode/config.json:ro" \
   --env-file .env \
   ghcr.io/zhangdw156/oh-my-openpod:latest
 ```
@@ -145,15 +150,15 @@ root@hostname /workspace main ❯ git status  # Git operations
 
 ## Self-Hosted AI Support
 
-Configure `.env` + `opencode.json` to connect to:
+Configure `.env` to connect to:
 
 - **OpenAI-compatible**: vLLM / Ollama / LiteLLM / SiliconFlow, etc.
 - **Anthropic-compatible**: Self-hosted Claude / AWS Bedrock proxy, etc.
 - **Official services**: OpenAI / Anthropic APIs
 
-The image also preinstalls the vendored `superpowers` OpenCode plugin and reserves `/opt/vendor/opencode/skills` as the repository-managed global skills root.
+The image bakes in the default global OpenCode config at `/root/.config/opencode/config.json`, preinstalls the vendored `superpowers` OpenCode plugin, and exposes repository-managed global skills through `/root/.config/opencode/skills -> /opt/vendor/opencode/skills`.
 
-If you copy `opencode.json.example` as your own config, keep its `skills.paths` entry. If you replace the config file entirely, add that directory back yourself so repository-managed global skills remain discoverable.
+If you place `opencode.json` in the project root mounted at `/workspace`, OpenCode can also pick up project-level configuration for that project.
 
 You do not need to add the bundled `superpowers` skills to `skills.paths` manually because the plugin registers its own `skills/` directory at runtime.
 
@@ -193,11 +198,11 @@ oh-my-openpod/
 ├── docs/
 │   └── vendor-assets.md    # Vendored asset sources and maintenance notes
 ├── .env.example            # Environment variable template
-├── opencode.json.example   # OpenCode AI provider config template
 ├── config/
 │   ├── .zshrc              # Zsh config
 │   ├── .p10k.zsh           # Powerlevel10k config
-│   └── .zsh_plugins.txt    # Vendored plugin inventory
+│   ├── .zsh_plugins.txt    # Vendored plugin inventory
+│   └── opencode.json       # Baked-in global OpenCode default config
 └── vendor/
     ├── manifest.lock.json  # Vendored asset lock file
     ├── opencode/
