@@ -88,7 +88,7 @@ docker pull ghcr.io/zhangdw156/oh-my-openpod:0.1.0
 
 # Start and enter the container directly
 docker run --rm -it \
-  --name oh-my-openpod \
+  --name openpod \
   --network host \
   -v "${PROJECT_DIR:-$HOME/projects}:/workspace" \
   -v "$(pwd)/opencode.json:/root/.config/opencode/config.json:ro" \
@@ -103,6 +103,8 @@ Image URL:
 ```text
 ghcr.io/zhangdw156/oh-my-openpod
 ```
+
+The default runtime container name is the shorter `openpod`; the project name and image name remain `oh-my-openpod`.
 
 ### 5. Enter the Container
 
