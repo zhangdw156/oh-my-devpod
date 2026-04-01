@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-03-31",
+  "generated_at": "2026-04-01",
   "releases": {
     "antidote": {
       "version": "v2.0.10",
@@ -70,6 +70,23 @@
           "source_url": "https://github.com/zellij-org/zellij/releases/download/v0.44.0/zellij-x86_64-unknown-linux-musl.sha256sum"
         }
       ]
+    }
+  },
+  "opencode": {
+    "plugin_packages": {
+      "superpowers": {
+        "repo": "obra/superpowers",
+        "version": "v5.0.7",
+        "local_path": "vendor/opencode/packages/superpowers",
+        "entrypoint": ".opencode/plugins/superpowers.js",
+        "bundled_skills_path": "skills",
+        "source_url": "https://codeload.github.com/obra/superpowers/tar.gz/refs/tags/v5.0.7",
+        "notes": "Package root layout is preserved so the vendored plugin can resolve ../../skills relative to its entrypoint."
+      }
+    },
+    "global_skills": {
+      "local_path": "vendor/opencode/skills",
+      "notes": "Repository-maintained OpenCode global skills live here and are kept outside the destructive refresh logic in build/update-vendor-assets.sh."
     }
   },
   "zsh_plugins": {

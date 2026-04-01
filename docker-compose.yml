@@ -10,7 +10,6 @@ services:
     working_dir: /workspace
     volumes:
       - ${PROJECT_DIR:-.}:/workspace
-      - ${OPENCODE_CONFIG:-./opencode.json.example}:/root/.config/opencode/config.json:ro
     env_file:
       - path: .env
         required: false

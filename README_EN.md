@@ -56,14 +56,20 @@ cd oh-my-openpod
 
 ```bash
 cp .env.example .env        # Fill in API keys, custom mount path, etc.
-cp opencode.json.example opencode.json  # Configure AI provider
 ```
+
+The image already bakes in a default global OpenCode config at `/root/.config/opencode/config.json`, including:
+
+- provider definitions that expand values from `.env`
+- repository-managed global skills exposed through `/root/.config/opencode/skills -> /opt/vendor/opencode/skills`
+
+If you are using openpod to work on a project and want project-specific OpenCode settings, create `opencode.json` in that project root.
 
 `.env` supports both official APIs and self-hosted OpenAI / Anthropic compatible endpoints. See [.env.example](.env.example) for details.
 
 ### 3. Option A: Build Locally and Start
 
-If you need `.env`, a custom OpenCode config, and so on, complete [step 2 “Configure (Optional)”](#2-configure-optional) before running the commands below.
+If you need `.env`, complete [step 2 “Configure (Optional)”](#2-configure-optional) before running the commands below.
 
 ```bash
 # Default: mounts the current directory (repository root)
@@ -73,7 +79,7 @@ docker compose up -d --build
 PROJECT_DIR=/path/to/your/project docker compose up -d --build
 ```
 
-Local image builds now use the vendored release assets and Zsh plugin snapshots stored in this repository, so they no longer depend on GitHub release downloads or plugin clones during the build.
+Local image builds now use the vendored release assets, Zsh plugin snapshots, and OpenCode plugin packages stored in this repository, so they no longer depend on GitHub release downloads, plugin clones, or runtime plugin fetches during the build.
 
 The remaining network requirement is access to base image registries such as Docker Hub and GHCR.
 
@@ -89,7 +95,7 @@ docker pull ghcr.io/zhangdw156/oh-my-openpod:latest
 docker pull ghcr.io/zhangdw156/oh-my-openpod:0.1.0
 ```
 
-**Minimal**: mount the current directory to `/workspace` only (quick try; works without `.env` or a custom `opencode.json`).
+**Minimal**: mount the current directory to `/workspace` only (quick try; works without `.env` or a custom `opencode.json`). This path can use the vendored `superpowers` plugin that ships inside the image.
 
 ```bash
 docker run --rm -it \
@@ -99,14 +105,15 @@ docker run --rm -it \
   ghcr.io/zhangdw156/oh-my-openpod:latest
 ```
 
-**Full**: when you need `--env-file .env` and a custom OpenCode config, first run `cp .env.example .env` and `cp opencode.json.example opencode.json` from [step 2](#2-configure-optional), edit them, then run:
+**Full**: when you need `--env-file .env`, first run `cp .env.example .env` from [step 2](#2-configure-optional), edit it, then run:
+
+If your project root already contains `opencode.json`, mounting that project at `/workspace` lets OpenCode pick up project-level config while the image keeps its baked global defaults at `/root/.config/opencode/config.json`.
 
 ```bash
 docker run --rm -it \
   --name openpod \
   --network host \
   -v "${PROJECT_DIR:-.}:/workspace" \
-  -v "$(pwd)/opencode.json:/root/.config/opencode/config.json:ro" \
   --env-file .env \
   ghcr.io/zhangdw156/oh-my-openpod:latest
 ```
@@ -143,11 +150,17 @@ root@hostname /workspace main ❯ git status  # Git operations
 
 ## Self-Hosted AI Support
 
-Configure `.env` + `opencode.json` to connect to:
+Configure `.env` to connect to:
 
 - **OpenAI-compatible**: vLLM / Ollama / LiteLLM / SiliconFlow, etc.
 - **Anthropic-compatible**: Self-hosted Claude / AWS Bedrock proxy, etc.
 - **Official services**: OpenAI / Anthropic APIs
+
+The image bakes in the default global OpenCode config at `/root/.config/opencode/config.json`, preinstalls the vendored `superpowers` OpenCode plugin, and exposes repository-managed global skills through `/root/.config/opencode/skills -> /opt/vendor/opencode/skills`.
+
+If you place `opencode.json` in the project root mounted at `/workspace`, OpenCode can also pick up project-level configuration for that project.
+
+You do not need to add the bundled `superpowers` skills to `skills.paths` manually because the plugin registers its own `skills/` directory at runtime.
 
 ```bash
 # .env example
@@ -179,19 +192,22 @@ oh-my-openpod/
 ├── build/
 │   ├── install-antidote.sh # Install Antidote
 │   ├── install-btop.sh     # Install btop
-│   ├── update-vendor-assets.sh # Refresh vendored release assets and plugin snapshots
+│   ├── update-vendor-assets.sh # Refresh vendored release assets, plugin snapshots, and OpenCode plugin packages
 │   ├── install-yazi.sh     # Install Yazi
 │   └── install-zellij.sh   # Install Zellij
 ├── docs/
 │   └── vendor-assets.md    # Vendored asset sources and maintenance notes
 ├── .env.example            # Environment variable template
-├── opencode.json.example   # OpenCode AI provider config template
 ├── config/
 │   ├── .zshrc              # Zsh config
 │   ├── .p10k.zsh           # Powerlevel10k config
-│   └── .zsh_plugins.txt    # Vendored plugin inventory
+│   ├── .zsh_plugins.txt    # Vendored plugin inventory
+│   └── opencode.json       # Baked-in global OpenCode default config
 └── vendor/
     ├── manifest.lock.json  # Vendored asset lock file
+    ├── opencode/
+    │   ├── packages/       # OpenCode plugin packages that keep upstream layout
+    │   └── skills/         # Repository-managed OpenCode global skills
     ├── releases/           # Pinned release packages used by build scripts
     └── zsh/                # Zsh plugin source snapshots
 ```

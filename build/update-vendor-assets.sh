@@ -23,6 +23,7 @@ btop_version="v1.4.6"
 antidote_version="v2.0.10"
 zellij_version="v0.44.0"
 yazi_version="v26.1.22"
+superpowers_version="v5.0.7"
 
 ohmyzsh_commit="9e2c1548c3dfeefd055e1c6606f66657093ae928"
 powerlevel10k_commit="604f19a9eaa18e76db2e60b8d446d5f879065f90"
@@ -75,7 +76,7 @@ download_plugin_snapshot() {
   find "${target_dir}" -name '.git' -prune -exec rm -rf {} +
 }
 
-mkdir -p "${vendor_dir}/releases" "${vendor_dir}/zsh"
+mkdir -p "${vendor_dir}/releases" "${vendor_dir}/zsh" "${vendor_dir}/opencode/packages" "${vendor_dir}/opencode/skills"
 
 download_release_assets \
   "antidote" \
@@ -116,5 +117,6 @@ download_plugin_snapshot "romkatv/powerlevel10k" "${powerlevel10k_commit}" "${ve
 download_plugin_snapshot "zsh-users/zsh-autosuggestions" "${autosuggestions_commit}" "${vendor_dir}/zsh/zsh-autosuggestions"
 download_plugin_snapshot "zsh-users/zsh-history-substring-search" "${history_substring_search_commit}" "${vendor_dir}/zsh/zsh-history-substring-search"
 download_plugin_snapshot "zsh-users/zsh-syntax-highlighting" "${syntax_highlighting_commit}" "${vendor_dir}/zsh/zsh-syntax-highlighting"
+download_plugin_snapshot "obra/superpowers" "refs/tags/${superpowers_version}" "${vendor_dir}/opencode/packages/superpowers"
 
 echo "Vendored assets updated under ${vendor_dir}"

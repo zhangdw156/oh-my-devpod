@@ -2,10 +2,11 @@
 
 ## Purpose
 
-This project keeps the first batch of build-time release assets and Zsh plugin sources under `vendor/` so local image builds stay fast and predictable.
+This project keeps build-time release assets, Zsh plugin sources, and OpenCode extensions under `vendor/` so local image builds stay fast and predictable.
 
 - No GitHub release download is required for `antidote`, `btop`, `zellij`, or `yazi`
 - No plugin repository clone is required for the default Zsh setup
+- The image can ship vendored OpenCode plugins and global skills without runtime network fetches
 - Users do not need Git submodules or `git clone --recursive`
 
 The machine-readable inventory lives in [`vendor/manifest.lock.json`](../vendor/manifest.lock.json).
@@ -15,6 +16,15 @@ The machine-readable inventory lives in [`vendor/manifest.lock.json`](../vendor/
 ```text
 vendor/
 ├── manifest.lock.json
+├── opencode/
+│   ├── packages/
+│   │   └── superpowers/
+│   │       ├── .opencode/
+│   │       │   └── plugins/
+│   │       │       └── superpowers.js
+│   │       ├── package.json
+│   │       └── skills/
+│   └── skills/
 ├── releases/
 │   ├── antidote/
 │   ├── btop/
@@ -51,6 +61,32 @@ Each release directory includes a `SHA256SUMS` file. The `build/install-*.sh` sc
 
 The default shell setup now sources these local copies directly from `/opt/vendor/zsh` inside the image.
 
+## Vendored OpenCode Assets
+
+### Plugin packages
+
+| Component | Version | Local path | Upstream source |
+|-----------|---------|------------|-----------------|
+| superpowers | `v5.0.7` | `vendor/opencode/packages/superpowers/` | `obra/superpowers` tag archive |
+
+`superpowers` is vendored as a full package snapshot, not as a copied `SKILL.md` bundle.
+
+That layout is intentional:
+
+- the plugin entrypoint stays at `vendor/opencode/packages/superpowers/.opencode/plugins/superpowers.js`
+- the bundled skills stay at `vendor/opencode/packages/superpowers/skills/`
+- the package root survives intact after `COPY vendor /opt/vendor`
+
+This matters because the upstream plugin resolves `../../skills` relative to its own entrypoint and appends that directory to `config.skills.paths`. Flattening only the JS file into another directory would break that behavior.
+
+The image creates `/root/.config/opencode/plugins/superpowers.js` as a symlink to the vendored package entrypoint, while the package content itself remains under `/opt/vendor/opencode/packages/superpowers`.
+
+### Global skills
+
+`vendor/opencode/skills/` is reserved for repository-maintained OpenCode global skills.
+
+Unlike plugin package snapshots, this directory is intentionally kept outside the destructive refresh logic in `build/update-vendor-assets.sh`, so future repo-maintained skills are not deleted when vendored upstream assets are refreshed.
+
 ## Update Workflow
 
 Use the helper script below whenever you want to refresh the vendored assets:
@@ -62,12 +98,13 @@ bash build/update-vendor-assets.sh
 After running it:
 
 1. Review the new files under `vendor/`
-2. Update [`vendor/manifest.lock.json`](../vendor/manifest.lock.json) if versions or commits changed
+2. Update [`vendor/manifest.lock.json`](../vendor/manifest.lock.json) if versions, commits, or OpenCode package refs changed
 3. Rebuild the image with `docker compose up -d --build`
-4. Verify the container starts cleanly and the vendored Zsh plugins still load correctly
+4. Verify the container starts cleanly, the vendored Zsh plugins still load, and OpenCode can see the vendored plugin/skill roots
 
 ## Notes
 
 - This approach intentionally avoids Git submodules.
 - Local builds still need access to base image registries such as Docker Hub and GHCR.
+- Vendored OpenCode plugin packages should keep their upstream package-root layout unless their runtime behavior is re-validated.
 - The vendored assets are part of the repository history, so version bumps should stay deliberate and infrequent.
