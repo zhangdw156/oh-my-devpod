@@ -44,6 +44,9 @@ RUN bash /tmp/install-yazi.sh && rm -f /tmp/install-yazi.sh
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 
 # ---------- 9. 环境变量 ----------
+# btop / 终端 Unicode 依赖 UTF-8 locale；基础镜像默认为 POSIX
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
 ENV TERM=xterm-256color
 ENV SHELL=/bin/zsh
 ENV UV_LINK_MODE=copy
