@@ -3,7 +3,10 @@ set -euo pipefail
 
 target_arch="${TARGETARCH:-}"
 version="v1.4.6"
-asset_dir="/opt/vendor/releases/btop/${version}"
+asset_root="${OPENPOD_ASSET_ROOT:-/opt/vendor/releases}"
+asset_dir="${asset_root}/btop/${version}"
+bin_dir="${OPENPOD_BIN_DIR:-/usr/local/bin}"
+btop_dir="${OPENPOD_BTOP_DIR:-/opt/btop}"
 
 if [[ -z "${target_arch}" ]]; then
   target_arch="$(dpkg --print-architecture)"
@@ -42,10 +45,12 @@ if [[ -z "${expected_sha}" || "${actual_sha}" != "${expected_sha}" ]]; then
   exit 1
 fi
 
+mkdir -p "${bin_dir}"
+rm -rf "${btop_dir}"
+mkdir -p "$(dirname "${btop_dir}")"
+
 tar -xjf "${archive_path}" -C "${tmp_dir}"
+mv "${tmp_dir}/btop" "${btop_dir}"
+ln -sf "${btop_dir}/bin/btop" "${bin_dir}/btop"
 
-rm -rf /opt/btop
-mv "${tmp_dir}/btop" /opt/btop
-ln -sf /opt/btop/bin/btop /usr/local/bin/btop
-
-test -x /usr/local/bin/btop
+test -x "${bin_dir}/btop"

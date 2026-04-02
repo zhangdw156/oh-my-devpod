@@ -67,7 +67,7 @@ cp .env.example .env        # 填入 API Key、自定义挂载路径等
 
 `.env` 支持官方 API 和自部署的 OpenAI / Anthropic 兼容接口，详见 [.env.example](.env.example)。
 
-### 3. 方式 A：本地构建并启动
+### 3. 方式 A：Docker 模式（默认推荐）
 
 若需使用 `.env`，请先完成 [第 2 步「配置（可选）」](#2-配置可选) 再执行下方命令。
 
@@ -83,7 +83,48 @@ PROJECT_DIR=/path/to/your/project docker compose up -d --build
 
 仍然需要联网的只有基础镜像来源，例如 Docker Hub 和 GHCR。
 
-### 4. 方式 B：直接使用 GHCR 预构建镜像
+### 4. 方式 B：Bootstrap 模式（无 Docker / 已有容器）
+
+当服务器上没有 Docker，或者你已经在一个现成的 Linux 容器里时，可以直接把当前环境 bootstrap 成 openpod 风格环境。
+
+当前 bootstrap 模式的初始支持范围：
+
+- Linux
+- Debian / Ubuntu 风格环境（要求 `dpkg` / `dpkg-deb` 可用）
+- 推荐优先使用用户态安装，不覆盖现有 `~/.zshrc`
+
+```bash
+# 默认用户态安装到 ~/.local/openpod
+bash install/bootstrap.sh --user
+
+# 让当前 shell 获取 openpod 环境变量
+source ~/.local/openpod/env.sh
+
+# 进入 openpod shell
+openpod-shell
+```
+
+也可以直接执行命令而不先进入交互 shell：
+
+```bash
+openpod-shell -lc 'opencode debug config'
+openpod-shell -lc 'opencode debug skill'
+```
+
+如需系统级安装，可在具备 root 权限时使用：
+
+```bash
+sudo bash install/bootstrap.sh --system
+```
+
+注意：
+
+- bootstrap 模式会复用仓库内 vendored 的 release 包、Zsh 插件快照和 OpenCode 插件包
+- `superpowers` 仍然保持完整包结构，不会被拆平
+- 当前不会自动修改你的 `~/.zshrc`；shell 配置会写到安装前缀下的 `shell/` 目录
+- `uv` 和 `opencode` 在目标 `bin` 目录不存在时会通过各自官方安装脚本补齐
+
+### 5. 方式 C：直接使用 GHCR 预构建镜像
 
 如果你不想在本地构建，也可以直接使用发布到 GitHub Container Registry 的镜像：
 
@@ -128,7 +169,7 @@ ghcr.io/zhangdw156/oh-my-openpod
 
 默认运行容器名使用更短的 `openpod`；项目名和镜像名仍然保持为 `oh-my-openpod`。
 
-### 5. 进入容器，开始工作
+### 6. 进入容器或 shell，开始工作
 
 如果你使用的是 `docker compose` 方式，可以这样进入容器：
 

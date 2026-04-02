@@ -1,0 +1,73 @@
+name: Epic / 史诗任务
+description: Track a multi-step initiative that spans multiple workstreams or follow-up issues.
+title: "[Epic] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for outlining a larger initiative.
+
+        Please capture the motivation, intended scope, and validation criteria so follow-up work can stay aligned.
+  - type: textarea
+    id: background
+    attributes:
+      label: Background / 背景
+      description: What problem, opportunity, or context is driving this epic?
+      placeholder: Describe the current situation and why this initiative matters now.
+    validations:
+      required: true
+  - type: textarea
+    id: goals
+    attributes:
+      label: Goals / 目标
+      description: What outcomes should this epic achieve?
+      placeholder: List the desired outcomes or user capabilities this work should unlock.
+    validations:
+      required: true
+  - type: textarea
+    id: workstreams
+    attributes:
+      label: Proposed Workstreams / 拟议工作流
+      description: What major tracks of work do you expect?
+      placeholder: Break the initiative into implementation areas, milestones, or child issues.
+    validations:
+      required: true
+  - type: textarea
+    id: non_goals
+    attributes:
+      label: Non-goals / 不在范围
+      description: What is explicitly out of scope for this epic?
+      placeholder: Clarify what should not be addressed as part of this initiative.
+    validations:
+      required: false
+  - type: textarea
+    id: risks
+    attributes:
+      label: Constraints and Risks / 约束与风险
+      description: What constraints, compatibility concerns, or risks should be planned for?
+      placeholder: Environment assumptions, dependency limitations, rollout concerns, etc.
+    validations:
+      required: false
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation and Success Criteria / 验证与成功标准
+      description: How will we know this epic is complete and successful?
+      placeholder: Tests, verification commands, user outcomes, and documentation expectations.
+    validations:
+      required: true
+  - type: textarea
+    id: follow_ups
+    attributes:
+      label: Rollout and Follow-ups / 推进与后续
+      description: Any sequencing, rollout notes, or known follow-up tasks?
+      placeholder: Related issues, rollout order, migration notes, or future enhancements.
+    validations:
+      required: false
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional Context / 补充信息
+      placeholder: References, links, screenshots, or related discussions.
+    validations:
+      required: false

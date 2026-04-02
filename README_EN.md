@@ -67,7 +67,7 @@ If you are using openpod to work on a project and want project-specific OpenCode
 
 `.env` supports both official APIs and self-hosted OpenAI / Anthropic compatible endpoints. See [.env.example](.env.example) for details.
 
-### 3. Option A: Build Locally and Start
+### 3. Option A: Docker Mode (Recommended)
 
 If you need `.env`, complete [step 2 “Configure (Optional)”](#2-configure-optional) before running the commands below.
 
@@ -83,7 +83,48 @@ Local image builds now use the vendored release assets, Zsh plugin snapshots, an
 
 The remaining network requirement is access to base image registries such as Docker Hub and GHCR.
 
-### 4. Option B: Use the Prebuilt GHCR Image
+### 4. Option B: Bootstrap Mode (No Docker / Existing Container)
+
+If the server does not have Docker, or you are already inside an existing Linux container, you can bootstrap the current environment into an openpod-style setup in place.
+
+Initial bootstrap support is intentionally narrow:
+
+- Linux
+- Debian/Ubuntu-style environments with `dpkg` and `dpkg-deb`
+- user-scoped installs are the preferred default and do not overwrite an existing `~/.zshrc`
+
+```bash
+# Default user-scoped install into ~/.local/openpod
+bash install/bootstrap.sh --user
+
+# Load openpod environment variables into the current shell
+source ~/.local/openpod/env.sh
+
+# Enter the openpod shell
+openpod-shell
+```
+
+You can also run commands directly without entering an interactive shell first:
+
+```bash
+openpod-shell -lc 'opencode debug config'
+openpod-shell -lc 'opencode debug skill'
+```
+
+If you explicitly want a system-wide install and have root access:
+
+```bash
+sudo bash install/bootstrap.sh --system
+```
+
+Notes:
+
+- bootstrap mode reuses the vendored release assets, Zsh plugin snapshots, and OpenCode plugin packages stored in this repository
+- `superpowers` keeps its full upstream package layout intact
+- bootstrap mode does not modify your `~/.zshrc`; shell config is written under the install prefix in `shell/`
+- `uv` and `opencode` are installed via their official install scripts only if they are missing from the target `bin` directory
+
+### 5. Option C: Use the Prebuilt GHCR Image
 
 If you do not want to build locally, you can use the image published to GitHub Container Registry directly:
 
@@ -128,7 +169,7 @@ ghcr.io/zhangdw156/oh-my-openpod
 
 The default runtime container name is the shorter `openpod`; the project name and image name remain `oh-my-openpod`.
 
-### 5. Enter the Container
+### 6. Enter the Container or Shell
 
 If you are using the `docker compose` workflow, enter the container with:
 

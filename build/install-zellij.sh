@@ -3,7 +3,9 @@ set -euo pipefail
 
 target_arch="${TARGETARCH:-}"
 version="v0.44.0"
-asset_dir="/opt/vendor/releases/zellij/${version}"
+asset_root="${OPENPOD_ASSET_ROOT:-/opt/vendor/releases}"
+asset_dir="${asset_root}/zellij/${version}"
+bin_dir="${OPENPOD_BIN_DIR:-/usr/local/bin}"
 
 if [[ -z "${target_arch}" ]]; then
   target_arch="$(dpkg --print-architecture)"
@@ -46,4 +48,5 @@ if [[ "${actual_sha}" != "${expected_sha}" ]]; then
   exit 1
 fi
 
-install -m 0755 "${tmp_dir}/zellij" /usr/local/bin/zellij
+mkdir -p "${bin_dir}"
+install -m 0755 "${tmp_dir}/zellij" "${bin_dir}/zellij"
