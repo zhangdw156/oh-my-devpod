@@ -52,6 +52,7 @@ image: oh-my-openpod:x.y.z       # 正式发布
 ## Issue 约定
 
 - 新 issue 默认通过 GitHub Web UI 的 issue form 创建，统一走 `.github/ISSUE_TEMPLATE/`
+- 史诗任务使用 `Epic / 史诗任务` 模板，标题前缀保持为 `[Epic] `
 - 功能建议使用 `Feature Request / 功能建议` 模板，标题前缀保持为 `[Feature] `
 - 缺陷反馈使用 `Bug Report / Bug 反馈` 模板，标题前缀保持为 `[Bug] `
 - `gh issue create` 不会自动套用 issue form；除非手动补齐相同标题和表单内容，否则不要直接用 CLI 裸建 issue
@@ -66,6 +67,7 @@ image: oh-my-openpod:x.y.z       # 正式发布
 ## 依赖安装约定
 
 - `build/` 目录存放镜像构建期使用的安装脚本，例如 `install-antidote.sh`、`install-btop.sh`、`install-yazi.sh` 和 `install-zellij.sh`
+- 这些安装脚本同时也是 bootstrap 模式的基础构件；新增脚本时优先保持可通过环境变量改写安装前缀与目标路径
 - `build/update-vendor-assets.sh` 用于刷新仓库内维护的 release 包、Zsh 插件快照和 OpenCode 插件包快照
 - `config/` 目录存放要复制进镜像的配置文件，包括 shell 配置和内置的 `opencode.json`
 - `vendor/releases/` 存放构建脚本使用的固定 release 包，`vendor/zsh/` 存放默认 shell 使用的插件源码快照

@@ -3,7 +3,9 @@ set -euo pipefail
 
 target_arch="${TARGETARCH:-}"
 version="v26.1.22"
-asset_dir="/opt/vendor/releases/yazi/${version}"
+asset_root="${OPENPOD_ASSET_ROOT:-/opt/vendor/releases}"
+asset_dir="${asset_root}/yazi/${version}"
+bin_dir="${OPENPOD_BIN_DIR:-/usr/local/bin}"
 
 if [[ -z "${target_arch}" ]]; then
   target_arch="$(dpkg --print-architecture)"
@@ -42,9 +44,13 @@ if [[ -z "${expected_sha}" || "${actual_sha}" != "${expected_sha}" ]]; then
   exit 1
 fi
 
-# Extract the upstream package payload directly so we can keep Yazi's
-# core navigation binaries without pulling in every optional preview helper.
-dpkg-deb -x "${asset_path}" /
+mkdir -p "${bin_dir}"
 
-test -x /usr/bin/yazi
-test -x /usr/bin/ya
+# Extract the upstream package payload into a staging directory so bootstrap mode
+# can install Yazi without writing directly into /. Keep only the core binaries.
+dpkg-deb -x "${asset_path}" "${tmp_dir}/root"
+install -m 0755 "${tmp_dir}/root/usr/bin/yazi" "${bin_dir}/yazi"
+install -m 0755 "${tmp_dir}/root/usr/bin/ya" "${bin_dir}/ya"
+
+test -x "${bin_dir}/yazi"
+test -x "${bin_dir}/ya"
