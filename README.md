@@ -1,17 +1,16 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Ubuntu-24.04-E95420?style=for-the-badge&logo=ubuntu&logoColor=white" alt="Ubuntu 24.04"/>
   <img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker"/>
-  <img src="https://img.shields.io/badge/Zsh-Powerlevel10k-4EAA25?style=for-the-badge&logo=gnubash&logoColor=white" alt="Zsh"/>
+  <img src="https://img.shields.io/badge/Claude_Code-Ready-D97757?style=for-the-badge" alt="Claude Code"/>
   <img src="https://img.shields.io/github/v/tag/zhangdw156/oh-my-openpod?style=for-the-badge&label=version&color=blue" alt="Version"/>
   <img src="https://img.shields.io/github/license/zhangdw156/oh-my-openpod?style=for-the-badge" alt="License"/>
-  <img src="https://img.shields.io/github/stars/zhangdw156/oh-my-openpod?style=for-the-badge&color=yellow" alt="Stars"/>
 </p>
 
-<h1 align="center">oh-my-openpod</h1>
+<h1 align="center">oh-my-claudepod</h1>
 
 <p align="center">
-  <strong>AI 编程开发容器，开箱即用</strong><br/>
-  在任意机器上一键拉起 OpenCode + uv + Git + Zsh 环境，挂载你的项目目录即可开始工作。
+  <strong>Claude Code 开发容器，开箱即用</strong><br/>
+  在任意机器上一键拉起 Claude Code + uv + Git + Zsh 环境，挂载你的项目目录即可开始工作。
 </p>
 
 <p align="center">
@@ -20,260 +19,232 @@
 
 ---
 
-## 为什么需要 oh-my-openpod？
+## 这是什么
 
-> 换了一台机器，花了半天配环境？服务器上没有趁手的 Shell？想用 AI 辅助编程却懒得装？
+`dev/claude` 分支把原本的 OpenCode 运行时替换成了 Claude Code，同时尽量保留原有 openpod 的使用体验：
 
-oh-my-openpod 把 **AI 编程助手 + Python 工具链 + 美观 Shell** 打包成一个 Docker 容器：
+- Docker 模式和 bootstrap 模式都可用
+- 继续复用 vendored 的 Zsh、Neovim、Yazi、Zellij、btop 等资产
+- 如果存在 `.env`，优先用它构造 Claude 运行配置
+- 如果没有 `.env`，就让用户使用 `claude login` 或自行维护 `~/.claude/settings.json`
 
-- **2 条命令启动**，无需手动安装任何依赖
-- **挂载你的项目目录**，在容器内直接编辑、运行、提交
-- **一致的开发体验**，本地、服务器、CI 环境完全相同
+这条分支的公开镜像名是 `oh-my-claudepod`，默认服务名和容器名是 `claudepod`。
 
-## 内置工具一览
+## 内置工具
 
 | 类别 | 工具 | 说明 |
 |------|------|------|
-| **AI** | [OpenCode](https://github.com/opencode-ai/opencode) | 终端 AI 编程助手，支持自定义 Provider |
-| **Python** | [uv](https://github.com/astral-sh/uv) | 极速 Python 包管理器 & 虚拟环境管理 |
-| **Shell** | Zsh + vendored 插件快照 + [Powerlevel10k](https://github.com/romkatv/powerlevel10k) + [Antidote](https://github.com/mattmc3/antidote) | 语法高亮、自动补全、Git 状态提示 |
-| **Editor** | [Neovim](https://neovim.io/) + [LazyVim Starter](https://github.com/LazyVim/starter) | 默认内置的终端编辑器配置，预装 `pyright[nodejs]` 与 `ruff`，首次启动自动引导插件安装 |
-| **Terminal** | [Zellij](https://github.com/zellij-org/zellij) | 终端多路复用器，适合长时间开发会话 |
-| **TUI** | [Yazi](https://yazi-rs.github.io/) | 现代化终端文件管理器，适合目录浏览和基础文件查看 |
-| **Monitor** | [btop](https://github.com/aristocratos/btop) | 终端资源监控面板，便于查看容器内 CPU、内存和进程状态 |
+| **AI** | [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview) | 终端 AI 编程助手 |
+| **Python** | [uv](https://github.com/astral-sh/uv) | Python 包管理器与虚拟环境工具 |
+| **Shell** | Zsh + vendored 插件快照 + Powerlevel10k + Antidote | 语法高亮、补全、Git 状态提示 |
+| **Editor** | Neovim + LazyVim Starter | 默认终端编辑器配置，预装 `pyright[nodejs]` 与 `ruff` |
+| **Terminal** | Zellij | 终端多路复用器 |
+| **TUI** | Yazi | 终端文件管理器 |
+| **Monitor** | btop | 资源监控 |
 | **CLI** | Git / curl / rg / fd / file / vim | 轻量但够用的命令行工具集 |
-| **系统** | Ubuntu 24.04 LTS (glibc) | 稳定底座，兼容主流 Python C 扩展 |
 
 ## 快速开始
 
-### 1. 克隆仓库
+### 1. 克隆仓库并切到分支
 
 ```bash
 git clone https://github.com/zhangdw156/oh-my-openpod.git
 cd oh-my-openpod
+git switch dev/claude
 ```
 
-### 2. 配置（可选）
+### 2. 配置 `.env`（可选但推荐）
 
 ```bash
-cp .env.example .env        # 填入 API Key、自定义挂载路径等
+cp .env.example .env
 ```
 
-镜像默认已经内置 OpenCode 全局配置文件 `/root/.config/opencode/config.json`，其中包含：
+这条分支只考虑 Claude Code 官方支持的接入面，例如：
 
-- 基于 `.env` 变量展开的 provider 定义
-- 通过 `/root/.config/opencode/skills -> /opt/vendor/opencode/skills` 暴露的仓库维护全局 skills
+- `ANTHROPIC_API_KEY`
+- `ANTHROPIC_BASE_URL` / `ANTHROPIC_AUTH_TOKEN`
+- `CLAUDE_CODE_USE_BEDROCK` 及对应 AWS 变量
+- `CLAUDE_CODE_USE_VERTEX` 及对应 Vertex 变量
 
-如果你在用 openpod 开发某个项目，并且希望给该项目单独配置 OpenCode，请直接在项目根目录创建 `opencode.json`。
+Docker 模式会直接把 `.env` 注入容器环境；bootstrap 模式会优先读取仓库根目录 `.env`，并由 `claudepod-sync-config` 把受管键写入 `~/.claude/settings.json`。
 
-`.env` 支持官方 API 和自部署的 OpenAI / Anthropic 兼容接口，详见 [.env.example](.env.example)。
+如果没有 `.env`，也可以后续手动执行 `claude login`。
 
-### 3. 方式 A：Docker 模式（默认推荐）
-
-若需使用 `.env`，请先完成 [第 2 步「配置（可选）」](#2-配置可选) 再执行下方命令。
+### 3. Docker 模式
 
 ```bash
-# 默认挂载当前目录（仓库根目录）
 docker compose up -d --build
+```
 
-# 挂载其它目录
+挂载其它目录：
+
+```bash
 PROJECT_DIR=/path/to/your/project docker compose up -d --build
 ```
 
-本地构建默认直接使用仓库内 vendored 的 release 包、Zsh 插件快照和 OpenCode 插件包，因此不再依赖 GitHub release、插件仓库或 OpenCode 插件仓库的运行时拉取。
-
-仍然需要联网的只有基础镜像来源，例如 Docker Hub 和 GHCR。
-
-### 4. 方式 B：Bootstrap 模式（无 Docker / 已有容器）
-
-当服务器上没有 Docker，或者你已经在一个现成的 Linux 容器里时，可以直接把当前环境 bootstrap 成 openpod 风格环境。
-
-当前 bootstrap 模式的初始支持范围：
-
-- Linux
-- Debian / Ubuntu 风格环境（要求 `dpkg` / `dpkg-deb` 可用）
-- 推荐优先使用用户态安装，不覆盖现有 `~/.zshrc`
+进入容器：
 
 ```bash
-# 默认用户态安装到 ~/.local/openpod
+docker compose exec claudepod zsh
+```
+
+常用 smoke check：
+
+```bash
+docker compose run --rm claudepod -lc 'claude --version'
+docker compose run --rm claudepod -lc 'claude doctor'
+```
+
+如果你已经在 `.env` 中提供了有效认证，再做最小非交互调用：
+
+```bash
+docker compose run --rm claudepod -lc 'claude -p "Reply with OK"'
+```
+
+### 4. Bootstrap 模式
+
+适用于无 Docker 的 Linux 主机，或者你已经在现成容器里。
+
+```bash
+# 默认用户态安装到 ~/.local/claudepod
 bash install/bootstrap.sh --user
 
-# 让当前 shell 获取 openpod 环境变量
-source ~/.local/openpod/env.sh
+# 加载环境变量
+source ~/.local/claudepod/env.sh
 
-# 进入 openpod shell
-openpod-shell
+# 进入 shell
+claudepod-shell
 ```
 
-也可以直接执行命令而不先进入交互 shell：
-
-```bash
-openpod-shell -lc 'opencode debug config'
-openpod-shell -lc 'opencode debug skill'
-```
-
-如需系统级安装，可在具备 root 权限时使用：
+系统级安装：
 
 ```bash
 sudo bash install/bootstrap.sh --system
 ```
 
-注意：
-
-- bootstrap 模式会复用仓库内 vendored 的 release 包、Zsh 插件快照和 OpenCode 插件包
-- 默认会安装 `neovim` 和一份受 openpod 管理的 LazyVim starter 配置；首次接管已有 `nvim` 目录时会自动备份
-- 默认会通过 `uv tool install` 预装 `pyright[nodejs]` 与 `ruff`，便于在 `nvim` 中直接获得 Python 诊断与补全
-- `superpowers` 仍然保持完整包结构，不会被拆平
-- 当前不会自动修改你的 `~/.zshrc`；shell 配置会写到安装前缀下的 `shell/` 目录
-- `uv` 和 `opencode` 在目标 `bin` 目录不存在时会通过各自官方安装脚本补齐
-
-### 5. 方式 C：直接使用 GHCR 预构建镜像
-
-如果你不想在本地构建，也可以直接使用发布到 GitHub Container Registry 的镜像：
+bootstrap 完成后可以验证：
 
 ```bash
-# 拉取最新正式版
-docker pull ghcr.io/zhangdw156/oh-my-openpod:latest
-
-# 或拉取指定版本
-docker pull ghcr.io/zhangdw156/oh-my-openpod:0.1.0
+claudepod-shell -lc 'claude --version'
+claudepod-shell -lc 'claude doctor'
 ```
 
-**最简**：只把当前目录挂到 `/workspace`（适合快速试用；无 `.env` / 自定义 `opencode.json` 时也可用）。此方式可直接使用镜像内预置的 vendored `superpowers` 插件。
+为了兼容旧习惯，`openpod-shell` 仍然保留，但文档中的主入口已经切换为 `claudepod-shell`。
+
+### 5. 直接使用 GHCR 镜像
+
+```bash
+docker pull ghcr.io/zhangdw156/oh-my-claudepod:latest
+```
+
+最简运行：
 
 ```bash
 docker run --rm -it \
-  --name openpod \
+  --name claudepod \
   --network host \
   -v .:/workspace \
-  ghcr.io/zhangdw156/oh-my-openpod:latest
+  ghcr.io/zhangdw156/oh-my-claudepod:latest
 ```
 
-**完整**：需要 `--env-file .env` 时，请先按 [第 2 步](#2-配置可选) 执行 `cp .env.example .env` 并编辑好，再运行：
-
-如果你的项目根目录本身带有 `opencode.json`，把该项目挂到 `/workspace` 后即可让 OpenCode 使用项目级配置；镜像内置的全局默认配置仍然保留在 `/root/.config/opencode/config.json`。
+带 `.env` 运行：
 
 ```bash
 docker run --rm -it \
-  --name openpod \
+  --name claudepod \
   --network host \
   -v "${PROJECT_DIR:-.}:/workspace" \
   --env-file .env \
-  ghcr.io/zhangdw156/oh-my-openpod:latest
+  ghcr.io/zhangdw156/oh-my-claudepod:latest
 ```
 
-对于服务器环境，更推荐这种方式：无需本地 build，也不用关心基础镜像拉取之外的构建依赖。
+## 配置模型
 
-镜像地址：
+### 全局配置
+
+Claude 的用户级配置位于：
 
 ```text
-ghcr.io/zhangdw156/oh-my-openpod
+~/.claude/settings.json
 ```
 
-默认运行容器名使用更短的 `openpod`；项目名和镜像名仍然保持为 `oh-my-openpod`。
+这条分支会额外维护一个受管状态文件：
 
-### 6. 进入容器或 shell，开始工作
-
-如果你使用的是 `docker compose` 方式，可以这样进入容器：
-
-```bash
-docker compose exec openpod zsh
+```text
+~/.claude/oh-my-claudepod-state.json
 ```
 
-```
-root@hostname /workspace main ❯ opencode   # AI 编程助手
-root@hostname /workspace main ❯ nvim       # 默认内置的 Neovim + LazyVim starter
-root@hostname /workspace main ❯ pyright    # Python LSP / 类型检查
-root@hostname /workspace main ❯ ruff check . # Python lint / format 相关工具
-root@hostname /workspace main ❯ zellij     # 终端多路复用会话
-root@hostname /workspace main ❯ y          # Yazi 文件管理器（退出时同步 cwd）
-root@hostname /workspace main ❯ btop       # 资源监控面板
-root@hostname /workspace main ❯ uv run ... # Python 项目
-root@hostname /workspace main ❯ git status  # Git 操作
-```
+它只记录 claudepod 注入过的受管键，避免覆盖你自己写的其它 Claude 偏好。
 
-`zellij` 已预装，但默认不会自动接管 shell；按需手动执行 `zellij` 即可进入会话。
-`y` 是 `yazi` 的 shell wrapper；退出 Yazi 后会把当前目录同步回 shell。
-首次执行 `nvim` 时仍然需要联网，因为 `lazy.nvim` 会按需拉取插件集。
+### 项目级配置
 
-## 支持自部署 AI 服务
+项目级配置入口改成：
 
-通过 `.env` 配置，可以对接：
+- `.claude/settings.json`
+- `.claude/settings.local.json`
+- `CLAUDE.md`
 
-- **OpenAI 兼容接口**：vLLM / Ollama / LiteLLM / 硅基流动 等
-- **Anthropic 兼容接口**：自部署 Claude / AWS Bedrock 代理 等
-- **官方服务**：OpenAI / Anthropic 官方 API
+## 迁移说明
 
-镜像会内置 OpenCode 全局默认配置 `/root/.config/opencode/config.json`，并预置 vendored 的 `superpowers` OpenCode 插件；仓库维护的全局 skills 会通过 `/root/.config/opencode/skills -> /opt/vendor/opencode/skills` 暴露给 OpenCode。
+`dev/claude` 不再使用下面这些 OpenCode 时代的概念：
 
-如果你在挂载到 `/workspace` 的项目根目录里放置 `opencode.json`，可以为该项目追加项目级配置。
+- `opencode.json`
+- `~/.config/opencode`
+- OpenCode plugin 目录
+- `vendor/opencode/...`
 
-`superpowers` 自带 skills 不需要手动加入 `skills.paths`，因为插件会在运行时自动注册它自己的 `skills/` 目录。
+如果你的项目之前依赖 `opencode.json`，请迁移到 `.claude/settings.json` 和 `CLAUDE.md`。
 
-```bash
-# .env 示例
-CUSTOM_OPENAI_BASE_URL=https://your-host/v1
-CUSTOM_OPENAI_API_KEY=your-api-key
-CUSTOM_OPENAI_MODEL=your-model-name
-```
+## 仓库结构
 
-## 自定义 Zsh
-
-配置文件位于 `config/` 目录，修改后重新构建即可：
-
-| 文件 | 说明 |
-|------|------|
-| `config/.zshrc` | Zsh 主配置 |
-| `config/.p10k.zsh` | Powerlevel10k 主题 |
-| `config/.zsh_plugins.txt` | Vendored 插件清单 |
-
-```bash
-# 修改配置后
-docker compose up -d --build
-```
-
-## 项目结构
-
-```
+```text
 oh-my-openpod/
-├── Dockerfile              # 容器镜像定义 (Ubuntu 24.04)
-├── docker-compose.yml      # 编排配置 & 版本号
+├── Dockerfile
+├── docker-compose.yml
 ├── build/
-│   ├── install-antidote.sh # 安装 Antidote
-│   ├── install-btop.sh     # 安装 btop
-│   ├── install-lazyvim.sh  # 安装默认 LazyVim starter 配置
-│   ├── install-neovim.sh   # 安装 Neovim
-│   ├── install-python-dev-tools.sh # 安装 pyright[nodejs] 与 ruff
-│   ├── update-vendor-assets.sh # 更新 vendored release 包、插件快照和 OpenCode 插件包
-│   ├── install-yazi.sh     # 安装 Yazi
-│   └── install-zellij.sh   # 安装 Zellij
-├── docs/
-│   └── vendor-assets.md    # Vendored 资产来源与维护说明
-├── .env.example            # 环境变量模板
+│   ├── install-claude-code.sh
+│   ├── install-antidote.sh
+│   ├── install-btop.sh
+│   ├── install-lazyvim.sh
+│   ├── install-neovim.sh
+│   ├── install-python-dev-tools.sh
+│   ├── install-yazi.sh
+│   ├── install-zellij.sh
+│   └── update-vendor-assets.sh
+├── bin/
+│   ├── claude
+│   ├── claudepod-shell
+│   ├── claudepod-sync-config
+│   └── openpod-shell
 ├── config/
+│   ├── claude/
+│   │   └── settings.base.json
 │   ├── nvim/
-│   │   └── lua/plugins/python.lua # openpod 维护的 LazyVim Python overlay
-│   ├── .zshrc              # Zsh 配置
-│   ├── .p10k.zsh           # Powerlevel10k 配置
-│   ├── .zsh_plugins.txt    # Vendored 插件清单
-│   └── opencode.json       # 镜像内置 OpenCode 全局默认配置
-├── tests/
-│   └── run.sh              # 安装器与关键接线的 shell 级回归测试入口
+│   ├── .zshrc
+│   └── .p10k.zsh
+├── install/
+│   └── bootstrap.sh
 └── vendor/
-    ├── manifest.lock.json  # Vendored 资产清单
+    ├── claude/
+    │   └── skills/
     ├── nvim/
-    │   └── lazyvim-starter/ # Pinned LazyVim starter 快照
-    ├── opencode/
-    │   ├── packages/       # 需要保留原始结构的 OpenCode 插件包
-    │   └── skills/         # 仓库直接维护的 OpenCode 全局 skills
-    ├── releases/           # 构建脚本使用的固定 release 包
-    └── zsh/                # Zsh 插件源码快照
+    ├── releases/
+    └── zsh/
 ```
 
-## 参与贡献
+## 验证
 
-欢迎提交 Issue 和 Pull Request！开发文档详见 [DEVELOPMENT.md](DEVELOPMENT.md)，vendored 资产说明详见 [docs/vendor-assets.md](docs/vendor-assets.md)。
+开发改动后，优先跑：
 
-## License
+```bash
+bash tests/run.sh
+docker compose build
+docker compose run --rm claudepod -lc 'claude --version'
+docker compose run --rm claudepod -lc 'claude doctor'
+```
 
-[MIT](LICENSE)
+## 说明
+
+- 首次执行 `nvim` 仍然需要联网，因为 `lazy.nvim` 会按需拉取插件
+- 本地构建仍然需要访问基础镜像仓库，比如 Docker Hub 和 GHCR
+- 这条分支聚焦 Claude Code 官方支持的接入面，不处理 OpenAI-compatible provider 兼容层

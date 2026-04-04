@@ -2,12 +2,12 @@
 
 ## Purpose
 
-This project keeps build-time release assets, editor defaults, Zsh plugin sources, and OpenCode extensions under `vendor/` so local image builds stay fast and predictable.
+This branch keeps build-time release assets, editor defaults, Zsh plugin sources, and Claude skills under `vendor/` so local image builds stay fast and predictable.
 
 - No GitHub release download is required for `antidote`, `btop`, `neovim`, `zellij`, or `yazi`
 - No runtime `git clone` is required to ship the default LazyVim starter config
 - No plugin repository clone is required for the default Zsh setup
-- The image can ship vendored OpenCode plugins and global skills without runtime network fetches
+- The image can ship vendored Claude skills without runtime network fetches
 - Users do not need Git submodules or `git clone --recursive`
 
 The machine-readable inventory lives in [`vendor/manifest.lock.json`](../vendor/manifest.lock.json).
@@ -16,18 +16,13 @@ The machine-readable inventory lives in [`vendor/manifest.lock.json`](../vendor/
 
 ```text
 vendor/
+├── claude/
+│   └── skills/
+│       ├── oh-my-claudepod/
+│       └── superpowers/
 ├── manifest.lock.json
 ├── nvim/
 │   └── lazyvim-starter/
-├── opencode/
-│   ├── packages/
-│   │   └── superpowers/
-│   │       ├── .opencode/
-│   │       │   └── plugins/
-│   │       │       └── superpowers.js
-│   │       ├── package.json
-│   │       └── skills/
-│   └── skills/
 ├── releases/
 │   ├── antidote/
 │   ├── btop/
@@ -64,7 +59,7 @@ Each release directory includes a `SHA256SUMS` file. The `build/install-*.sh` sc
 | zsh-history-substring-search | `zsh-users/zsh-history-substring-search@14c8d2e0ffaee98f2df9850b19944f32546fdea5` | `vendor/zsh/zsh-history-substring-search/` |
 | zsh-syntax-highlighting | `zsh-users/zsh-syntax-highlighting@1d85c692615a25fe2293bdd44b34c217d5d2bf04` | `vendor/zsh/zsh-syntax-highlighting/` |
 
-The default shell setup now sources these local copies directly from `/opt/vendor/zsh` inside the image.
+The default shell setup sources these local copies directly from `/opt/vendor/zsh` inside the image.
 
 ## Vendored Neovim Defaults
 
@@ -82,31 +77,32 @@ That split is intentional:
 
 The Docker image and bootstrap flow both install this starter as the default managed `nvim` config. First `nvim` launch still bootstraps `lazy.nvim` and the rest of the plugin set from upstream.
 
-## Vendored OpenCode Assets
+## Vendored Claude Assets
 
-### Plugin packages
+### Claude runtime
+
+This branch does not vendor the Claude Code binary itself. Docker and bootstrap install a pinned Claude Code native binary directly from Anthropic's official release bucket:
+
+- `https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/`
+
+The repo then wraps the installed binary with `claudepod-sync-config` and the `claude` launcher so `.env`-driven settings can be materialized into `~/.claude/settings.json` without replacing the rest of the user's Claude preferences.
+
+### Claude skills
 
 | Component | Version | Local path | Upstream source |
 |-----------|---------|------------|-----------------|
-| superpowers | `v5.0.7` | `vendor/opencode/packages/superpowers/` | `obra/superpowers` tag archive |
+| superpowers skills snapshot | `v5.0.7` | `vendor/claude/skills/superpowers/` | `obra/superpowers` tag archive |
+| repo-managed Claude skills | repo-local | `vendor/claude/skills/oh-my-claudepod/` | maintained in this repository |
 
-`superpowers` is vendored as a full package snapshot, not as a copied `SKILL.md` bundle.
+Only the upstream `skills/` tree is vendored on `dev/claude`. OpenCode-specific plugin wrappers are intentionally removed from this branch.
 
-That layout is intentional:
+The image exposes the Claude skills root through:
 
-- the plugin entrypoint stays at `vendor/opencode/packages/superpowers/.opencode/plugins/superpowers.js`
-- the bundled skills stay at `vendor/opencode/packages/superpowers/skills/`
-- the package root survives intact after `COPY vendor /opt/vendor`
+- `/root/.claude/skills -> /opt/vendor/claude/skills`
 
-This matters because the upstream plugin resolves `../../skills` relative to its own entrypoint and appends that directory to `config.skills.paths`. Flattening only the JS file into another directory would break that behavior.
+Bootstrap installs the same skills tree into:
 
-The image creates `/root/.config/opencode/plugins/superpowers.js` as a symlink to the vendored package entrypoint, while the package content itself remains under `/opt/vendor/opencode/packages/superpowers`.
-
-### Global skills
-
-`vendor/opencode/skills/` is reserved for repository-maintained OpenCode global skills.
-
-Unlike plugin package snapshots, this directory is intentionally kept outside the destructive refresh logic in `build/update-vendor-assets.sh`, so future repo-maintained skills are not deleted when vendored upstream assets are refreshed.
+- `~/.claude/skills -> <prefix>/vendor/claude/skills`
 
 ## Update Workflow
 
@@ -119,14 +115,13 @@ bash build/update-vendor-assets.sh
 After running it:
 
 1. Review the new files under `vendor/`
-2. Update [`vendor/manifest.lock.json`](../vendor/manifest.lock.json) if versions, commits, or OpenCode package refs changed
+2. Update [`vendor/manifest.lock.json`](../vendor/manifest.lock.json) if versions, commits, or Claude skill refs changed
 3. Rebuild the image with `docker compose up -d --build`
-4. Verify the container starts cleanly, the vendored Zsh plugins still load, OpenCode can see the vendored plugin/skill roots, and `nvim` starts with the managed LazyVim starter
+4. Verify the container starts cleanly, the vendored Zsh plugins still load, Claude can resolve the vendored skills root, and `nvim` starts with the managed LazyVim starter
 
 ## Notes
 
 - This approach intentionally avoids Git submodules.
 - Local builds still need access to base image registries such as Docker Hub and GHCR.
 - The default LazyVim config is vendored, but first-run plugin installation still needs network access.
-- Vendored OpenCode plugin packages should keep their upstream package-root layout unless their runtime behavior is re-validated.
 - The vendored assets are part of the repository history, so version bumps should stay deliberate and infrequent.

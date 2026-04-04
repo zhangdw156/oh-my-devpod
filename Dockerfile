@@ -9,28 +9,26 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     git \
     make \
+    perl \
     ripgrep \
     tzdata \
     unzip \
     vim \
     zsh \
     ca-certificates \
-    musl \
     && rm -rf /var/lib/apt/lists/*
 
 # ---------- 2. 复制 vendored 构建资产 ----------
 COPY vendor /opt/vendor
 
-# ---------- 3. 预置 OpenCode vendored plugin 入口与全局 skills ----------
-RUN mkdir -p /root/.config/opencode/plugins \
-    && ln -sf /opt/vendor/opencode/packages/superpowers/.opencode/plugins/superpowers.js /root/.config/opencode/plugins/superpowers.js \
-    && ln -sfn /opt/vendor/opencode/skills /root/.config/opencode/skills
+# ---------- 3. 预置 Claude skills ----------
+RUN mkdir -p /root/.claude \
+    && ln -sfn /opt/vendor/claude/skills /root/.claude/skills
 
-# ---------- 4. 安装 opencode（Alpine musl 构建，需要连同依赖库一起拷贝）----------
-COPY --from=ghcr.io/anomalyco/opencode /usr/local/bin/opencode /usr/local/bin/opencode
-COPY --from=ghcr.io/anomalyco/opencode /usr/lib/libstdc++.so.6 /usr/lib/musl-compat/libstdc++.so.6
-COPY --from=ghcr.io/anomalyco/opencode /usr/lib/libgcc_s.so.1 /usr/lib/musl-compat/libgcc_s.so.1
-RUN echo "/lib:/usr/local/lib:/usr/lib:/usr/lib/musl-compat" > /etc/ld-musl-x86_64.path
+# ---------- 4. 安装 Claude Code ----------
+COPY build/install-claude-code.sh /tmp/install-claude-code.sh
+RUN OPENPOD_BIN_DIR=/usr/local/bin OPENPOD_CLAUDE_INSTALL_HOME=/root bash /tmp/install-claude-code.sh \
+    && rm -f /tmp/install-claude-code.sh
 
 # ---------- 5. 安装 btop（使用 vendored release 包）----------
 ARG TARGETARCH
@@ -62,6 +60,7 @@ RUN bash /tmp/install-python-dev-tools.sh && rm -f /tmp/install-python-dev-tools
 
 # ---------- 12. 安装默认 LazyVim 配置 ----------
 COPY config/nvim /opt/openpod-config/nvim
+COPY config/claude /opt/openpod-config/claude
 COPY build/install-lazyvim.sh /tmp/install-lazyvim.sh
 RUN OPENPOD_NVM_OVERLAY_DIR=/opt/openpod-config/nvim bash /tmp/install-lazyvim.sh && rm -f /tmp/install-lazyvim.sh
 
@@ -69,6 +68,11 @@ RUN OPENPOD_NVM_OVERLAY_DIR=/opt/openpod-config/nvim bash /tmp/install-lazyvim.s
 # btop / 终端 Unicode 依赖 UTF-8 locale；基础镜像默认为 POSIX
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
+ENV OPENPOD_CLAUDE_CODE_VERSION=2.1.92
+ENV DISABLE_AUTOUPDATER=1
+ENV OPENPOD_CLAUDE_BASE_SETTINGS=/opt/openpod-config/claude/settings.base.json
+ENV OPENPOD_CLAUDE_REAL_BIN=/usr/local/bin/claude-real
+ENV OPENPOD_CLAUDE_SYNC_BIN=/usr/local/bin/claudepod-sync-config
 ENV OPENPOD_LAZYVIM_STARTER_COMMIT=803bc181d7c0d6d5eeba9274d9be49b287294d99
 ENV OPENPOD_LAZYVIM_SOURCE_DIR=/opt/vendor/nvim/lazyvim-starter
 ENV OPENPOD_NEOVIM_DIR=/opt/neovim
@@ -76,6 +80,7 @@ ENV OPENPOD_NVM_OVERLAY_DIR=/opt/openpod-config/nvim
 ENV OPENPOD_PYRIGHT_VERSION=1.1.408
 ENV OPENPOD_RUFF_VERSION=0.15.9
 ENV OPENPOD_UV_TOOL_DIR=/opt/uv-tools
+ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/.local/bin
 ENV TERM=xterm-256color
 ENV SHELL=/bin/zsh
 ENV UV_LINK_MODE=copy
@@ -89,7 +94,11 @@ RUN git config --global --add safe.directory '*'
 # ---------- 15. 复制配置文件 ----------
 COPY config/.zshrc /root/.zshrc
 COPY config/.p10k.zsh /root/.p10k.zsh
-COPY config/opencode.json /root/.config/opencode/config.json
+COPY bin/claude /usr/local/bin/claude
+COPY bin/claudepod-shell /usr/local/bin/claudepod-shell
+COPY bin/claudepod-sync-config /usr/local/bin/claudepod-sync-config
+COPY bin/openpod-shell /usr/local/bin/openpod-shell
+RUN chmod 0755 /usr/local/bin/claude /usr/local/bin/claudepod-shell /usr/local/bin/claudepod-sync-config /usr/local/bin/openpod-shell
 
 # ---------- 16. 启动设置 ----------
 WORKDIR /workspace

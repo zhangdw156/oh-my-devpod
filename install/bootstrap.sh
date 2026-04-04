@@ -3,18 +3,18 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 mode="user"
-prefix_default="${HOME}/.local/openpod"
+prefix_default="${HOME}/.local/claudepod"
 prefix="${OPENPOD_PREFIX:-${prefix_default}}"
 
 usage() {
   cat <<'EOF'
 Usage: bash install/bootstrap.sh [--user] [--system] [--prefix PATH]
 
-Bootstrap an openpod-like environment on a Linux host or inside an existing container.
+Bootstrap a claudepod-like environment on a Linux host or inside an existing container.
 
 Options:
   --user           Install into a user-owned prefix (default)
-  --system         Install into /opt/openpod with binaries under /usr/local/bin
+  --system         Install into /opt/claudepod with binaries under /usr/local/bin
   --prefix PATH    Override the installation prefix
   -h, --help       Show this help message
 EOF
@@ -24,12 +24,12 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --user)
       mode="user"
-      prefix="${OPENPOD_PREFIX:-${HOME}/.local/openpod}"
+      prefix="${OPENPOD_PREFIX:-${HOME}/.local/claudepod}"
       shift
       ;;
     --system)
       mode="system"
-      prefix="${OPENPOD_PREFIX:-/opt/openpod}"
+      prefix="${OPENPOD_PREFIX:-/opt/claudepod}"
       shift
       ;;
     --prefix)
@@ -58,7 +58,7 @@ if ! command -v dpkg >/dev/null 2>&1 || ! command -v dpkg-deb >/dev/null 2>&1; t
   exit 1
 fi
 
-for cmd in bash curl git tar sha256sum install zsh; do
+for cmd in bash curl git perl tar sha256sum install zsh; do
   if ! command -v "$cmd" >/dev/null 2>&1; then
     echo "Missing required command: $cmd" >&2
     exit 1
@@ -86,40 +86,40 @@ fi
 
 if [[ -z "${config_home}" ]]; then
   if [[ "$mode" == "system" ]]; then
-    config_home="/root/.config/opencode"
+    config_home="/root/.claude"
   else
-    config_home="${HOME}/.config/opencode"
+    config_home="${HOME}/.claude"
   fi
 fi
 
 if [[ -z "${data_home}" ]]; then
   if [[ "$mode" == "system" ]]; then
-    data_home="/root/.local/share/openpod"
+    data_home="/root/.local/share/claudepod"
   else
-    data_home="${HOME}/.local/share/openpod"
+    data_home="${HOME}/.local/share/claudepod"
   fi
 fi
 
 if [[ -z "${state_home}" ]]; then
   if [[ "$mode" == "system" ]]; then
-    state_home="/root/.local/state/openpod"
+    state_home="/root/.local/state/claudepod"
   else
-    state_home="${HOME}/.local/state/openpod"
+    state_home="${HOME}/.local/state/claudepod"
   fi
 fi
 
 if [[ -z "${cache_home}" ]]; then
   if [[ "$mode" == "system" ]]; then
-    cache_home="/root/.cache/openpod"
+    cache_home="/root/.cache/claudepod"
   else
-    cache_home="${HOME}/.cache/openpod"
+    cache_home="${HOME}/.cache/claudepod"
   fi
 fi
 
 vendor_home="${prefix}/vendor"
-plugin_dir="${config_home}/plugins"
 skills_link="${config_home}/skills"
 shell_dir="${prefix}/shell"
+managed_config_dir="${prefix}/config/claude"
 asset_root="${repo_root}/vendor/releases"
 xdg_config_home="${HOME}/.config"
 xdg_data_home="${HOME}/.local/share"
@@ -133,22 +133,27 @@ if [[ "$mode" == "system" ]]; then
   xdg_cache_home="/root/.cache"
 fi
 
-mkdir -p "${prefix}" "${bin_dir}" "${config_home}" "${plugin_dir}" "${data_home}" "${state_home}" "${cache_home}" "${shell_dir}"
+mkdir -p "${prefix}" "${bin_dir}" "${config_home}" "${data_home}" "${state_home}" "${cache_home}" "${shell_dir}" "${managed_config_dir}"
 rm -rf "${vendor_home}"
 cp -R "${repo_root}/vendor" "${vendor_home}"
 
 cat > "${shell_dir}/.zshrc" <<EOF
-# openpod bootstrap-managed zsh config
+# claudepod bootstrap-managed zsh config
 export OPENPOD_PREFIX="${prefix}"
 export OPENPOD_BIN_DIR="${bin_dir}"
 export OPENPOD_CONFIG_DIR="${config_home}"
 export OPENPOD_DATA_HOME="${data_home}"
 export OPENPOD_STATE_HOME="${state_home}"
 export OPENPOD_CACHE_HOME="${cache_home}"
+export OPENPOD_SOURCE_REPO="${repo_root}"
+export OPENPOD_CLAUDE_BASE_SETTINGS="${managed_config_dir}/settings.base.json"
+export OPENPOD_CLAUDE_REAL_BIN="${bin_dir}/claude-real"
+export OPENPOD_CLAUDE_SYNC_BIN="${bin_dir}/claudepod-sync-config"
 export PATH="${bin_dir}:\$PATH"
 export ZSH="${vendor_home}/zsh/ohmyzsh"
 export ZSH_DISABLE_COMPFIX=true
 export DISABLE_AUTO_UPDATE=true
+export DISABLE_AUTOUPDATER=1
 export LANG="\${LANG:-C.UTF-8}"
 export LC_ALL="\${LC_ALL:-C.UTF-8}"
 export TERM="\${TERM:-xterm-256color}"
@@ -179,18 +184,22 @@ export OPENPOD_CONFIG_DIR="${config_home}"
 export OPENPOD_DATA_HOME="${data_home}"
 export OPENPOD_STATE_HOME="${state_home}"
 export OPENPOD_CACHE_HOME="${cache_home}"
+export OPENPOD_SOURCE_REPO="${repo_root}"
+export OPENPOD_CLAUDE_BASE_SETTINGS="${managed_config_dir}/settings.base.json"
+export OPENPOD_CLAUDE_REAL_BIN="${bin_dir}/claude-real"
+export OPENPOD_CLAUDE_SYNC_BIN="${bin_dir}/claudepod-sync-config"
 export PATH="${bin_dir}:\$PATH"
 export XDG_CONFIG_HOME="\${XDG_CONFIG_HOME:-${HOME}/.config}"
 export XDG_DATA_HOME="\${XDG_DATA_HOME:-${HOME}/.local/share}"
 export XDG_STATE_HOME="\${XDG_STATE_HOME:-${HOME}/.local/state}"
 export XDG_CACHE_HOME="\${XDG_CACHE_HOME:-${HOME}/.cache}"
 export UV_LINK_MODE=copy
+export DISABLE_AUTOUPDATER=1
 EOF
 
 cp "${repo_root}/config/.p10k.zsh" "${shell_dir}/.p10k.zsh"
-cp "${repo_root}/config/opencode.json" "${config_home}/config.json"
-ln -sfn "${vendor_home}/opencode/packages/superpowers/.opencode/plugins/superpowers.js" "${plugin_dir}/superpowers.js"
-ln -sfn "${vendor_home}/opencode/skills" "${skills_link}"
+cp "${repo_root}/config/claude/settings.base.json" "${managed_config_dir}/settings.base.json"
+ln -sfn "${vendor_home}/claude/skills" "${skills_link}"
 
 export OPENPOD_ASSET_ROOT="${asset_root}"
 export OPENPOD_BIN_DIR="${bin_dir}"
@@ -207,6 +216,12 @@ export OPENPOD_NVM_OVERLAY_DIR="${repo_root}/config/nvim"
 export OPENPOD_PYRIGHT_VERSION="1.1.408"
 export OPENPOD_RUFF_VERSION="0.15.9"
 export OPENPOD_UV_TOOL_DIR="${prefix}/opt/uv-tools"
+export OPENPOD_CLAUDE_CODE_VERSION="2.1.92"
+export OPENPOD_SOURCE_REPO="${repo_root}"
+export OPENPOD_CLAUDE_BASE_SETTINGS="${managed_config_dir}/settings.base.json"
+export OPENPOD_CLAUDE_REAL_BIN="${bin_dir}/claude-real"
+export OPENPOD_CLAUDE_SYNC_BIN="${bin_dir}/claudepod-sync-config"
+export DISABLE_AUTOUPDATER="1"
 
 bash "${repo_root}/build/install-btop.sh"
 bash "${repo_root}/build/install-antidote.sh"
@@ -232,46 +247,41 @@ for cmd in rg fd unzip make gcc; do
   fi
 done
 
-need_opencode_install=0
-if [[ ! -x "${bin_dir}/opencode" ]]; then
-  need_opencode_install=1
-elif ! "${bin_dir}/opencode" --version >/dev/null 2>&1; then
-  need_opencode_install=1
+need_claude_install=0
+if [[ ! -x "${bin_dir}/claude-real" ]]; then
+  need_claude_install=1
 fi
 
-if [[ "${need_opencode_install}" == "1" ]]; then
-  opencode_home="$(mktemp -d)"
-  env HOME="${opencode_home}" PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" bash -c 'curl -fsSL https://opencode.ai/install | bash -s -- --no-modify-path'
-  install -m 0755 "${opencode_home}/.opencode/bin/opencode" "${bin_dir}/opencode"
-  rm -rf "${opencode_home}"
+if [[ "${need_claude_install}" == "1" ]]; then
+  if [[ "${mode}" == "system" ]]; then
+    export OPENPOD_CLAUDE_INSTALL_HOME="/root"
+  else
+    export OPENPOD_CLAUDE_INSTALL_HOME="${HOME}"
+  fi
+  bash "${repo_root}/build/install-claude-code.sh"
 fi
 
-cat > "${bin_dir}/openpod-shell" <<EOF
-#!/usr/bin/env bash
-set -euo pipefail
-source "${prefix}/env.sh"
-if [[ \$# -eq 0 ]]; then
-  exec env ZDOTDIR="${shell_dir}" zsh -i
-else
-  exec env ZDOTDIR="${shell_dir}" zsh "\$@"
-fi
-EOF
-chmod 0755 "${bin_dir}/openpod-shell"
+install -m 0755 "${repo_root}/bin/claude" "${bin_dir}/claude"
+install -m 0755 "${repo_root}/bin/claudepod-sync-config" "${bin_dir}/claudepod-sync-config"
+install -m 0755 "${repo_root}/bin/claudepod-shell" "${bin_dir}/claudepod-shell"
+install -m 0755 "${repo_root}/bin/openpod-shell" "${bin_dir}/openpod-shell"
+"${bin_dir}/claudepod-sync-config"
 
 cat <<EOF
 Bootstrap complete.
 
 Prefix: ${prefix}
 Bin dir: ${bin_dir}
-OpenCode config: ${config_home}
+Claude config: ${config_home}
 
 Next steps:
   source "${prefix}/env.sh"
-  openpod-shell
+  claudepod-shell
 
 Notes:
 - Existing ~/.zshrc was not modified.
 - Shell config lives under ${shell_dir}.
+- openpod-shell remains available as a compatibility alias.
 EOF
 
 if ((${#missing_lazyvim_deps[@]} > 0)); then

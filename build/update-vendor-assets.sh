@@ -78,7 +78,7 @@ download_plugin_snapshot() {
   find "${target_dir}" -name '.git' -prune -exec rm -rf {} +
 }
 
-mkdir -p "${vendor_dir}/releases" "${vendor_dir}/nvim" "${vendor_dir}/zsh" "${vendor_dir}/opencode/packages" "${vendor_dir}/opencode/skills"
+mkdir -p "${vendor_dir}/releases" "${vendor_dir}/nvim" "${vendor_dir}/zsh" "${vendor_dir}/claude/skills"
 
 download_release_assets \
   "antidote" \
@@ -127,7 +127,10 @@ download_plugin_snapshot "romkatv/powerlevel10k" "${powerlevel10k_commit}" "${ve
 download_plugin_snapshot "zsh-users/zsh-autosuggestions" "${autosuggestions_commit}" "${vendor_dir}/zsh/zsh-autosuggestions"
 download_plugin_snapshot "zsh-users/zsh-history-substring-search" "${history_substring_search_commit}" "${vendor_dir}/zsh/zsh-history-substring-search"
 download_plugin_snapshot "zsh-users/zsh-syntax-highlighting" "${syntax_highlighting_commit}" "${vendor_dir}/zsh/zsh-syntax-highlighting"
-download_plugin_snapshot "obra/superpowers" "refs/tags/${superpowers_version}" "${vendor_dir}/opencode/packages/superpowers"
+download_plugin_snapshot "obra/superpowers" "refs/tags/${superpowers_version}" "${tmp_dir}/superpowers"
+rm -rf "${vendor_dir}/claude/skills/superpowers"
+mkdir -p "${vendor_dir}/claude/skills/superpowers"
+cp -R "${tmp_dir}/superpowers/skills/." "${vendor_dir}/claude/skills/superpowers/"
 download_plugin_snapshot "LazyVim/starter" "${lazyvim_starter_commit}" "${vendor_dir}/nvim/lazyvim-starter"
 printf '%s\n' "${lazyvim_starter_commit}" > "${vendor_dir}/nvim/lazyvim-starter/.openpod-source-commit"
 

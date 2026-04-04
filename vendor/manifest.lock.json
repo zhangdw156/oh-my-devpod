@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-04-04",
+  "generated_at": "2026-04-05",
   "releases": {
     "antidote": {
       "version": "v2.0.10",
@@ -88,21 +88,25 @@
       ]
     }
   },
-  "opencode": {
-    "plugin_packages": {
+  "claude_code": {
+    "installer": {
+      "method": "native-binary-download",
+      "source_url": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/",
+      "version": "2.1.92",
+      "notes": "Docker and bootstrap download a pinned Claude Code native binary from Anthropic's official release bucket, then wrap it with repo-managed sync scripts."
+    },
+    "skills": {
       "superpowers": {
         "repo": "obra/superpowers",
         "version": "v5.0.7",
-        "local_path": "vendor/opencode/packages/superpowers",
-        "entrypoint": ".opencode/plugins/superpowers.js",
-        "bundled_skills_path": "skills",
+        "local_path": "vendor/claude/skills/superpowers",
         "source_url": "https://codeload.github.com/obra/superpowers/tar.gz/refs/tags/v5.0.7",
-        "notes": "Package root layout is preserved so the vendored plugin can resolve ../../skills relative to its entrypoint."
+        "notes": "Only the upstream skills tree is vendored on dev/claude; OpenCode-specific plugin wrappers are intentionally dropped."
+      },
+      "oh_my_claudepod": {
+        "local_path": "vendor/claude/skills/oh-my-claudepod",
+        "notes": "Reserved for repository-maintained Claude-specific skills that complement the vendored superpowers snapshot."
       }
-    },
-    "global_skills": {
-      "local_path": "vendor/opencode/skills",
-      "notes": "Repository-maintained OpenCode global skills live here and are kept outside the destructive refresh logic in build/update-vendor-assets.sh."
     }
   },
   "nvim_configs": {
