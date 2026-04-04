@@ -23,7 +23,9 @@ btop_version="v1.4.6"
 antidote_version="v2.0.10"
 zellij_version="v0.44.0"
 yazi_version="v26.1.22"
+neovim_version="v0.12.0"
 superpowers_version="v5.0.7"
+lazyvim_starter_commit="803bc181d7c0d6d5eeba9274d9be49b287294d99"
 
 ohmyzsh_commit="9e2c1548c3dfeefd055e1c6606f66657093ae928"
 powerlevel10k_commit="604f19a9eaa18e76db2e60b8d446d5f879065f90"
@@ -76,7 +78,7 @@ download_plugin_snapshot() {
   find "${target_dir}" -name '.git' -prune -exec rm -rf {} +
 }
 
-mkdir -p "${vendor_dir}/releases" "${vendor_dir}/zsh" "${vendor_dir}/opencode/packages" "${vendor_dir}/opencode/skills"
+mkdir -p "${vendor_dir}/releases" "${vendor_dir}/nvim" "${vendor_dir}/zsh" "${vendor_dir}/opencode/packages" "${vendor_dir}/opencode/skills"
 
 download_release_assets \
   "antidote" \
@@ -105,6 +107,14 @@ download_release_assets \
   "https://github.com/zellij-org/zellij/releases/download/${zellij_version}/zellij-x86_64-unknown-linux-musl.tar.gz"
 
 download_release_assets \
+  "neovim" \
+  "${neovim_version}" \
+  "nvim-linux-arm64.tar.gz" \
+  "https://github.com/neovim/neovim/releases/download/${neovim_version}/nvim-linux-arm64.tar.gz" \
+  "nvim-linux-x86_64.tar.gz" \
+  "https://github.com/neovim/neovim/releases/download/${neovim_version}/nvim-linux-x86_64.tar.gz"
+
+download_release_assets \
   "yazi" \
   "${yazi_version}" \
   "yazi-aarch64-unknown-linux-gnu.deb" \
@@ -118,5 +128,7 @@ download_plugin_snapshot "zsh-users/zsh-autosuggestions" "${autosuggestions_comm
 download_plugin_snapshot "zsh-users/zsh-history-substring-search" "${history_substring_search_commit}" "${vendor_dir}/zsh/zsh-history-substring-search"
 download_plugin_snapshot "zsh-users/zsh-syntax-highlighting" "${syntax_highlighting_commit}" "${vendor_dir}/zsh/zsh-syntax-highlighting"
 download_plugin_snapshot "obra/superpowers" "refs/tags/${superpowers_version}" "${vendor_dir}/opencode/packages/superpowers"
+download_plugin_snapshot "LazyVim/starter" "${lazyvim_starter_commit}" "${vendor_dir}/nvim/lazyvim-starter"
+printf '%s\n' "${lazyvim_starter_commit}" > "${vendor_dir}/nvim/lazyvim-starter/.openpod-source-commit"
 
 echo "Vendored assets updated under ${vendor_dir}"

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-04-01",
+  "generated_at": "2026-04-04",
   "releases": {
     "antidote": {
       "version": "v2.0.10",
@@ -26,6 +26,22 @@
           "name": "btop-x86_64-unknown-linux-musl.tbz",
           "sha256": "9bf7ed170423bb3709a8020767bd2ca529c5632af478f229dce7cdfd32b25691",
           "source_url": "https://github.com/aristocratos/btop/releases/download/v1.4.6/btop-x86_64-unknown-linux-musl.tbz"
+        }
+      ]
+    },
+    "neovim": {
+      "version": "v0.12.0",
+      "local_path": "vendor/releases/neovim/v0.12.0",
+      "assets": [
+        {
+          "name": "nvim-linux-arm64.tar.gz",
+          "sha256": "89024e7be2ef3c8f08e9c002b1eb3e3b36672ee44bd6343cf2d168d38b3736b2",
+          "source_url": "https://github.com/neovim/neovim/releases/download/v0.12.0/nvim-linux-arm64.tar.gz"
+        },
+        {
+          "name": "nvim-linux-x86_64.tar.gz",
+          "sha256": "160b69125defb16e60b283b69be112fd4850d67ac8f9a752328c20ad43ec34af",
+          "source_url": "https://github.com/neovim/neovim/releases/download/v0.12.0/nvim-linux-x86_64.tar.gz"
         }
       ]
     },
@@ -87,6 +103,15 @@
     "global_skills": {
       "local_path": "vendor/opencode/skills",
       "notes": "Repository-maintained OpenCode global skills live here and are kept outside the destructive refresh logic in build/update-vendor-assets.sh."
+    }
+  },
+  "nvim_configs": {
+    "lazyvim_starter": {
+      "repo": "LazyVim/starter",
+      "commit": "803bc181d7c0d6d5eeba9274d9be49b287294d99",
+      "local_path": "vendor/nvim/lazyvim-starter",
+      "source_url": "https://codeload.github.com/LazyVim/starter/tar.gz/803bc181d7c0d6d5eeba9274d9be49b287294d99",
+      "notes": "Vendored as a pinned starter snapshot because LazyVim/starter does not publish installable release artifacts. First nvim launch still bootstraps lazy.nvim and plugins from upstream."
     }
   },
   "zsh_plugins": {

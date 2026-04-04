@@ -58,7 +58,7 @@ if ! command -v dpkg >/dev/null 2>&1 || ! command -v dpkg-deb >/dev/null 2>&1; t
   exit 1
 fi
 
-for cmd in bash curl tar sha256sum install zsh; do
+for cmd in bash curl git tar sha256sum install zsh; do
   if ! command -v "$cmd" >/dev/null 2>&1; then
     echo "Missing required command: $cmd" >&2
     exit 1
@@ -121,6 +121,17 @@ plugin_dir="${config_home}/plugins"
 skills_link="${config_home}/skills"
 shell_dir="${prefix}/shell"
 asset_root="${repo_root}/vendor/releases"
+xdg_config_home="${HOME}/.config"
+xdg_data_home="${HOME}/.local/share"
+xdg_state_home="${HOME}/.local/state"
+xdg_cache_home="${HOME}/.cache"
+
+if [[ "$mode" == "system" ]]; then
+  xdg_config_home="/root/.config"
+  xdg_data_home="/root/.local/share"
+  xdg_state_home="/root/.local/state"
+  xdg_cache_home="/root/.cache"
+fi
 
 mkdir -p "${prefix}" "${bin_dir}" "${config_home}" "${plugin_dir}" "${data_home}" "${state_home}" "${cache_home}" "${shell_dir}"
 rm -rf "${vendor_home}"
@@ -185,11 +196,31 @@ export OPENPOD_ASSET_ROOT="${asset_root}"
 export OPENPOD_BIN_DIR="${bin_dir}"
 export OPENPOD_BTOP_DIR="${prefix}/opt/btop"
 export OPENPOD_ANTIDOTE_DIR="${prefix}/opt/antidote"
+export OPENPOD_NEOVIM_DIR="${prefix}/opt/neovim"
+export OPENPOD_LAZYVIM_SOURCE_DIR="${vendor_home}/nvim/lazyvim-starter"
+export OPENPOD_LAZYVIM_STARTER_COMMIT="803bc181d7c0d6d5eeba9274d9be49b287294d99"
+export OPENPOD_NVM_CONFIG_DIR="${xdg_config_home}/nvim"
+export OPENPOD_NVM_DATA_DIR="${xdg_data_home}/nvim"
+export OPENPOD_NVM_STATE_DIR="${xdg_state_home}/nvim"
+export OPENPOD_NVM_CACHE_DIR="${xdg_cache_home}/nvim"
 
 bash "${repo_root}/build/install-btop.sh"
 bash "${repo_root}/build/install-antidote.sh"
 bash "${repo_root}/build/install-zellij.sh"
 bash "${repo_root}/build/install-yazi.sh"
+bash "${repo_root}/build/install-neovim.sh"
+bash "${repo_root}/build/install-lazyvim.sh"
+
+if command -v fdfind >/dev/null 2>&1 && [[ ! -e "${bin_dir}/fd" ]]; then
+  ln -sfn "$(command -v fdfind)" "${bin_dir}/fd"
+fi
+
+missing_lazyvim_deps=()
+for cmd in rg fd unzip make gcc; do
+  if ! command -v "${cmd}" >/dev/null 2>&1; then
+    missing_lazyvim_deps+=("${cmd}")
+  fi
+done
 
 if [[ ! -x "${bin_dir}/uv" ]]; then
   curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="${bin_dir}" UV_NO_MODIFY_PATH=1 sh
@@ -236,3 +267,8 @@ Notes:
 - Existing ~/.zshrc was not modified.
 - Shell config lives under ${shell_dir}.
 EOF
+
+if ((${#missing_lazyvim_deps[@]} > 0)); then
+  printf ' - LazyVim optional dependencies not found: %s\n' "${missing_lazyvim_deps[*]}"
+  echo "   First nvim launch still works, but some picker/build features may be limited until those commands are installed."
+fi

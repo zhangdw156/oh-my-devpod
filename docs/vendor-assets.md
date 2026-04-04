@@ -2,9 +2,10 @@
 
 ## Purpose
 
-This project keeps build-time release assets, Zsh plugin sources, and OpenCode extensions under `vendor/` so local image builds stay fast and predictable.
+This project keeps build-time release assets, editor defaults, Zsh plugin sources, and OpenCode extensions under `vendor/` so local image builds stay fast and predictable.
 
-- No GitHub release download is required for `antidote`, `btop`, `zellij`, or `yazi`
+- No GitHub release download is required for `antidote`, `btop`, `neovim`, `zellij`, or `yazi`
+- No runtime `git clone` is required to ship the default LazyVim starter config
 - No plugin repository clone is required for the default Zsh setup
 - The image can ship vendored OpenCode plugins and global skills without runtime network fetches
 - Users do not need Git submodules or `git clone --recursive`
@@ -16,6 +17,8 @@ The machine-readable inventory lives in [`vendor/manifest.lock.json`](../vendor/
 ```text
 vendor/
 ├── manifest.lock.json
+├── nvim/
+│   └── lazyvim-starter/
 ├── opencode/
 │   ├── packages/
 │   │   └── superpowers/
@@ -28,6 +31,7 @@ vendor/
 ├── releases/
 │   ├── antidote/
 │   ├── btop/
+│   ├── neovim/
 │   ├── yazi/
 │   └── zellij/
 └── zsh/
@@ -44,6 +48,7 @@ vendor/
 |-----------|---------|------------|-----------------|
 | Antidote | `v2.0.10` | `vendor/releases/antidote/v2.0.10/` | `mattmc3/antidote` tag archive |
 | btop | `v1.4.6` | `vendor/releases/btop/v1.4.6/` | `aristocratos/btop` release assets |
+| Neovim | `v0.12.0` | `vendor/releases/neovim/v0.12.0/` | `neovim/neovim` release assets |
 | Zellij | `v0.44.0` | `vendor/releases/zellij/v0.44.0/` | `zellij-org/zellij` release assets |
 | Yazi | `v26.1.22` | `vendor/releases/yazi/v26.1.22/` | `sxyazi/yazi` Debian packages |
 
@@ -60,6 +65,22 @@ Each release directory includes a `SHA256SUMS` file. The `build/install-*.sh` sc
 | zsh-syntax-highlighting | `zsh-users/zsh-syntax-highlighting@1d85c692615a25fe2293bdd44b34c217d5d2bf04` | `vendor/zsh/zsh-syntax-highlighting/` |
 
 The default shell setup now sources these local copies directly from `/opt/vendor/zsh` inside the image.
+
+## Vendored Neovim Defaults
+
+| Component | Source | Local path |
+|-----------|--------|------------|
+| LazyVim starter | `LazyVim/starter@803bc181d7c0d6d5eeba9274d9be49b287294d99` | `vendor/nvim/lazyvim-starter/` |
+
+`LazyVim/starter` is vendored as a pinned source snapshot instead of a release package because the upstream repository does not publish installable release artifacts.
+
+That split is intentional:
+
+- `neovim` itself comes from official release tarballs under `vendor/releases/neovim/`
+- the default editor config comes from `vendor/nvim/lazyvim-starter/`
+- the vendored starter includes `.openpod-source-commit` so installer metadata can record the pinned source commit
+
+The Docker image and bootstrap flow both install this starter as the default managed `nvim` config. First `nvim` launch still bootstraps `lazy.nvim` and the rest of the plugin set from upstream.
 
 ## Vendored OpenCode Assets
 
@@ -100,11 +121,12 @@ After running it:
 1. Review the new files under `vendor/`
 2. Update [`vendor/manifest.lock.json`](../vendor/manifest.lock.json) if versions, commits, or OpenCode package refs changed
 3. Rebuild the image with `docker compose up -d --build`
-4. Verify the container starts cleanly, the vendored Zsh plugins still load, and OpenCode can see the vendored plugin/skill roots
+4. Verify the container starts cleanly, the vendored Zsh plugins still load, OpenCode can see the vendored plugin/skill roots, and `nvim` starts with the managed LazyVim starter
 
 ## Notes
 
 - This approach intentionally avoids Git submodules.
 - Local builds still need access to base image registries such as Docker Hub and GHCR.
+- The default LazyVim config is vendored, but first-run plugin installation still needs network access.
 - Vendored OpenCode plugin packages should keep their upstream package-root layout unless their runtime behavior is re-validated.
 - The vendored assets are part of the repository history, so version bumps should stay deliberate and infrequent.
