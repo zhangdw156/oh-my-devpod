@@ -70,6 +70,9 @@ Docker mode injects `.env` into the container environment directly. Bootstrap mo
 
 If there is no `.env`, you can log in later with `claude login`.
 
+Even if you do not pass `--env-file .env` to `docker run`, claudepod will still fall back to `/workspace/.env` the first time `claude` runs, as long as the mounted project root contains that file.
+That fallback only materializes Claude-managed config; it does not automatically export those variables into every other shell process.
+
 ### 3. Docker Mode
 
 ```bash

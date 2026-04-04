@@ -18,8 +18,21 @@ base_template="${OPENPOD_CLAUDE_BASE_SETTINGS:-}"
 
 mkdir -p "${claude_dir}"
 
+loaded_env_file=0
 if [[ -n "${OPENPOD_SOURCE_REPO:-}" ]]; then
-  load_env_file "${OPENPOD_SOURCE_REPO}/.env"
+  if [[ -f "${OPENPOD_SOURCE_REPO}/.env" ]]; then
+    load_env_file "${OPENPOD_SOURCE_REPO}/.env"
+    loaded_env_file=1
+  fi
+fi
+
+if [[ "${loaded_env_file}" == "0" && -f "${PWD}/.env" ]]; then
+  load_env_file "${PWD}/.env"
+  loaded_env_file=1
+fi
+
+if [[ "${loaded_env_file}" == "0" && -f "/workspace/.env" ]]; then
+  load_env_file "/workspace/.env"
 fi
 
 perl -MJSON::PP -e '
