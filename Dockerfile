@@ -53,20 +53,29 @@ RUN bash /tmp/install-yazi.sh && rm -f /tmp/install-yazi.sh
 COPY build/install-neovim.sh /tmp/install-neovim.sh
 RUN bash /tmp/install-neovim.sh && rm -f /tmp/install-neovim.sh
 
-# ---------- 10. 安装默认 LazyVim 配置 ----------
-COPY build/install-lazyvim.sh /tmp/install-lazyvim.sh
-RUN bash /tmp/install-lazyvim.sh && rm -f /tmp/install-lazyvim.sh
-
-# ---------- 11. 安装 uv (Python 包管理器) ----------
+# ---------- 10. 安装 uv (Python 包管理器) ----------
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 
-# ---------- 12. 环境变量 ----------
+# ---------- 11. 预装 Python 开发工具 ----------
+COPY build/install-python-dev-tools.sh /tmp/install-python-dev-tools.sh
+RUN bash /tmp/install-python-dev-tools.sh && rm -f /tmp/install-python-dev-tools.sh
+
+# ---------- 12. 安装默认 LazyVim 配置 ----------
+COPY config/nvim /opt/openpod-config/nvim
+COPY build/install-lazyvim.sh /tmp/install-lazyvim.sh
+RUN OPENPOD_NVM_OVERLAY_DIR=/opt/openpod-config/nvim bash /tmp/install-lazyvim.sh && rm -f /tmp/install-lazyvim.sh
+
+# ---------- 13. 环境变量 ----------
 # btop / 终端 Unicode 依赖 UTF-8 locale；基础镜像默认为 POSIX
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV OPENPOD_LAZYVIM_STARTER_COMMIT=803bc181d7c0d6d5eeba9274d9be49b287294d99
 ENV OPENPOD_LAZYVIM_SOURCE_DIR=/opt/vendor/nvim/lazyvim-starter
 ENV OPENPOD_NEOVIM_DIR=/opt/neovim
+ENV OPENPOD_NVM_OVERLAY_DIR=/opt/openpod-config/nvim
+ENV OPENPOD_PYRIGHT_VERSION=1.1.408
+ENV OPENPOD_RUFF_VERSION=0.15.9
+ENV OPENPOD_UV_TOOL_DIR=/opt/uv-tools
 ENV TERM=xterm-256color
 ENV SHELL=/bin/zsh
 ENV UV_LINK_MODE=copy
@@ -74,14 +83,14 @@ ENV TZ=Asia/Shanghai
 RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 RUN if command -v fdfind >/dev/null 2>&1 && ! command -v fd >/dev/null 2>&1; then ln -sf "$(command -v fdfind)" /usr/local/bin/fd; fi
 
-# ---------- 13. 允许 git 操作挂载目录（容器 root 与宿主机 UID 不同）----------
+# ---------- 14. 允许 git 操作挂载目录（容器 root 与宿主机 UID 不同）----------
 RUN git config --global --add safe.directory '*'
 
-# ---------- 14. 复制配置文件 ----------
+# ---------- 15. 复制配置文件 ----------
 COPY config/.zshrc /root/.zshrc
 COPY config/.p10k.zsh /root/.p10k.zsh
 COPY config/opencode.json /root/.config/opencode/config.json
 
-# ---------- 15. 启动设置 ----------
+# ---------- 16. 启动设置 ----------
 WORKDIR /workspace
 ENTRYPOINT ["/bin/zsh"]

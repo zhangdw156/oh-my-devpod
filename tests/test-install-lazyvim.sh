@@ -21,20 +21,23 @@ assert_glob() {
 }
 
 source_dir="${tmp_dir}/vendor/nvim/lazyvim-starter"
+overlay_dir="${tmp_dir}/overlay"
 config_dir="${tmp_dir}/config/nvim"
 data_dir="${tmp_dir}/data/nvim"
 state_dir="${tmp_dir}/state/nvim"
 cache_dir="${tmp_dir}/cache/nvim"
 
-mkdir -p "${source_dir}/lua/config" "${config_dir}" "${data_dir}" "${state_dir}" "${cache_dir}"
+mkdir -p "${source_dir}/lua/config" "${overlay_dir}/lua/plugins" "${config_dir}" "${data_dir}" "${state_dir}" "${cache_dir}"
 printf '%s\n' '-- starter init' > "${source_dir}/init.lua"
 printf '%s\n' 'return {}' > "${source_dir}/lua/config/lazy.lua"
+printf '%s\n' 'return { { import = "lazyvim.plugins.extras.lang.python" } }' > "${overlay_dir}/lua/plugins/python.lua"
 printf '%s\n' 'old config' > "${config_dir}/custom.lua"
 printf '%s\n' 'old data' > "${data_dir}/data.txt"
 printf '%s\n' 'old state' > "${state_dir}/state.txt"
 printf '%s\n' 'old cache' > "${cache_dir}/cache.txt"
 
 OPENPOD_LAZYVIM_SOURCE_DIR="${source_dir}" \
+OPENPOD_NVM_OVERLAY_DIR="${overlay_dir}" \
 OPENPOD_NVM_CONFIG_DIR="${config_dir}" \
 OPENPOD_NVM_DATA_DIR="${data_dir}" \
 OPENPOD_NVM_STATE_DIR="${state_dir}" \
@@ -43,6 +46,7 @@ bash "${repo_root}/build/install-lazyvim.sh"
 
 assert_file "${config_dir}/init.lua"
 assert_file "${config_dir}/lua/config/lazy.lua"
+assert_file "${config_dir}/lua/plugins/python.lua"
 assert_file "${config_dir}/.openpod-managed.json"
 assert_glob "${tmp_dir}/config/nvim.openpod.bak.*"
 assert_glob "${tmp_dir}/data/nvim.openpod.bak.*"

@@ -2,6 +2,7 @@
 set -euo pipefail
 
 source_dir="${OPENPOD_LAZYVIM_SOURCE_DIR:-/opt/vendor/nvim/lazyvim-starter}"
+overlay_dir="${OPENPOD_NVM_OVERLAY_DIR:-}"
 config_dir="${OPENPOD_NVM_CONFIG_DIR:-${XDG_CONFIG_HOME:-${HOME}/.config}/nvim}"
 data_dir="${OPENPOD_NVM_DATA_DIR:-${XDG_DATA_HOME:-${HOME}/.local/share}/nvim}"
 state_dir="${OPENPOD_NVM_STATE_DIR:-${XDG_STATE_HOME:-${HOME}/.local/state}/nvim}"
@@ -48,6 +49,9 @@ fi
 
 mkdir -p "$(dirname "${config_dir}")"
 cp -R "${source_dir}" "${config_dir}"
+if [[ -n "${overlay_dir}" && -d "${overlay_dir}" ]]; then
+  cp -R "${overlay_dir}/." "${config_dir}"
+fi
 rm -rf "${config_dir}/.git"
 rm -f "${config_dir}/.openpod-source-commit"
 

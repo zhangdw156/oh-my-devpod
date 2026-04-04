@@ -37,7 +37,7 @@ oh-my-openpod packages **AI coding assistant + Python toolchain + beautiful Shel
 | **AI** | [OpenCode](https://github.com/opencode-ai/opencode) | Terminal AI coding assistant with custom provider support |
 | **Python** | [uv](https://github.com/astral-sh/uv) | Blazingly fast Python package & virtualenv manager |
 | **Shell** | Zsh + vendored plugin snapshots + [Powerlevel10k](https://github.com/romkatv/powerlevel10k) + [Antidote](https://github.com/mattmc3/antidote) | Syntax highlighting, auto-suggestions, Git status |
-| **Editor** | [Neovim](https://neovim.io/) + [LazyVim Starter](https://github.com/LazyVim/starter) | Default terminal editor setup; first launch bootstraps plugins automatically |
+| **Editor** | [Neovim](https://neovim.io/) + [LazyVim Starter](https://github.com/LazyVim/starter) | Default terminal editor setup with preinstalled `pyright[nodejs]` and `ruff`; first launch bootstraps plugins automatically |
 | **Terminal** | [Zellij](https://github.com/zellij-org/zellij) | Terminal multiplexer for long-lived dev sessions |
 | **TUI** | [Yazi](https://yazi-rs.github.io/) | Modern terminal file manager for directory browsing and basic file inspection |
 | **Monitor** | [btop](https://github.com/aristocratos/btop) | Terminal resource monitor for CPU, memory, and process activity |
@@ -122,6 +122,7 @@ Notes:
 
 - bootstrap mode reuses the vendored release assets, Zsh plugin snapshots, and OpenCode plugin packages stored in this repository
 - bootstrap mode installs `neovim` and a managed LazyVim starter config by default; existing unmanaged `nvim` config/data/state/cache paths are backed up automatically on first takeover
+- bootstrap mode also preinstalls `pyright[nodejs]` and `ruff` via `uv tool install` so Python diagnostics work out of the box in `nvim`
 - `superpowers` keeps its full upstream package layout intact
 - bootstrap mode does not modify your `~/.zshrc`; shell config is written under the install prefix in `shell/`
 - `uv` and `opencode` are installed via their official install scripts only if they are missing from the target `bin` directory
@@ -182,6 +183,8 @@ docker compose exec openpod zsh
 ```
 root@hostname /workspace main ❯ opencode   # AI coding assistant
 root@hostname /workspace main ❯ nvim       # Neovim with the default LazyVim starter
+root@hostname /workspace main ❯ pyright    # Python LSP / type checker
+root@hostname /workspace main ❯ ruff check . # Python lint / formatting toolchain
 root@hostname /workspace main ❯ zellij     # terminal multiplexer session
 root@hostname /workspace main ❯ y          # Yazi file manager with cwd sync
 root@hostname /workspace main ❯ btop       # resource monitor
@@ -239,6 +242,7 @@ oh-my-openpod/
 │   ├── install-btop.sh     # Install btop
 │   ├── install-lazyvim.sh  # Install the default LazyVim starter config
 │   ├── install-neovim.sh   # Install Neovim
+│   ├── install-python-dev-tools.sh # Install pyright[nodejs] and ruff
 │   ├── update-vendor-assets.sh # Refresh vendored release assets, plugin snapshots, and OpenCode plugin packages
 │   ├── install-yazi.sh     # Install Yazi
 │   └── install-zellij.sh   # Install Zellij
@@ -246,6 +250,8 @@ oh-my-openpod/
 │   └── vendor-assets.md    # Vendored asset sources and maintenance notes
 ├── .env.example            # Environment variable template
 ├── config/
+│   ├── nvim/
+│   │   └── lua/plugins/python.lua # openpod-managed LazyVim Python overlay
 │   ├── .zshrc              # Zsh config
 │   ├── .p10k.zsh           # Powerlevel10k config
 │   ├── .zsh_plugins.txt    # Vendored plugin inventory

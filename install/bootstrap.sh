@@ -203,17 +203,27 @@ export OPENPOD_NVM_CONFIG_DIR="${xdg_config_home}/nvim"
 export OPENPOD_NVM_DATA_DIR="${xdg_data_home}/nvim"
 export OPENPOD_NVM_STATE_DIR="${xdg_state_home}/nvim"
 export OPENPOD_NVM_CACHE_DIR="${xdg_cache_home}/nvim"
+export OPENPOD_NVM_OVERLAY_DIR="${repo_root}/config/nvim"
+export OPENPOD_PYRIGHT_VERSION="1.1.408"
+export OPENPOD_RUFF_VERSION="0.15.9"
+export OPENPOD_UV_TOOL_DIR="${prefix}/opt/uv-tools"
 
 bash "${repo_root}/build/install-btop.sh"
 bash "${repo_root}/build/install-antidote.sh"
 bash "${repo_root}/build/install-zellij.sh"
 bash "${repo_root}/build/install-yazi.sh"
 bash "${repo_root}/build/install-neovim.sh"
-bash "${repo_root}/build/install-lazyvim.sh"
 
 if command -v fdfind >/dev/null 2>&1 && [[ ! -e "${bin_dir}/fd" ]]; then
   ln -sfn "$(command -v fdfind)" "${bin_dir}/fd"
 fi
+
+if [[ ! -x "${bin_dir}/uv" ]]; then
+  curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="${bin_dir}" UV_NO_MODIFY_PATH=1 sh
+fi
+
+bash "${repo_root}/build/install-python-dev-tools.sh"
+bash "${repo_root}/build/install-lazyvim.sh"
 
 missing_lazyvim_deps=()
 for cmd in rg fd unzip make gcc; do
@@ -221,10 +231,6 @@ for cmd in rg fd unzip make gcc; do
     missing_lazyvim_deps+=("${cmd}")
   fi
 done
-
-if [[ ! -x "${bin_dir}/uv" ]]; then
-  curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="${bin_dir}" UV_NO_MODIFY_PATH=1 sh
-fi
 
 need_opencode_install=0
 if [[ ! -x "${bin_dir}/opencode" ]]; then
