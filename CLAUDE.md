@@ -68,7 +68,7 @@ Release flow details live in `DEVELOPMENT.md`.
 
 ### 2. Pod-local compose files are the local runtime contract
 
-Each `docker/<flavor>/docker-compose.yaml` file defines the canonical local workflow for that flavor and embeds the `devpod` build service needed to resolve its shared base image locally. Compose renders image tags through `${IMAGE_VERSION:-local}` and does not read `VERSION` automatically, so release engineers should export `IMAGE_VERSION="$(cat VERSION)"` (or otherwise inject that value) when they want the local tags to match the centralized version. The repository-root `VERSION` file remains the authoritative version source while the compose files simply consume whatever `IMAGE_VERSION` is supplied, so they should not be treated as an independent release authority.
+Each `docker/<flavor>/docker-compose.yaml` file defines the canonical local workflow for that flavor and embeds the `devpod` build service needed to resolve its shared base image locally. Compose renders image tags through `${IMAGE_VERSION:-local}` and does not read `VERSION` automatically, so release engineers should export `IMAGE_VERSION="$(tr -d '\r' < VERSION)"` (or otherwise inject that value) when they want the local tags to match the centralized version. The repository-root `VERSION` file remains the authoritative version source while the compose files simply consume whatever `IMAGE_VERSION` is supplied, so they should not be treated as an independent release authority.
 
 ### 3. Vendoring is split by ownership
 

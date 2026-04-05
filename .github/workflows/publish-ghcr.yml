@@ -46,7 +46,7 @@ jobs:
             fi
           done
 
-          if ! [[ "$version" =~ ^[[:digit:]]+(\.[[:digit:]]+)+([-.]dev[[:digit:]]*)?$ ]]; then
+          if ! [[ "$version" =~ ^[[:digit:]]+(\.[[:digit:]]+)+(\.dev[[:digit:]]+)?$ ]]; then
             echo "VERSION file contains an unexpected value: ${version}" >&2
             exit 1
           fi
@@ -58,7 +58,7 @@ jobs:
           codexpod_image_name="ghcr.io/${owner}/oh-my-codexpod"
 
           publish="true"
-          if [[ "$version" =~ [-.]dev[0-9]*$ ]]; then
+          if [[ "$version" =~ \.dev[0-9]+$ ]]; then
             publish="false"
           fi
 
@@ -72,7 +72,7 @@ jobs:
       - name: Skip dev image versions
         if: steps.version.outputs.publish != 'true'
         run: |
-          echo "Pod-local compose files use ${VERSION}; skipping GHCR publish."
+          echo "VERSION is ${VERSION}; skipping GHCR publish for this development tag."
         env:
           VERSION: ${{ steps.version.outputs.version }}
 
