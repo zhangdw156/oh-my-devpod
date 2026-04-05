@@ -73,11 +73,9 @@ docker compose -f docker/claudepod/docker-compose.yaml build devpod claudepod
 docker compose -f docker/codexpod/docker-compose.yaml build devpod codexpod
 ```
 
-After building, the resulting image names are:
+After building, the resulting images are tagged via `${IMAGE_VERSION:-local}`, e.g. `oh-my-openpod:${IMAGE_VERSION:-local}`. To make the local compose-built tags match the value stored in the repository-root `VERSION` file, prefix the compose commands with `IMAGE_VERSION="$(tr -d '\r' < VERSION)"` or export `IMAGE_VERSION` beforehand using the same value; without that, the default tag is `local`.
 
-- `oh-my-openpod:0.4.0.dev5`
-- `oh-my-claudepod:0.4.0.dev5`
-- `oh-my-codexpod:0.4.0.dev5`
+The repository-root `VERSION` file is the shared source of truth for all four image tags; pod-local compose files only consume it through `${IMAGE_VERSION:-local}` and do not persist release version numbers.
 
 ### Run a flavor with compose
 

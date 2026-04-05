@@ -27,39 +27,27 @@ jobs:
         run: |
           set -euo pipefail
 
-          extract_tag() {
-            local compose_file="$1"
-            local image_name="$2"
+          if [[ ! -f VERSION ]]; then
+            echo "VERSION file is missing" >&2
+            exit 1
+          fi
 
-            sed -nE "s/^[[:space:]]*image:[[:space:]]*${image_name}:([^[:space:]]+)[[:space:]]*$/\\1/p" "${compose_file}" | head -n 1
-          }
+          mapfile -t version_lines < <(tr -d '\r' < VERSION)
+          version="${version_lines[0]:-}"
+          if [[ -z "$version" ]]; then
+            echo "VERSION file is empty" >&2
+            exit 1
+          fi
 
-          compose_files=(
-            "docker/openpod/docker-compose.yaml:oh-my-openpod"
-            "docker/claudepod/docker-compose.yaml:oh-my-claudepod"
-            "docker/codexpod/docker-compose.yaml:oh-my-codexpod"
-          )
-
-          tags=()
-          for entry in "${compose_files[@]}"; do
-            compose_file="${entry%%:*}"
-            image_name="${entry##*:}"
-
-            flavor_tag="$(extract_tag "${compose_file}" "${image_name}")"
-            devpod_tag="$(extract_tag "${compose_file}" "oh-my-devpod")"
-
-            if [[ -z "${flavor_tag}" || -z "${devpod_tag}" ]]; then
-              echo "Unable to resolve image tags from ${compose_file}" >&2
+          for ((i = 1; i < ${#version_lines[@]}; i++)); do
+            if [[ -n "${version_lines[i]}" ]]; then
+              echo "VERSION file contains extra non-empty line #$((i + 1)): ${version_lines[i]}" >&2
               exit 1
             fi
-
-            tags+=("${flavor_tag}" "${devpod_tag}")
           done
 
-          version="$(printf '%s\n' "${tags[@]}" | sort -u | head -n 1)"
-          if [[ "$(printf '%s\n' "${tags[@]}" | sort -u | wc -l | tr -d ' ')" != "1" ]]; then
-            echo "Compose image tags are inconsistent across docker/<flavor>/docker-compose.yaml files" >&2
-            printf 'Resolved tags:\n%s\n' "${tags[*]}" >&2
+          if ! [[ "$version" =~ ^[[:digit:]]+(\.[[:digit:]]+)+(\.dev[[:digit:]]+)?$ ]]; then
+            echo "VERSION file contains an unexpected value: ${version}" >&2
             exit 1
           fi
 
@@ -70,7 +58,7 @@ jobs:
           codexpod_image_name="ghcr.io/${owner}/oh-my-codexpod"
 
           publish="true"
-          if [[ "$version" == *-dev || "$version" =~ \.dev[0-9]+$ ]]; then
+          if [[ "$version" =~ \.dev[0-9]+$ ]]; then
             publish="false"
           fi
 
@@ -84,7 +72,7 @@ jobs:
       - name: Skip dev image versions
         if: steps.version.outputs.publish != 'true'
         run: |
-          echo "Pod-local compose files use ${VERSION}; skipping GHCR publish."
+          echo "VERSION is ${VERSION}; skipping GHCR publish for this development tag."
         env:
           VERSION: ${{ steps.version.outputs.version }}
 

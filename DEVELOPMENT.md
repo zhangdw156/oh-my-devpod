@@ -63,14 +63,9 @@ oh-my-openpod/
 
 ## 版本管理
 
-版本号维护在 `docker/<flavor>/docker-compose.yaml` 的 `image` 字段中，三个 pod 的 compose 文件必须保持同一版本：
+仓库根目录 `VERSION` 文件是四个镜像唯一的版本真源，格式为 `x.y.z.devN`（开发）或 `x.y.z`（正式发布）。
 
-```yaml
-image: oh-my-devpod:x.y.z.dev0
-image: oh-my-openpod:x.y.z.dev0
-image: oh-my-claudepod:x.y.z.dev0
-image: oh-my-codexpod:x.y.z.dev0
-```
+`docker/<flavor>/docker-compose.yaml` 通过 `${IMAGE_VERSION:-local}` 消费这个版本。compose 本身不会自动读取 `VERSION`，因此在需要让本地 compose 构建的标签与中心版本一致时，应使用 `IMAGE_VERSION="$(tr -d '\r' < VERSION)" docker compose ...` 这种前缀写法，或显式 `export IMAGE_VERSION="$(tr -d '\r' < VERSION)"` 后再运行 compose；未设置时 `IMAGE_VERSION` 默认为 `local`。
 
 | 版本格式 | 含义 |
 |----------|------|
@@ -145,11 +140,8 @@ git checkout main
 git pull --ff-only origin main
 git checkout -b release/x.y.z
 
-# 2. 同步修改三个 pod compose 文件中的 image tag（去掉开发后缀）
-#    docker/openpod/docker-compose.yaml
-#    docker/claudepod/docker-compose.yaml
-#    docker/codexpod/docker-compose.yaml
-git add docker/openpod/docker-compose.yaml docker/claudepod/docker-compose.yaml docker/codexpod/docker-compose.yaml
+# 2. 同步修改根目录 `VERSION` 将版本号改为正式版本（去掉开发后缀）
+git add VERSION
 git commit -m "release: cut x.y.z"
 git push -u origin release/x.y.z
 
@@ -166,8 +158,8 @@ git push origin vx.y.z
 
 # 5. 开始下一个版本的开发
 git checkout -b chore/bump-version-to-next-dev
-#    三个 pod compose 文件中的 image tag 一起改到 <next-version>.dev0
-git add docker/openpod/docker-compose.yaml docker/claudepod/docker-compose.yaml docker/codexpod/docker-compose.yaml
+#    只需把根目录 `VERSION` 更新到 <next-version>.dev0；如需让 pod-local compose 使用相同标签，需显式注入 IMAGE_VERSION
+git add VERSION
 git commit -m "chore: bump version to <next-version>.dev0"
 git push -u origin chore/bump-version-to-next-dev
 

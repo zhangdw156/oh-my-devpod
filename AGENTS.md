@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-`Dockerfile.devpod` defines the shared base image, and each `docker/<flavor>/` directory owns that flavor's `Dockerfile` plus `docker-compose.yaml`. `runtime/` contains harness-specific launchers, config, installers, skills, and any flavor-owned vendored assets; `runtime/openpod/vendor/opencode/` is the OpenCode-specific asset root. `build/` contains shared installer and asset-refresh scripts. `install/bootstrap.sh` is the shared bootstrap entrypoint with `--flavor`. Shared vendored assets live in `vendor/`, while user docs are in `README.md` and `README_EN.md`; maintainer rules live in `DEVELOPMENT.md` and `docs/vendor-assets.md`.
+`Dockerfile.devpod` defines the shared base image, each `docker/<flavor>/` directory owns that flavor's `Dockerfile` plus `docker-compose.yaml`, and the repository-root `VERSION` file is the shared source of truth for all four image tags. `runtime/` contains harness-specific launchers, config, installers, skills, and any flavor-owned vendored assets; `runtime/openpod/vendor/opencode/` is the OpenCode-specific asset root. `build/` contains shared installer and asset-refresh scripts. `install/bootstrap.sh` is the shared bootstrap entrypoint with `--flavor`. Shared vendored assets live in `vendor/`, while user docs are in `README.md` and `README_EN.md`; maintainer rules live in `DEVELOPMENT.md` and `docs/vendor-assets.md`.
 
 ## Build, Test, and Development Commands
 `docker compose -f docker/openpod/docker-compose.yaml build devpod openpod` builds the OpenCode flavor.  
@@ -18,7 +18,7 @@ This repository is Bash- and YAML-heavy. Use `#!/usr/bin/env bash`, keep `set -e
 There is no first-party unit test suite at the root; validation is mostly smoke-based. After behavior changes, run `bash tests/run.sh`, then rebuild and smoke-test affected flavors. When vendored versions change, review `vendor/manifest.lock.json`, `docs/vendor-assets.md`, `runtime/openpod/vendor/opencode/`, and any synchronized flavor skill trees under `runtime/`.
 
 ## Commit & Pull Request Guidelines
-Follow the existing Conventional Commit style: `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, and `release:`. Keep subjects imperative and focused; issue refs such as `(#27)` are common. PRs should explain the user-visible effect, list verification commands, link the related issue, and call out any version or tag changes in `docker/<flavor>/docker-compose.yaml`. Include screenshots only when terminal UX, docs examples, or visible config behavior changes.
+Follow the existing Conventional Commit style: `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, and `release:`. Keep subjects imperative and focused; issue refs such as `(#27)` are common. PRs should explain the user-visible effect, list verification commands, link the related issue, and call out any changes to the repository-root `VERSION` file that affect image versions or tags. Include screenshots only when terminal UX, docs examples, or visible config behavior changes.
 
 ## Security & Configuration Tips
 Never commit API keys or populated harness config. Keep flavor-specific secrets and auth state outside the repository, for example in your OpenCode config, `~/.claude`, or `~/.codex`, depending on the selected harness.

@@ -52,11 +52,9 @@ bash runtime/openpod/vendor/opencode/packages/superpowers/tests/opencode/run-tes
 
 ## Release and versioning
 
-- The pod-local compose files under `docker/<flavor>/docker-compose.yaml` are the source of truth for image versions.
-- Development versions use `x.y.z.devN`.
-- Release versions use `x.y.z`.
-- `.github/workflows/publish-ghcr.yml` reads the pod-local compose files and requires them to agree on the version to publish.
-- Pushes to `main` only publish to GHCR when the version is not a dev version.
+- The single source of truth for image and release versions is the root `VERSION` file.
+- Pod-local compose files stay the local runtime contract for each flavor and only consume `${IMAGE_VERSION:-local}`; they do not read `VERSION` automatically.
+- `.github/workflows/publish-ghcr.yml` reads `VERSION` directly.
 
 Release flow details live in `DEVELOPMENT.md`.
 
@@ -70,7 +68,7 @@ Release flow details live in `DEVELOPMENT.md`.
 
 ### 2. Pod-local compose files are the local runtime contract
 
-Each `docker/<flavor>/docker-compose.yaml` file defines the canonical local workflow for that flavor and embeds the `devpod` build service needed to resolve its shared base image locally. Use those files as the source of truth for image names, local smoke commands, and release tags.
+Each `docker/<flavor>/docker-compose.yaml` file defines the canonical local workflow for that flavor and embeds the `devpod` build service needed to resolve its shared base image locally. Compose renders image tags through `${IMAGE_VERSION:-local}` and does not read `VERSION` automatically, so release engineers should export `IMAGE_VERSION="$(tr -d '\r' < VERSION)"` (or otherwise inject that value) when they want the local tags to match the centralized version. The repository-root `VERSION` file remains the authoritative version source while the compose files simply consume whatever `IMAGE_VERSION` is supplied, so they should not be treated as an independent release authority.
 
 ### 3. Vendoring is split by ownership
 
