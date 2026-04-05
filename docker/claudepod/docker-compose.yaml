@@ -4,7 +4,7 @@ services:
       context: ../..
       dockerfile: Dockerfile.devpod
       network: host
-    image: oh-my-devpod:0.4.0.dev5
+    image: oh-my-devpod:${IMAGE_VERSION:-local}
   claudepod:
     build:
       context: ../..
@@ -14,7 +14,7 @@ services:
         devpod: service:devpod
       args:
         DEVPOD_BASE_IMAGE: devpod
-    image: oh-my-claudepod:0.4.0.dev5
+    image: oh-my-claudepod:${IMAGE_VERSION:-local}
     container_name: claudepod
     stdin_open: true
     tty: true

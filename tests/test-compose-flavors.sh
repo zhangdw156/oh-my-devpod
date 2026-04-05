@@ -8,8 +8,12 @@ fail() {
   exit 1
 }
 
+[[ -f "${repo_root}/VERSION" ]] || fail "missing VERSION file"
 [[ ! -f "${repo_root}/Dockerfile" ]] || fail "root Dockerfile should not exist"
 [[ ! -f "${repo_root}/docker-compose.yml" ]] || fail "root docker-compose.yml should not exist"
+
+version="$(tr -d '\n' < "${repo_root}/VERSION")"
+[[ -n "${version}" ]] || fail "VERSION file should not be empty"
 
 check_compose() {
   local flavor="$1"
@@ -17,9 +21,16 @@ check_compose() {
   local tmp_out
 
   [[ -f "${compose_file}" ]] || fail "missing compose file: ${compose_file}"
+  rg -q -F 'image: oh-my-devpod:${IMAGE_VERSION:-local}' "${compose_file}" \
+    || fail "compose should use IMAGE_VERSION for devpod in ${compose_file}"
+  rg -q -F "image: oh-my-${flavor}:\${IMAGE_VERSION:-local}" "${compose_file}" \
+    || fail "compose should use IMAGE_VERSION for ${flavor} in ${compose_file}"
+  if rg -q "image: oh-my-(devpod|${flavor}):${version}" "${compose_file}"; then
+    fail "compose should not hard-code ${version} in ${compose_file}"
+  fi
 
   tmp_out="$(mktemp)"
-  docker compose -f "${compose_file}" config > "${tmp_out}"
+  IMAGE_VERSION=test-version docker compose -f "${compose_file}" config > "${tmp_out}"
 
   for service in devpod "${flavor}"; do
     if ! rg -q "^  ${service}:" "${tmp_out}"; then
@@ -34,6 +45,13 @@ check_compose() {
       fail "missing compose dockerfile path ${dockerfile} in ${compose_file}"
     fi
   done
+
+  if ! rg -q -F 'image: oh-my-devpod:test-version' "${tmp_out}"; then
+    fail "compose should render IMAGE_VERSION for devpod in ${compose_file}"
+  fi
+  if ! rg -q -F "image: oh-my-${flavor}:test-version" "${tmp_out}"; then
+    fail "compose should render IMAGE_VERSION for ${flavor} in ${compose_file}"
+  fi
 
   if rg -q "^\\s+env_file:" "${tmp_out}"; then
     fail "compose should not define env_file entries in ${compose_file}"

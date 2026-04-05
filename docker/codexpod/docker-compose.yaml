@@ -4,7 +4,7 @@ services:
       context: ../..
       dockerfile: Dockerfile.devpod
       network: host
-    image: oh-my-devpod:0.4.0.dev5
+    image: oh-my-devpod:${IMAGE_VERSION:-local}
   codexpod:
     build:
       context: ../..
@@ -14,7 +14,7 @@ services:
         devpod: service:devpod
       args:
         DEVPOD_BASE_IMAGE: devpod
-    image: oh-my-codexpod:0.4.0.dev5
+    image: oh-my-codexpod:${IMAGE_VERSION:-local}
     container_name: codexpod
     stdin_open: true
     tty: true
