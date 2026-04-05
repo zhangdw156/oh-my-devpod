@@ -78,6 +78,7 @@ After building, the resulting image names are:
 - `oh-my-openpod:0.4.0.dev5`
 - `oh-my-claudepod:0.4.0.dev5`
 - `oh-my-codexpod:0.4.0.dev5`
+- The repository-root `VERSION` file is the shared source of truth for all four image tags; pod-local compose files only consume it
 
 ### Run a flavor with compose
 

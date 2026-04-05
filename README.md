@@ -78,6 +78,7 @@ docker compose -f docker/codexpod/docker-compose.yaml build devpod codexpod
 - `oh-my-openpod:0.4.0.dev5`
 - `oh-my-claudepod:0.4.0.dev5`
 - `oh-my-codexpod:0.4.0.dev5`
+- 仓库根目录 `VERSION` 是四个镜像共享的版本真源；pod-local compose 仅消费它，不再保存发布版本号
 
 ### 通过 compose 运行某个 flavor
 

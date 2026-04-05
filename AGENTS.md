@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-`Dockerfile.devpod` defines the shared base image, and each `docker/<flavor>/` directory owns that flavor's `Dockerfile` plus `docker-compose.yaml`. `runtime/` contains harness-specific launchers, config, installers, skills, and any flavor-owned vendored assets; `runtime/openpod/vendor/opencode/` is the OpenCode-specific asset root. `build/` contains shared installer and asset-refresh scripts. `install/bootstrap.sh` is the shared bootstrap entrypoint with `--flavor`. Shared vendored assets live in `vendor/`, while user docs are in `README.md` and `README_EN.md`; maintainer rules live in `DEVELOPMENT.md` and `docs/vendor-assets.md`.
+`Dockerfile.devpod` defines the shared base image, each `docker/<flavor>/` directory owns that flavor's `Dockerfile` plus `docker-compose.yaml`, and the repository-root `VERSION` file is the shared source of truth for all four image tags. `runtime/` contains harness-specific launchers, config, installers, skills, and any flavor-owned vendored assets; `runtime/openpod/vendor/opencode/` is the OpenCode-specific asset root. `build/` contains shared installer and asset-refresh scripts. `install/bootstrap.sh` is the shared bootstrap entrypoint with `--flavor`. Shared vendored assets live in `vendor/`, while user docs are in `README.md` and `README_EN.md`; maintainer rules live in `DEVELOPMENT.md` and `docs/vendor-assets.md`.
 
 ## Build, Test, and Development Commands
 `docker compose -f docker/openpod/docker-compose.yaml build devpod openpod` builds the OpenCode flavor.  

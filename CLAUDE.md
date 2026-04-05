@@ -52,11 +52,9 @@ bash runtime/openpod/vendor/opencode/packages/superpowers/tests/opencode/run-tes
 
 ## Release and versioning
 
-- The pod-local compose files under `docker/<flavor>/docker-compose.yaml` are the source of truth for image versions.
-- Development versions use `x.y.z.devN`.
-- Release versions use `x.y.z`.
-- `.github/workflows/publish-ghcr.yml` reads the pod-local compose files and requires them to agree on the version to publish.
-- Pushes to `main` only publish to GHCR when the version is not a dev version.
+- The single source of truth for image versions is the root `VERSION` file.
+- Pod-local compose files consume `${IMAGE_VERSION:-local}` and are not release metadata authorities.
+- `.github/workflows/publish-ghcr.yml` reads `VERSION` directly.
 
 Release flow details live in `DEVELOPMENT.md`.
 
