@@ -27,39 +27,9 @@ jobs:
         run: |
           set -euo pipefail
 
-          extract_tag() {
-            local compose_file="$1"
-            local image_name="$2"
-
-            sed -nE "s/^[[:space:]]*image:[[:space:]]*${image_name}:([^[:space:]]+)[[:space:]]*$/\\1/p" "${compose_file}" | head -n 1
-          }
-
-          compose_files=(
-            "docker/openpod/docker-compose.yaml:oh-my-openpod"
-            "docker/claudepod/docker-compose.yaml:oh-my-claudepod"
-            "docker/codexpod/docker-compose.yaml:oh-my-codexpod"
-          )
-
-          tags=()
-          for entry in "${compose_files[@]}"; do
-            compose_file="${entry%%:*}"
-            image_name="${entry##*:}"
-
-            flavor_tag="$(extract_tag "${compose_file}" "${image_name}")"
-            devpod_tag="$(extract_tag "${compose_file}" "oh-my-devpod")"
-
-            if [[ -z "${flavor_tag}" || -z "${devpod_tag}" ]]; then
-              echo "Unable to resolve image tags from ${compose_file}" >&2
-              exit 1
-            fi
-
-            tags+=("${flavor_tag}" "${devpod_tag}")
-          done
-
-          version="$(printf '%s\n' "${tags[@]}" | sort -u | head -n 1)"
-          if [[ "$(printf '%s\n' "${tags[@]}" | sort -u | wc -l | tr -d ' ')" != "1" ]]; then
-            echo "Compose image tags are inconsistent across docker/<flavor>/docker-compose.yaml files" >&2
-            printf 'Resolved tags:\n%s\n' "${tags[*]}" >&2
+          version="$(tr -d '\n' < VERSION)"
+          if [[ -z "$version" ]]; then
+            echo "VERSION file is empty" >&2
             exit 1
           fi
 
