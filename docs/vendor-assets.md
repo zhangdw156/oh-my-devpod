@@ -99,7 +99,9 @@ After running it:
 5. Rebuild the base and flavors:
 
 ```bash
-docker compose build devpod openpod claudepod codexpod
+docker compose -f docker/openpod/docker-compose.yaml build devpod openpod
+docker compose -f docker/claudepod/docker-compose.yaml build devpod claudepod
+docker compose -f docker/codexpod/docker-compose.yaml build devpod codexpod
 ```
 
 ## Notes

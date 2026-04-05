@@ -47,7 +47,7 @@
 - Harness: OpenCode
 - 镜像名：`oh-my-openpod`
 - bootstrap 前缀默认值：`~/.local/openpod`
-- 认证/配置：沿用 OpenCode 模型，可配合 `.env` 和项目根 `opencode.json`
+- 认证/配置：沿用 OpenCode 模型；用户自行维护项目根 `opencode.json` 或自己的 OpenCode 配置目录
 
 ### `claudepod`
 
@@ -65,21 +65,39 @@
 
 ## Docker 用法
 
-### 构建基座与所有 flavor
+### 分别构建 3 个 pod 镜像
 
 ```bash
-docker compose build devpod openpod claudepod codexpod
+docker compose -f docker/openpod/docker-compose.yaml build devpod openpod
+docker compose -f docker/claudepod/docker-compose.yaml build devpod claudepod
+docker compose -f docker/codexpod/docker-compose.yaml build devpod codexpod
 ```
 
-### 只构建某个 flavor
+构建完成后，对应镜像名分别是：
+
+- `oh-my-openpod:0.4.0.dev5`
+- `oh-my-claudepod:0.4.0.dev5`
+- `oh-my-codexpod:0.4.0.dev5`
+
+### 通过 compose 运行某个 flavor
 
 ```bash
-docker compose build devpod openpod
-docker compose build devpod claudepod
-docker compose build devpod codexpod
+docker compose -f docker/openpod/docker-compose.yaml run --rm openpod -lc 'opencode --version'
+docker compose -f docker/claudepod/docker-compose.yaml run --rm claudepod -lc 'claude --version && claude auth status'
+docker compose -f docker/codexpod/docker-compose.yaml run --rm codexpod -lc 'codex --help | sed -n "1,20p"'
 ```
 
-也可以直接指定 flavor Dockerfile：
+进入交互 shell：
+
+```bash
+docker compose -f docker/openpod/docker-compose.yaml run --rm -it openpod
+docker compose -f docker/claudepod/docker-compose.yaml run --rm -it claudepod
+docker compose -f docker/codexpod/docker-compose.yaml run --rm -it codexpod
+```
+
+### 直接构造镜像
+
+如果你不想走 compose，也可以直接分别构造 3 个 pod 镜像：
 
 ```bash
 docker build -f Dockerfile.devpod -t oh-my-devpod:local .
@@ -88,20 +106,22 @@ docker build -f docker/claudepod/Dockerfile --build-arg DEVPOD_BASE_IMAGE=oh-my-
 docker build -f docker/codexpod/Dockerfile --build-arg DEVPOD_BASE_IMAGE=oh-my-devpod:local -t oh-my-codexpod:local .
 ```
 
-### 运行某个 flavor
+### 直接使用镜像
+
+如果镜像已经构建好，也可以不经过 compose，直接运行镜像：
 
 ```bash
-docker compose run --rm openpod -lc 'opencode --version'
-docker compose run --rm claudepod -lc 'claude --version && claude auth status'
-docker compose run --rm codexpod -lc 'codex --help | sed -n "1,20p"'
+docker run --rm -it --network host -v "$PWD:/workspace" -w /workspace oh-my-openpod:local
+docker run --rm -it --network host -v "$PWD:/workspace" -w /workspace oh-my-claudepod:local
+docker run --rm -it --network host -v "$PWD:/workspace" -w /workspace oh-my-codexpod:local
 ```
 
-进入交互 shell：
+直接执行主命令示例：
 
 ```bash
-docker compose run --rm -it openpod
-docker compose run --rm -it claudepod
-docker compose run --rm -it codexpod
+docker run --rm --network host -v "$PWD:/workspace" -w /workspace oh-my-openpod:local opencode --version
+docker run --rm --network host -v "$PWD:/workspace" -w /workspace oh-my-claudepod:local claude --version
+docker run --rm --network host -v "$PWD:/workspace" -w /workspace oh-my-codexpod:local codex --help
 ```
 
 ## Bootstrap 用法
@@ -126,8 +146,8 @@ codexpod-shell
 
 `openpod`：
 
-- 仍可使用 `.env`
-- 也可在项目根使用 `opencode.json`
+- 在项目根使用 `opencode.json`
+- 或维护自己的 OpenCode 配置目录
 - 当前 bootstrap 需要宿主机已安装 `node` 和 `npm`
 
 `claudepod`：
@@ -145,13 +165,17 @@ codexpod-shell
 
 ```text
 oh-my-openpod/
-├── Dockerfile                # openpod 兼容构建入口
 ├── Dockerfile.devpod
 ├── docker/
-│   ├── openpod/Dockerfile
-│   ├── claudepod/Dockerfile
-│   └── codexpod/Dockerfile
-├── docker-compose.yml
+│   ├── openpod/
+│   │   ├── Dockerfile
+│   │   └── docker-compose.yaml
+│   ├── claudepod/
+│   │   ├── Dockerfile
+│   │   └── docker-compose.yaml
+│   └── codexpod/
+│       ├── Dockerfile
+│       └── docker-compose.yaml
 ├── runtime/
 │   ├── openpod/
 │   ├── claudepod/
@@ -168,10 +192,9 @@ oh-my-openpod/
 
 ```bash
 bash tests/run.sh
-docker compose build devpod openpod claudepod codexpod
-docker compose run --rm openpod -lc 'opencode --version'
-docker compose run --rm claudepod -lc 'claude --version && claude auth status'
-docker compose run --rm codexpod -lc 'codex --help | sed -n "1,20p"'
+docker compose -f docker/openpod/docker-compose.yaml run --rm openpod -lc 'opencode --version'
+docker compose -f docker/claudepod/docker-compose.yaml run --rm claudepod -lc 'claude --version && claude auth status'
+docker compose -f docker/codexpod/docker-compose.yaml run --rm codexpod -lc 'codex --help | sed -n "1,20p"'
 ```
 
 ## 说明

@@ -2,27 +2,46 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-tmp_out="$(mktemp)"
-trap 'rm -f "${tmp_out}"' EXIT
 
 fail() {
   echo "FAIL: $*" >&2
   exit 1
 }
 
-docker compose -f "${repo_root}/docker-compose.yml" config > "${tmp_out}"
+[[ ! -f "${repo_root}/Dockerfile" ]] || fail "root Dockerfile should not exist"
+[[ ! -f "${repo_root}/docker-compose.yml" ]] || fail "root docker-compose.yml should not exist"
 
-for service in openpod claudepod codexpod; do
-  if ! rg -q "^  ${service}:" "${tmp_out}"; then
-    fail "missing compose service: ${service}"
-  fi
-done
+check_compose() {
+  local flavor="$1"
+  local compose_file="${repo_root}/docker/${flavor}/docker-compose.yaml"
+  local tmp_out
 
-for dockerfile in \
-  "dockerfile: docker/openpod/Dockerfile" \
-  "dockerfile: docker/claudepod/Dockerfile" \
-  "dockerfile: docker/codexpod/Dockerfile"; do
-  if ! rg -q "${dockerfile}" "${tmp_out}"; then
-    fail "missing compose dockerfile path: ${dockerfile}"
+  [[ -f "${compose_file}" ]] || fail "missing compose file: ${compose_file}"
+
+  tmp_out="$(mktemp)"
+  docker compose -f "${compose_file}" config > "${tmp_out}"
+
+  for service in devpod "${flavor}"; do
+    if ! rg -q "^  ${service}:" "${tmp_out}"; then
+      fail "missing compose service ${service} in ${compose_file}"
+    fi
+  done
+
+  for dockerfile in \
+    "dockerfile: Dockerfile.devpod" \
+    "dockerfile: docker/${flavor}/Dockerfile"; do
+    if ! rg -q "${dockerfile}" "${tmp_out}"; then
+      fail "missing compose dockerfile path ${dockerfile} in ${compose_file}"
+    fi
+  done
+
+  if rg -q "^\\s+env_file:" "${tmp_out}"; then
+    fail "compose should not define env_file entries in ${compose_file}"
   fi
+
+  rm -f "${tmp_out}"
+}
+
+for flavor in openpod claudepod codexpod; do
+  check_compose "${flavor}"
 done

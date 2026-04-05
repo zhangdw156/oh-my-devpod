@@ -47,7 +47,7 @@ The flavors differ only in:
 - Harness: OpenCode
 - Image: `oh-my-openpod`
 - Default bootstrap prefix: `~/.local/openpod`
-- Config model: `.env` and project-level `opencode.json`
+- Config model: user-managed project `opencode.json` or user-managed OpenCode config directories
 
 ### `claudepod`
 
@@ -65,21 +65,39 @@ The flavors differ only in:
 
 ## Docker Usage
 
-### Build the base and all flavors
+### Build the three pod images separately
 
 ```bash
-docker compose build devpod openpod claudepod codexpod
+docker compose -f docker/openpod/docker-compose.yaml build devpod openpod
+docker compose -f docker/claudepod/docker-compose.yaml build devpod claudepod
+docker compose -f docker/codexpod/docker-compose.yaml build devpod codexpod
 ```
 
-### Build a single flavor
+After building, the resulting image names are:
+
+- `oh-my-openpod:0.4.0.dev5`
+- `oh-my-claudepod:0.4.0.dev5`
+- `oh-my-codexpod:0.4.0.dev5`
+
+### Run a flavor with compose
 
 ```bash
-docker compose build devpod openpod
-docker compose build devpod claudepod
-docker compose build devpod codexpod
+docker compose -f docker/openpod/docker-compose.yaml run --rm openpod -lc 'opencode --version'
+docker compose -f docker/claudepod/docker-compose.yaml run --rm claudepod -lc 'claude --version && claude auth status'
+docker compose -f docker/codexpod/docker-compose.yaml run --rm codexpod -lc 'codex --help | sed -n "1,20p"'
 ```
 
-You can also target the flavor Dockerfiles directly:
+Interactive shell:
+
+```bash
+docker compose -f docker/openpod/docker-compose.yaml run --rm -it openpod
+docker compose -f docker/claudepod/docker-compose.yaml run --rm -it claudepod
+docker compose -f docker/codexpod/docker-compose.yaml run --rm -it codexpod
+```
+
+### Build images directly
+
+If you do not want to use compose, you can build the three pod images directly:
 
 ```bash
 docker build -f Dockerfile.devpod -t oh-my-devpod:local .
@@ -88,20 +106,22 @@ docker build -f docker/claudepod/Dockerfile --build-arg DEVPOD_BASE_IMAGE=oh-my-
 docker build -f docker/codexpod/Dockerfile --build-arg DEVPOD_BASE_IMAGE=oh-my-devpod:local -t oh-my-codexpod:local .
 ```
 
-### Run a flavor
+### Use the images directly
+
+If the images already exist, you can run them without compose:
 
 ```bash
-docker compose run --rm openpod -lc 'opencode --version'
-docker compose run --rm claudepod -lc 'claude --version && claude auth status'
-docker compose run --rm codexpod -lc 'codex --help | sed -n "1,20p"'
+docker run --rm -it --network host -v "$PWD:/workspace" -w /workspace oh-my-openpod:local
+docker run --rm -it --network host -v "$PWD:/workspace" -w /workspace oh-my-claudepod:local
+docker run --rm -it --network host -v "$PWD:/workspace" -w /workspace oh-my-codexpod:local
 ```
 
-Interactive shell:
+Direct command examples:
 
 ```bash
-docker compose run --rm -it openpod
-docker compose run --rm -it claudepod
-docker compose run --rm -it codexpod
+docker run --rm --network host -v "$PWD:/workspace" -w /workspace oh-my-openpod:local opencode --version
+docker run --rm --network host -v "$PWD:/workspace" -w /workspace oh-my-claudepod:local claude --version
+docker run --rm --network host -v "$PWD:/workspace" -w /workspace oh-my-codexpod:local codex --help
 ```
 
 ## Bootstrap Usage
@@ -126,8 +146,8 @@ codexpod-shell
 
 `openpod`:
 
-- can still use `.env`
-- can also use project-level `opencode.json`
+- can use a project-level `opencode.json`
+- or maintain its own OpenCode config directories
 - bootstrap currently expects `node` and `npm` to already exist on the host
 
 `claudepod`:
@@ -145,13 +165,17 @@ codexpod-shell
 
 ```text
 oh-my-openpod/
-├── Dockerfile                # compatibility build entry for openpod
 ├── Dockerfile.devpod
 ├── docker/
-│   ├── openpod/Dockerfile
-│   ├── claudepod/Dockerfile
-│   └── codexpod/Dockerfile
-├── docker-compose.yml
+│   ├── openpod/
+│   │   ├── Dockerfile
+│   │   └── docker-compose.yaml
+│   ├── claudepod/
+│   │   ├── Dockerfile
+│   │   └── docker-compose.yaml
+│   └── codexpod/
+│       ├── Dockerfile
+│       └── docker-compose.yaml
 ├── runtime/
 │   ├── openpod/
 │   ├── claudepod/
@@ -168,10 +192,9 @@ After development changes, start with:
 
 ```bash
 bash tests/run.sh
-docker compose build devpod openpod claudepod codexpod
-docker compose run --rm openpod -lc 'opencode --version'
-docker compose run --rm claudepod -lc 'claude --version && claude auth status'
-docker compose run --rm codexpod -lc 'codex --help | sed -n "1,20p"'
+docker compose -f docker/openpod/docker-compose.yaml run --rm openpod -lc 'opencode --version'
+docker compose -f docker/claudepod/docker-compose.yaml run --rm claudepod -lc 'claude --version && claude auth status'
+docker compose -f docker/codexpod/docker-compose.yaml run --rm codexpod -lc 'codex --help | sed -n "1,20p"'
 ```
 
 ## Notes

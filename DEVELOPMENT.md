@@ -4,17 +4,17 @@
 
 ```
 oh-my-openpod/
-├── Dockerfile                # openpod 兼容构建入口
 ├── Dockerfile.devpod
 ├── docker/
 │   ├── openpod/
-│   │   └── Dockerfile
+│   │   ├── Dockerfile
+│   │   └── docker-compose.yaml
 │   ├── claudepod/
-│   │   └── Dockerfile
+│   │   ├── Dockerfile
+│   │   └── docker-compose.yaml
 │   └── codexpod/
-│       └── Dockerfile
-├── docker-compose.yml          # 多 flavor 编排配置
-├── .env.example               # openpod flavor 可选环境变量模板
+│       ├── Dockerfile
+│       └── docker-compose.yaml
 ├── .github/
 │   ├── ISSUE_TEMPLATE/
 │   └── workflows/
@@ -63,7 +63,7 @@ oh-my-openpod/
 
 ## 版本管理
 
-版本号仍然维护在 `docker-compose.yml` 的 `image` 字段中，但现在有多个 flavor 镜像：
+版本号维护在 `docker/<flavor>/docker-compose.yaml` 的 `image` 字段中，三个 pod 的 compose 文件必须保持同一版本：
 
 ```yaml
 image: oh-my-devpod:x.y.z.dev0
@@ -124,16 +124,16 @@ image: oh-my-codexpod:x.y.z.dev0
 - 镜像构建时会在 `/root/.config/opencode/plugins/superpowers.js` 创建指向 vendored 包入口的软链接
 - 镜像构建时还会在 `/root/.config/opencode/skills` 创建指向 `/opt/vendor/opencode/skills` 的软链接，避免项目级 `opencode.json` 覆盖掉仓库维护的全局 skills
 - 镜像还会把 `runtime/openpod/config/opencode.json` 复制到 `/root/.config/opencode/config.json`，作为 OpenCode 的全局默认配置
-- `runtime/openpod/config/opencode.json` 只保留镜像级 provider 默认值；不要在其中手动添加 `superpowers/skills`，因为插件会在运行时注册它自己的 bundled skills
+- `runtime/openpod/config/opencode.json` 只保留最小镜像级默认配置；不要在其中手动添加 `superpowers/skills`，因为插件会在运行时注册它自己的 bundled skills
 - bootstrap 模式会把 `runtime/openpod/vendor/opencode/` 复制到 flavor 自己的安装前缀下，再由 `runtime/openpod/install-harness.sh` 完成 OpenCode 接线
 - `build/update-vendor-assets.sh` 会刷新 `runtime/openpod/vendor/opencode/packages/superpowers/`，但不会破坏 `runtime/openpod/vendor/opencode/skills/`
-- `docker-compose.yml` 不再从宿主机挂载全局 OpenCode 配置；项目级自定义应放在挂载到 `/workspace` 的项目根目录 `opencode.json`
+- pod-local compose 文件不从宿主机挂载全局 OpenCode 配置；项目级自定义应放在挂载到 `/workspace` 的项目根目录 `opencode.json`
 
 ### Multi-Flavor 约定
 
 - 共享基础层只放在 `Dockerfile.devpod` 和 `build/` 中
 - flavor 差异只能出现在 `runtime/<flavor>/` 和对应的 `docker/<flavor>/Dockerfile` 中
-- `docker-compose.yml` 必须同时维护 `devpod`、`openpod`、`claudepod`、`codexpod`
+- `docker/<flavor>/docker-compose.yaml` 只为对应 pod 提供本地入口，但必须在同一文件中内嵌 `devpod` 构建 service
 - flavor Dockerfile 通过 `additional_contexts` 复用 `devpod` 基座
 - 新增 harness 时，先创建新的 `runtime/<flavor>/`，不要把逻辑直接写进共享基座
 
@@ -145,9 +145,11 @@ git checkout main
 git pull --ff-only origin main
 git checkout -b release/x.y.z
 
-# 2. 修改 docker-compose.yml 中 image 的 tag（去掉开发后缀）
-#    image: oh-my-openpod:x.y.z
-git add docker-compose.yml
+# 2. 同步修改三个 pod compose 文件中的 image tag（去掉开发后缀）
+#    docker/openpod/docker-compose.yaml
+#    docker/claudepod/docker-compose.yaml
+#    docker/codexpod/docker-compose.yaml
+git add docker/openpod/docker-compose.yaml docker/claudepod/docker-compose.yaml docker/codexpod/docker-compose.yaml
 git commit -m "release: cut x.y.z"
 git push -u origin release/x.y.z
 
@@ -164,8 +166,8 @@ git push origin vx.y.z
 
 # 5. 开始下一个版本的开发
 git checkout -b chore/bump-version-to-next-dev
-#    image: oh-my-openpod:<next-version>.dev0
-git add docker-compose.yml
+#    三个 pod compose 文件中的 image tag 一起改到 <next-version>.dev0
+git add docker/openpod/docker-compose.yaml docker/claudepod/docker-compose.yaml docker/codexpod/docker-compose.yaml
 git commit -m "chore: bump version to <next-version>.dev0"
 git push -u origin chore/bump-version-to-next-dev
 
