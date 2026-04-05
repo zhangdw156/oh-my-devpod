@@ -52,8 +52,8 @@ bash runtime/openpod/vendor/opencode/packages/superpowers/tests/opencode/run-tes
 
 ## Release and versioning
 
-- The single source of truth for image versions is the root `VERSION` file.
-- Pod-local compose files consume `${IMAGE_VERSION:-local}` and are not release metadata authorities.
+- The single source of truth for image and release versions is the root `VERSION` file.
+- Pod-local compose files stay the local runtime contract for each flavor and consume `${IMAGE_VERSION:-local}` from `VERSION`.
 - `.github/workflows/publish-ghcr.yml` reads `VERSION` directly.
 
 Release flow details live in `DEVELOPMENT.md`.

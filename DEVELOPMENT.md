@@ -144,10 +144,7 @@ git checkout main
 git pull --ff-only origin main
 git checkout -b release/x.y.z
 
-# 2. 同步修改三个 pod compose 文件中的 image tag（去掉开发后缀）
-#    docker/openpod/docker-compose.yaml
-#    docker/claudepod/docker-compose.yaml
-#    docker/codexpod/docker-compose.yaml
+# 2. 同步修改根目录 `VERSION` 将版本号改为正式版本（去掉开发后缀）
 git add VERSION
 git commit -m "release: cut x.y.z"
 git push -u origin release/x.y.z
@@ -165,7 +162,7 @@ git push origin vx.y.z
 
 # 5. 开始下一个版本的开发
 git checkout -b chore/bump-version-to-next-dev
-#    三个 pod compose 文件中的 image tag 一起改到 <next-version>.dev0
+#    只需把根目录 `VERSION` 更新到 <next-version>.dev0，pod-local compose 中通过 `${IMAGE_VERSION:-local}` 会自动消费这个值
 git add VERSION
 git commit -m "chore: bump version to <next-version>.dev0"
 git push -u origin chore/bump-version-to-next-dev
