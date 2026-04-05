@@ -11,6 +11,7 @@ fail() {
 [[ -f "${repo_root}/VERSION" ]] || fail "missing VERSION file"
 [[ ! -f "${repo_root}/Dockerfile" ]] || fail "root Dockerfile should not exist"
 [[ ! -f "${repo_root}/docker-compose.yml" ]] || fail "root docker-compose.yml should not exist"
+[[ ! -f "${repo_root}/docker-compose.yaml" ]] || fail "root docker-compose.yaml should not exist"
 
 version="$(tr -d '\n' < "${repo_root}/VERSION")"
 [[ -n "${version}" ]] || fail "VERSION file should not be empty"
@@ -25,7 +26,10 @@ check_compose() {
     || fail "compose should use IMAGE_VERSION for devpod in ${compose_file}"
   rg -q -F "image: oh-my-${flavor}:\${IMAGE_VERSION:-local}" "${compose_file}" \
     || fail "compose should use IMAGE_VERSION for ${flavor} in ${compose_file}"
-  if rg -q "image: oh-my-(devpod|${flavor}):${version}" "${compose_file}"; then
+  if rg -q -F "image: oh-my-devpod:${version}" "${compose_file}"; then
+    fail "compose should not hard-code ${version} in ${compose_file}"
+  fi
+  if rg -q -F "image: oh-my-${flavor}:${version}" "${compose_file}"; then
     fail "compose should not hard-code ${version} in ${compose_file}"
   fi
 
