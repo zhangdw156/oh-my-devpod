@@ -153,6 +153,8 @@ if [[ -z "${cache_home}" ]]; then
 fi
 
 vendor_home="${prefix}/vendor"
+runtime_home="${prefix}/runtime/${flavor_name}"
+runtime_vendor_home="${runtime_home}/vendor"
 shell_dir="${prefix}/shell"
 asset_root="${repo_root}/vendor/releases"
 xdg_config_home="${HOME}/.config"
@@ -168,8 +170,12 @@ if [[ "$mode" == "system" ]]; then
 fi
 
 mkdir -p "${prefix}" "${bin_dir}" "${config_home}" "${data_home}" "${state_home}" "${cache_home}" "${shell_dir}"
-rm -rf "${vendor_home}"
+rm -rf "${vendor_home}" "${runtime_home}"
+mkdir -p "${runtime_home}"
 cp -R "${repo_root}/vendor" "${vendor_home}"
+if [[ -d "${repo_root}/runtime/${flavor_name}/vendor" ]]; then
+  cp -R "${repo_root}/runtime/${flavor_name}/vendor" "${runtime_vendor_home}"
+fi
 
 cat > "${shell_dir}/.zshrc" <<EOF
 # ${flavor_name} bootstrap-managed zsh config
@@ -182,6 +188,8 @@ export OPENPOD_STATE_HOME="${state_home}"
 export OPENPOD_CACHE_HOME="${cache_home}"
 export OPENPOD_REPO_ROOT="${repo_root}"
 export OPENPOD_VENDOR_HOME="${vendor_home}"
+export OPENPOD_RUNTIME_HOME="${runtime_home}"
+export OPENPOD_RUNTIME_VENDOR_HOME="${runtime_vendor_home}"
 export OPENPOD_SHELL_DIR="${shell_dir}"
 export OPENPOD_CLAUDE_REAL_BIN="${bin_dir}/claude-real"
 export OPENPOD_CODEX_REAL_BIN="${bin_dir}/codex-real"
@@ -222,6 +230,8 @@ export OPENPOD_STATE_HOME="${state_home}"
 export OPENPOD_CACHE_HOME="${cache_home}"
 export OPENPOD_REPO_ROOT="${repo_root}"
 export OPENPOD_VENDOR_HOME="${vendor_home}"
+export OPENPOD_RUNTIME_HOME="${runtime_home}"
+export OPENPOD_RUNTIME_VENDOR_HOME="${runtime_vendor_home}"
 export OPENPOD_SHELL_DIR="${shell_dir}"
 export OPENPOD_CLAUDE_REAL_BIN="${bin_dir}/claude-real"
 export OPENPOD_CODEX_REAL_BIN="${bin_dir}/codex-real"
@@ -250,9 +260,12 @@ export OPENPOD_NVM_CACHE_DIR="${xdg_cache_home}/nvim"
 export OPENPOD_NVM_OVERLAY_DIR="${repo_root}/config/nvim"
 export OPENPOD_PYRIGHT_VERSION="1.1.408"
 export OPENPOD_RUFF_VERSION="0.15.9"
+export OPENPOD_UV_BIN="${bin_dir}/uv"
 export OPENPOD_UV_TOOL_DIR="${prefix}/opt/uv-tools"
 export OPENPOD_REPO_ROOT="${repo_root}"
 export OPENPOD_VENDOR_HOME="${vendor_home}"
+export OPENPOD_RUNTIME_HOME="${runtime_home}"
+export OPENPOD_RUNTIME_VENDOR_HOME="${runtime_vendor_home}"
 export OPENPOD_CONFIG_HOME="${config_home}"
 export OPENPOD_PREFIX="${prefix}"
 export OPENPOD_SHELL_DIR="${shell_dir}"

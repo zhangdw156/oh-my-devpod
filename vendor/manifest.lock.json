@@ -93,16 +93,16 @@
       "superpowers": {
         "repo": "obra/superpowers",
         "version": "v5.0.7",
-        "local_path": "vendor/opencode/packages/superpowers",
+        "local_path": "runtime/openpod/vendor/opencode/packages/superpowers",
         "entrypoint": ".opencode/plugins/superpowers.js",
         "bundled_skills_path": "skills",
         "source_url": "https://codeload.github.com/obra/superpowers/tar.gz/refs/tags/v5.0.7",
-        "notes": "Package root layout is preserved so the vendored plugin can resolve ../../skills relative to its entrypoint."
+        "notes": "Package root layout is preserved inside the openpod runtime tree so the vendored plugin can resolve ../../skills relative to its entrypoint."
       }
     },
     "global_skills": {
-      "local_path": "vendor/opencode/skills",
-      "notes": "Repository-maintained OpenCode global skills live here and are kept outside the destructive refresh logic in build/update-vendor-assets.sh."
+      "local_path": "runtime/openpod/vendor/opencode/skills",
+      "notes": "Repository-maintained OpenCode global skills live in the openpod runtime tree and stay outside the destructive package refresh logic in build/update-vendor-assets.sh."
     }
   },
   "nvim_configs": {
@@ -154,8 +154,8 @@
     },
     "openpod": {
       "dockerfile": "Dockerfile.openpod",
-      "skills_source": "vendor/opencode/skills",
-      "notes": "OpenCode flavor reuses the vendored OpenCode plugin package and global skills layout."
+      "skills_source": "runtime/openpod/vendor/opencode/skills",
+      "notes": "OpenCode flavor owns the vendored OpenCode plugin package and global skills layout under runtime/openpod/."
     },
     "claudepod": {
       "dockerfile": "Dockerfile.claudepod",

@@ -4,14 +4,20 @@ set -euo pipefail
 repo_root="${OPENPOD_REPO_ROOT:?missing OPENPOD_REPO_ROOT}"
 bin_dir="${OPENPOD_BIN_DIR:?missing OPENPOD_BIN_DIR}"
 config_home="${OPENPOD_CONFIG_HOME:?missing OPENPOD_CONFIG_HOME}"
-vendor_home="${OPENPOD_VENDOR_HOME:?missing OPENPOD_VENDOR_HOME}"
+runtime_vendor_home="${OPENPOD_RUNTIME_VENDOR_HOME:?missing OPENPOD_RUNTIME_VENDOR_HOME}"
 prefix="${OPENPOD_PREFIX:?missing OPENPOD_PREFIX}"
 shell_dir="${OPENPOD_SHELL_DIR:?missing OPENPOD_SHELL_DIR}"
+openpod_vendor_home="${runtime_vendor_home}/opencode"
+
+if [[ ! -d "${openpod_vendor_home}" ]]; then
+  echo "missing openpod runtime vendor at ${openpod_vendor_home}" >&2
+  exit 1
+fi
 
 mkdir -p "${config_home}/plugins"
 cp "${repo_root}/runtime/openpod/config/opencode.json" "${config_home}/config.json"
-ln -sfn "${vendor_home}/opencode/packages/superpowers/.opencode/plugins/superpowers.js" "${config_home}/plugins/superpowers.js"
-ln -sfn "${vendor_home}/opencode/skills" "${config_home}/skills"
+ln -sfn "${openpod_vendor_home}/packages/superpowers/.opencode/plugins/superpowers.js" "${config_home}/plugins/superpowers.js"
+ln -sfn "${openpod_vendor_home}/skills" "${config_home}/skills"
 
 need_opencode_install=0
 if [[ ! -x "${bin_dir}/opencode" ]]; then

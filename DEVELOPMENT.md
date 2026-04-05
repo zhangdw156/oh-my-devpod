@@ -29,6 +29,11 @@ oh-my-openpod/
 │   └── vendor-assets.md
 ├── runtime/
 │   ├── openpod/
+│   │   ├── bin/
+│   │   ├── config/
+│   │   │   └── opencode.json   # openpod flavor 的 OpenCode 默认配置
+│   │   └── vendor/
+│   │       └── opencode/       # openpod flavor 独占的 OpenCode vendored 资产
 │   ├── claudepod/
 │   └── codexpod/
 ├── tests/
@@ -43,16 +48,11 @@ oh-my-openpod/
 │   │   └── lua/plugins/python.lua
 │   ├── .zshrc
 │   ├── .p10k.zsh
-│   ├── .zsh_plugins.txt
-│   └── opencode.json          # 镜像内置的 OpenCode 全局默认配置
+│   └── .zsh_plugins.txt
 └── vendor/
     ├── manifest.lock.json
     ├── nvim/
     │   └── lazyvim-starter/
-    ├── opencode/
-    │   ├── packages/
-    │   │   └── superpowers/
-    │   └── skills/
     ├── releases/
     └── zsh/
 ```
@@ -94,11 +94,11 @@ image: oh-my-codexpod:x.y.z.dev0
 - 这些安装脚本同时也是 bootstrap 模式的基础构件；新增脚本时优先保持可通过环境变量改写安装前缀与目标路径
 - `build/update-vendor-assets.sh` 用于刷新共享 release 包、LazyVim starter 快照、Zsh 插件快照，并同步 flavor 目录下复用的 skills
 - `config/` 目录只存放共享配置，例如 shell 配置和 `nvim` overlay
-- `runtime/` 目录按 flavor 拆分 harness 相关安装脚本、launcher、config 和 skills
+- `runtime/` 目录按 flavor 拆分 harness 相关安装脚本、launcher、config、skills 和 flavor 自己拥有的 vendored 资产
 - `vendor/releases/` 存放构建脚本使用的固定 release 包，`vendor/nvim/` 存放默认 Neovim 配置快照，`vendor/zsh/` 存放默认 shell 使用的插件源码快照
 - `config/nvim/` 存放仓库直接维护的 LazyVim overlay；用于在不修改 vendored starter 快照的前提下追加 openpod 默认行为
-- `vendor/opencode/packages/` 存放需要保留原始包结构的 OpenCode 插件包快照
-- `vendor/opencode/skills/` 预留给仓库直接维护的 OpenCode 全局 skills
+- `runtime/openpod/vendor/opencode/packages/` 存放需要保留原始包结构的 OpenCode 插件包快照
+- `runtime/openpod/vendor/opencode/skills/` 预留给仓库直接维护的 OpenCode 全局 skills
 - `tests/` 目录存放仓库维护的 shell 级回归测试；优先覆盖 flavor 编排、bootstrap 参数、安装脚本行为和关键接线关系
 - `vendor/manifest.lock.json` 和 `docs/vendor-assets.md` 一起维护本地资产的来源、版本、校验和与更新方式
 - 默认本地 `docker build` 不再依赖 GitHub release、Zsh 插件仓库或 OpenCode 插件仓库的运行时拉取，但仍需要访问基础镜像来源，例如 Docker Hub 和 GHCR
@@ -115,12 +115,14 @@ image: oh-my-codexpod:x.y.z.dev0
 
 ### OpenCode 资产约定
 
-- `superpowers` 以完整包快照的形式维护在 `vendor/opencode/packages/superpowers/`
+- `superpowers` 以完整包快照的形式维护在 `runtime/openpod/vendor/opencode/packages/superpowers/`
 - 不要只抽取 `.opencode/plugins/superpowers.js` 或只复制 `skills/`，因为上游插件会基于自身入口文件相对路径解析 `../../skills`
 - 镜像构建时会在 `/root/.config/opencode/plugins/superpowers.js` 创建指向 vendored 包入口的软链接
 - 镜像构建时还会在 `/root/.config/opencode/skills` 创建指向 `/opt/vendor/opencode/skills` 的软链接，避免项目级 `opencode.json` 覆盖掉仓库维护的全局 skills
-- 镜像还会把 `config/opencode.json` 复制到 `/root/.config/opencode/config.json`，作为 OpenCode 的全局默认配置
-- `config/opencode.json` 只保留镜像级 provider 默认值；不要在其中手动添加 `superpowers/skills`，因为插件会在运行时注册它自己的 bundled skills
+- 镜像还会把 `runtime/openpod/config/opencode.json` 复制到 `/root/.config/opencode/config.json`，作为 OpenCode 的全局默认配置
+- `runtime/openpod/config/opencode.json` 只保留镜像级 provider 默认值；不要在其中手动添加 `superpowers/skills`，因为插件会在运行时注册它自己的 bundled skills
+- bootstrap 模式会把 `runtime/openpod/vendor/opencode/` 复制到 flavor 自己的安装前缀下，再由 `runtime/openpod/install-harness.sh` 完成 OpenCode 接线
+- `build/update-vendor-assets.sh` 会刷新 `runtime/openpod/vendor/opencode/packages/superpowers/`，但不会破坏 `runtime/openpod/vendor/opencode/skills/`
 - `docker-compose.yml` 不再从宿主机挂载全局 OpenCode 配置；项目级自定义应放在挂载到 `/workspace` 的项目根目录 `opencode.json`
 
 ### Multi-Flavor 约定

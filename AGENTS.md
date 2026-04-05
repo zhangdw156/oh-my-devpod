@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-`Dockerfile.devpod`, `Dockerfile.openpod`, `Dockerfile.claudepod`, and `Dockerfile.codexpod` define the shared base and flavor-specific images. `runtime/` contains harness-specific launchers, config, installers, and skills for each flavor. `build/` contains shared installer and asset-refresh scripts. `install/bootstrap.sh` is the shared bootstrap entrypoint with `--flavor`. Shared vendored assets live in `vendor/`, while user docs are in `README.md` and `README_EN.md`; maintainer rules live in `DEVELOPMENT.md` and `docs/vendor-assets.md`.
+`Dockerfile.devpod`, `Dockerfile.openpod`, `Dockerfile.claudepod`, and `Dockerfile.codexpod` define the shared base and flavor-specific images. `runtime/` contains harness-specific launchers, config, installers, skills, and any flavor-owned vendored assets; `runtime/openpod/vendor/opencode/` is the OpenCode-specific asset root. `build/` contains shared installer and asset-refresh scripts. `install/bootstrap.sh` is the shared bootstrap entrypoint with `--flavor`. Shared vendored assets live in `vendor/`, while user docs are in `README.md` and `README_EN.md`; maintainer rules live in `DEVELOPMENT.md` and `docs/vendor-assets.md`.
 
 ## Build, Test, and Development Commands
 `docker compose build devpod openpod claudepod codexpod` builds the base and all flavors.  
@@ -15,7 +15,7 @@
 This repository is Bash- and YAML-heavy. Use `#!/usr/bin/env bash`, keep `set -euo pipefail`, prefer quoted expansions, `[[ ... ]]`, and lowercase `snake_case` names for variables and functions. Match the existing 2-space indentation in shell blocks and YAML. Keep comments brief and operational. Keep shared logic in `build/` or `Dockerfile.devpod`, and keep harness-specific logic isolated in `runtime/<flavor>/`.
 
 ## Testing Guidelines
-There is no first-party unit test suite at the root; validation is mostly smoke-based. After behavior changes, run `bash tests/run.sh`, then rebuild and smoke-test affected flavors. When vendored versions change, review `vendor/manifest.lock.json`, `docs/vendor-assets.md`, and any synchronized flavor skill trees under `runtime/`.
+There is no first-party unit test suite at the root; validation is mostly smoke-based. After behavior changes, run `bash tests/run.sh`, then rebuild and smoke-test affected flavors. When vendored versions change, review `vendor/manifest.lock.json`, `docs/vendor-assets.md`, `runtime/openpod/vendor/opencode/`, and any synchronized flavor skill trees under `runtime/`.
 
 ## Commit & Pull Request Guidelines
 Follow the existing Conventional Commit style: `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, and `release:`. Keep subjects imperative and focused; issue refs such as `(#27)` are common. PRs should explain the user-visible effect, list verification commands, link the related issue, and call out any version or tag changes in `docker-compose.yml`. Include screenshots only when terminal UX, docs examples, or visible config behavior changes.

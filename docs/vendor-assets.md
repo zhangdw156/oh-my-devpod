@@ -8,8 +8,9 @@ Shared vendored assets include:
 
 - release archives for `antidote`, `btop`, `neovim`, `zellij`, and `yazi`
 - Zsh plugin snapshots
-- LazyVim starter snapshot
-- OpenCode-specific upstream snapshot currently reused by the `openpod` flavor and as the source of vendored `superpowers` skills for other flavors
+- the LazyVim starter snapshot
+
+OpenCode-specific vendored assets are no longer shared. They now live under `runtime/openpod/vendor/opencode/` and are owned by the `openpod` flavor.
 
 The machine-readable inventory lives in [`vendor/manifest.lock.json`](../vendor/manifest.lock.json).
 
@@ -20,10 +21,6 @@ vendor/
 ├── manifest.lock.json
 ├── nvim/
 │   └── lazyvim-starter/
-├── opencode/
-│   ├── packages/
-│   │   └── superpowers/
-│   └── skills/
 ├── releases/
 │   ├── antidote/
 │   ├── btop/
@@ -38,11 +35,27 @@ vendor/
     └── zsh-syntax-highlighting/
 ```
 
-Flavor-specific runtime assets live outside `vendor/` under:
+## Flavor-Owned Runtime Assets
 
-- `runtime/openpod/`
-- `runtime/claudepod/`
-- `runtime/codexpod/`
+Flavor-specific runtime assets live under `runtime/<flavor>/`.
+
+The OpenCode flavor is the only flavor that owns vendored harness assets:
+
+```text
+runtime/openpod/
+├── bin/
+├── config/
+│   └── opencode.json
+├── install-harness.sh
+├── skills/
+└── vendor/
+    └── opencode/
+        ├── packages/
+        │   └── superpowers/
+        └── skills/
+```
+
+`runtime/claudepod/skills/superpowers/` and `runtime/codexpod/skills/superpowers/` are synchronized copies of the same upstream `superpowers` skills snapshot, but they are flavor-owned trees rather than shared vendor roots.
 
 ## Shared Release Assets
 
@@ -58,12 +71,16 @@ Each release directory includes a `SHA256SUMS` file. The shared install scripts 
 
 ## Flavor-Specific Skill Materialization
 
-Current runtime wiring uses the shared OpenCode `superpowers` snapshot as the source for:
+`build/update-vendor-assets.sh` refreshes the upstream `superpowers` package snapshot into:
+
+- `runtime/openpod/vendor/opencode/packages/superpowers/`
+
+It then synchronizes the bundled `skills/` subtree into:
 
 - `runtime/claudepod/skills/superpowers/`
 - `runtime/codexpod/skills/superpowers/`
 
-`build/update-vendor-assets.sh` refreshes those flavor-owned skills trees after updating the upstream vendored snapshot.
+This keeps all three flavors aligned to the same upstream `superpowers` snapshot while preserving the ownership boundary that OpenCode-specific vendored assets belong to `openpod`.
 
 ## Update Workflow
 
@@ -76,9 +93,10 @@ bash build/update-vendor-assets.sh
 After running it:
 
 1. Review changes under `vendor/`
-2. Review synchronized flavor skills under `runtime/claudepod/skills/` and `runtime/codexpod/skills/`
-3. Update [`vendor/manifest.lock.json`](../vendor/manifest.lock.json) if versions or sources changed
-4. Rebuild the base and flavors:
+2. Review changes under `runtime/openpod/vendor/opencode/`
+3. Review synchronized flavor skills under `runtime/claudepod/skills/` and `runtime/codexpod/skills/`
+4. Update [`vendor/manifest.lock.json`](../vendor/manifest.lock.json) if versions or sources changed
+5. Rebuild the base and flavors:
 
 ```bash
 docker compose build devpod openpod claudepod codexpod
@@ -87,5 +105,6 @@ docker compose build devpod openpod claudepod codexpod
 ## Notes
 
 - Shared assets stay in `vendor/`; harness-specific runtime assets stay in `runtime/<flavor>/`
+- `runtime/openpod/vendor/opencode/skills/` stays outside the destructive package-refresh path so repo-maintained global OpenCode skills are preserved
 - This project intentionally avoids Git submodules
 - Local builds still need network access to base image registries and any harness installer endpoints that are not vendored
