@@ -25,8 +25,7 @@ The `dev/claude` branch replaces the old OpenCode runtime with Claude Code while
 
 - Docker mode and bootstrap mode are both supported
 - vendored shell/editor/runtime assets stay in place
-- `.env` is preferred when present
-- without `.env`, users can fall back to `claude login` or manage `~/.claude/settings.json` directly
+- authentication and Claude config are fully user-managed
 
 The public image name on this branch is `oh-my-claudepod`, and the default service/container name is `claudepod`.
 
@@ -53,25 +52,15 @@ cd oh-my-openpod
 git switch dev/claude
 ```
 
-### 2. Configure `.env` (Optional But Recommended)
+### 2. Prepare Claude Configuration
 
-```bash
-cp .env.example .env
-```
+This branch no longer consumes `.env` and no longer generates Claude auth settings for you.
 
-This branch only targets Claude Code official integration surfaces, such as:
+Use one of the native Claude paths instead:
 
-- `ANTHROPIC_API_KEY`
-- `ANTHROPIC_BASE_URL` / `ANTHROPIC_AUTH_TOKEN`
-- `CLAUDE_CODE_USE_BEDROCK` plus the related AWS variables
-- `CLAUDE_CODE_USE_VERTEX` plus the related Vertex variables
-
-Docker mode injects `.env` into the container environment directly. Bootstrap mode prefers the repository-root `.env` file and lets `claudepod-sync-config` materialize managed keys into `~/.claude/settings.json`.
-
-If there is no `.env`, you can log in later with `claude login`.
-
-Even if you do not pass `--env-file .env` to `docker run`, claudepod will still fall back to `/workspace/.env` the first time `claude` runs, as long as the mounted project root contains that file.
-That fallback only materializes Claude-managed config; it does not automatically export those variables into every other shell process.
+- run `claude auth login` inside the container or bootstrap environment
+- mount or reuse your own `~/.claude`
+- maintain project-local `.claude/settings.json`, `.claude/settings.local.json`, and `CLAUDE.md`
 
 ### 3. Docker Mode
 
@@ -98,7 +87,7 @@ docker compose run --rm claudepod -lc 'claude --version'
 docker compose run --rm claudepod -lc 'claude doctor'
 ```
 
-If `.env` already provides valid auth, you can also run a minimal non-interactive prompt:
+If you already completed `claude auth login` or supplied your own Claude config, you can also run a minimal non-interactive prompt:
 
 ```bash
 docker compose run --rm claudepod -lc 'claude -p "Reply with OK"'
@@ -150,14 +139,14 @@ docker run --rm -it \
   ghcr.io/zhangdw156/oh-my-claudepod:latest
 ```
 
-Run with `.env`:
+If you want to reuse Claude login state or settings from the host, mount `~/.claude`:
 
 ```bash
 docker run --rm -it \
   --name claudepod \
   --network host \
   -v "${PROJECT_DIR:-.}:/workspace" \
-  --env-file .env \
+  -v ~/.claude:/root/.claude \
   ghcr.io/zhangdw156/oh-my-claudepod:latest
 ```
 
@@ -171,13 +160,7 @@ Claude user settings live at:
 ~/.claude/settings.json
 ```
 
-This branch also maintains a small managed state file:
-
-```text
-~/.claude/oh-my-claudepod-state.json
-```
-
-It only tracks keys injected by claudepod so your other Claude preferences are not replaced.
+This branch no longer maintains a managed auth state file. Claude authentication and settings remain entirely under user control.
 
 ### Project Settings
 
@@ -217,11 +200,8 @@ oh-my-openpod/
 ├── bin/
 │   ├── claude
 │   ├── claudepod-shell
-│   ├── claudepod-sync-config
 │   └── openpod-shell
 ├── config/
-│   ├── claude/
-│   │   └── settings.base.json
 │   ├── nvim/
 │   ├── .zshrc
 │   └── .p10k.zsh

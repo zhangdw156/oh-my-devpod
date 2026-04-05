@@ -85,7 +85,7 @@ This branch does not vendor the Claude Code binary itself. Docker and bootstrap 
 
 - `https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/`
 
-The repo then wraps the installed binary with `claudepod-sync-config` and the `claude` launcher so `.env`-driven settings can be materialized into `~/.claude/settings.json` without replacing the rest of the user's Claude preferences.
+The repo wraps the installed binary with a thin `claude` launcher so the image and bootstrap environment can point at the pinned native binary consistently. Authentication and Claude settings remain entirely user-managed.
 
 ### Claude skills
 

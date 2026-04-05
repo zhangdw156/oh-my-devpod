@@ -1,10 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ -n "${OPENPOD_CLAUDE_SYNC_BIN:-}" && -x "${OPENPOD_CLAUDE_SYNC_BIN}" ]]; then
-  "${OPENPOD_CLAUDE_SYNC_BIN}"
-fi
-
 real_bin="${OPENPOD_CLAUDE_REAL_BIN:-}"
 if [[ -z "${real_bin}" || ! -x "${real_bin}" ]]; then
   echo "claude real binary not found: ${real_bin:-unset}" >&2

@@ -60,7 +60,6 @@ RUN bash /tmp/install-python-dev-tools.sh && rm -f /tmp/install-python-dev-tools
 
 # ---------- 12. 安装默认 LazyVim 配置 ----------
 COPY config/nvim /opt/openpod-config/nvim
-COPY config/claude /opt/openpod-config/claude
 COPY build/install-lazyvim.sh /tmp/install-lazyvim.sh
 RUN OPENPOD_NVM_OVERLAY_DIR=/opt/openpod-config/nvim bash /tmp/install-lazyvim.sh && rm -f /tmp/install-lazyvim.sh
 
@@ -70,9 +69,7 @@ ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV OPENPOD_CLAUDE_CODE_VERSION=2.1.92
 ENV DISABLE_AUTOUPDATER=1
-ENV OPENPOD_CLAUDE_BASE_SETTINGS=/opt/openpod-config/claude/settings.base.json
 ENV OPENPOD_CLAUDE_REAL_BIN=/usr/local/bin/claude-real
-ENV OPENPOD_CLAUDE_SYNC_BIN=/usr/local/bin/claudepod-sync-config
 ENV OPENPOD_LAZYVIM_STARTER_COMMIT=803bc181d7c0d6d5eeba9274d9be49b287294d99
 ENV OPENPOD_LAZYVIM_SOURCE_DIR=/opt/vendor/nvim/lazyvim-starter
 ENV OPENPOD_NEOVIM_DIR=/opt/neovim
@@ -96,9 +93,8 @@ COPY config/.zshrc /root/.zshrc
 COPY config/.p10k.zsh /root/.p10k.zsh
 COPY bin/claude /usr/local/bin/claude
 COPY bin/claudepod-shell /usr/local/bin/claudepod-shell
-COPY bin/claudepod-sync-config /usr/local/bin/claudepod-sync-config
 COPY bin/openpod-shell /usr/local/bin/openpod-shell
-RUN chmod 0755 /usr/local/bin/claude /usr/local/bin/claudepod-shell /usr/local/bin/claudepod-sync-config /usr/local/bin/openpod-shell
+RUN chmod 0755 /usr/local/bin/claude /usr/local/bin/claudepod-shell /usr/local/bin/openpod-shell
 
 # ---------- 16. 启动设置 ----------
 WORKDIR /workspace

@@ -10,8 +10,5 @@ services:
     working_dir: /workspace
     volumes:
       - ${PROJECT_DIR:-.}:/workspace
-    env_file:
-      - path: .env
-        required: false
     network_mode: host
     restart: "no"

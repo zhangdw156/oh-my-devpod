@@ -119,7 +119,6 @@ fi
 vendor_home="${prefix}/vendor"
 skills_link="${config_home}/skills"
 shell_dir="${prefix}/shell"
-managed_config_dir="${prefix}/config/claude"
 asset_root="${repo_root}/vendor/releases"
 xdg_config_home="${HOME}/.config"
 xdg_data_home="${HOME}/.local/share"
@@ -133,7 +132,7 @@ if [[ "$mode" == "system" ]]; then
   xdg_cache_home="/root/.cache"
 fi
 
-mkdir -p "${prefix}" "${bin_dir}" "${config_home}" "${data_home}" "${state_home}" "${cache_home}" "${shell_dir}" "${managed_config_dir}"
+mkdir -p "${prefix}" "${bin_dir}" "${config_home}" "${data_home}" "${state_home}" "${cache_home}" "${shell_dir}"
 rm -rf "${vendor_home}"
 cp -R "${repo_root}/vendor" "${vendor_home}"
 
@@ -145,10 +144,7 @@ export OPENPOD_CONFIG_DIR="${config_home}"
 export OPENPOD_DATA_HOME="${data_home}"
 export OPENPOD_STATE_HOME="${state_home}"
 export OPENPOD_CACHE_HOME="${cache_home}"
-export OPENPOD_SOURCE_REPO="${repo_root}"
-export OPENPOD_CLAUDE_BASE_SETTINGS="${managed_config_dir}/settings.base.json"
 export OPENPOD_CLAUDE_REAL_BIN="${bin_dir}/claude-real"
-export OPENPOD_CLAUDE_SYNC_BIN="${bin_dir}/claudepod-sync-config"
 export PATH="${bin_dir}:\$PATH"
 export ZSH="${vendor_home}/zsh/ohmyzsh"
 export ZSH_DISABLE_COMPFIX=true
@@ -184,10 +180,7 @@ export OPENPOD_CONFIG_DIR="${config_home}"
 export OPENPOD_DATA_HOME="${data_home}"
 export OPENPOD_STATE_HOME="${state_home}"
 export OPENPOD_CACHE_HOME="${cache_home}"
-export OPENPOD_SOURCE_REPO="${repo_root}"
-export OPENPOD_CLAUDE_BASE_SETTINGS="${managed_config_dir}/settings.base.json"
 export OPENPOD_CLAUDE_REAL_BIN="${bin_dir}/claude-real"
-export OPENPOD_CLAUDE_SYNC_BIN="${bin_dir}/claudepod-sync-config"
 export PATH="${bin_dir}:\$PATH"
 export XDG_CONFIG_HOME="\${XDG_CONFIG_HOME:-${HOME}/.config}"
 export XDG_DATA_HOME="\${XDG_DATA_HOME:-${HOME}/.local/share}"
@@ -198,7 +191,6 @@ export DISABLE_AUTOUPDATER=1
 EOF
 
 cp "${repo_root}/config/.p10k.zsh" "${shell_dir}/.p10k.zsh"
-cp "${repo_root}/config/claude/settings.base.json" "${managed_config_dir}/settings.base.json"
 ln -sfn "${vendor_home}/claude/skills" "${skills_link}"
 
 export OPENPOD_ASSET_ROOT="${asset_root}"
@@ -217,10 +209,7 @@ export OPENPOD_PYRIGHT_VERSION="1.1.408"
 export OPENPOD_RUFF_VERSION="0.15.9"
 export OPENPOD_UV_TOOL_DIR="${prefix}/opt/uv-tools"
 export OPENPOD_CLAUDE_CODE_VERSION="2.1.92"
-export OPENPOD_SOURCE_REPO="${repo_root}"
-export OPENPOD_CLAUDE_BASE_SETTINGS="${managed_config_dir}/settings.base.json"
 export OPENPOD_CLAUDE_REAL_BIN="${bin_dir}/claude-real"
-export OPENPOD_CLAUDE_SYNC_BIN="${bin_dir}/claudepod-sync-config"
 export DISABLE_AUTOUPDATER="1"
 
 bash "${repo_root}/build/install-btop.sh"
@@ -262,10 +251,8 @@ if [[ "${need_claude_install}" == "1" ]]; then
 fi
 
 install -m 0755 "${repo_root}/bin/claude" "${bin_dir}/claude"
-install -m 0755 "${repo_root}/bin/claudepod-sync-config" "${bin_dir}/claudepod-sync-config"
 install -m 0755 "${repo_root}/bin/claudepod-shell" "${bin_dir}/claudepod-shell"
 install -m 0755 "${repo_root}/bin/openpod-shell" "${bin_dir}/openpod-shell"
-"${bin_dir}/claudepod-sync-config"
 
 cat <<EOF
 Bootstrap complete.

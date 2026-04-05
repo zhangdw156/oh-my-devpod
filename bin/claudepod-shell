@@ -8,10 +8,6 @@ if [[ -f "${prefix}/env.sh" ]]; then
   source "${prefix}/env.sh"
 fi
 
-if [[ -n "${OPENPOD_CLAUDE_SYNC_BIN:-}" && -x "${OPENPOD_CLAUDE_SYNC_BIN}" ]]; then
-  "${OPENPOD_CLAUDE_SYNC_BIN}"
-fi
-
 shell_dir="${OPENPOD_PREFIX:-${prefix}}/shell"
 
 if [[ $# -eq 0 ]]; then

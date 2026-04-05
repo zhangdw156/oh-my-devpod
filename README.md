@@ -25,8 +25,7 @@
 
 - Docker 模式和 bootstrap 模式都可用
 - 继续复用 vendored 的 Zsh、Neovim、Yazi、Zellij、btop 等资产
-- 如果存在 `.env`，优先用它构造 Claude 运行配置
-- 如果没有 `.env`，就让用户使用 `claude login` 或自行维护 `~/.claude/settings.json`
+- 认证和 Claude 配置完全交给用户自己管理
 
 这条分支的公开镜像名是 `oh-my-claudepod`，默认服务名和容器名是 `claudepod`。
 
@@ -53,25 +52,15 @@ cd oh-my-openpod
 git switch dev/claude
 ```
 
-### 2. 配置 `.env`（可选但推荐）
+### 2. 准备 Claude 配置
 
-```bash
-cp .env.example .env
-```
+这条分支不再消费 `.env`，也不会替你生成 Claude 的认证配置。
 
-这条分支只考虑 Claude Code 官方支持的接入面，例如：
+可用的原生方式只有三种：
 
-- `ANTHROPIC_API_KEY`
-- `ANTHROPIC_BASE_URL` / `ANTHROPIC_AUTH_TOKEN`
-- `CLAUDE_CODE_USE_BEDROCK` 及对应 AWS 变量
-- `CLAUDE_CODE_USE_VERTEX` 及对应 Vertex 变量
-
-Docker 模式会直接把 `.env` 注入容器环境；bootstrap 模式会优先读取仓库根目录 `.env`，并由 `claudepod-sync-config` 把受管键写入 `~/.claude/settings.json`。
-
-如果没有 `.env`，也可以后续手动执行 `claude login`。
-
-即使你没有在 `docker run` 时传 `--env-file .env`，只要挂载到 `/workspace` 的项目根目录里有 `.env`，`claudepod-sync-config` 也会在首次执行 `claude` 时回退读取它并生成 Claude 配置。
-这只是给 Claude 生成受管配置，不代表这些变量会自动出现在其它进程的 shell 环境里。
+- 在容器或 bootstrap 环境里执行 `claude auth login`
+- 挂载或复用你自己维护的 `~/.claude`
+- 在项目里自己写 `.claude/settings.json`、`.claude/settings.local.json` 和 `CLAUDE.md`
 
 ### 3. Docker 模式
 
@@ -98,7 +87,7 @@ docker compose run --rm claudepod -lc 'claude --version'
 docker compose run --rm claudepod -lc 'claude doctor'
 ```
 
-如果你已经在 `.env` 中提供了有效认证，再做最小非交互调用：
+如果你已经先完成 `claude auth login` 或提供了自己的 Claude 配置，再做最小非交互调用：
 
 ```bash
 docker compose run --rm claudepod -lc 'claude -p "Reply with OK"'
@@ -150,14 +139,14 @@ docker run --rm -it \
   ghcr.io/zhangdw156/oh-my-claudepod:latest
 ```
 
-带 `.env` 运行：
+如果你想复用宿主机上的 Claude 登录态或设置，可以直接挂载 `~/.claude`：
 
 ```bash
 docker run --rm -it \
   --name claudepod \
   --network host \
   -v "${PROJECT_DIR:-.}:/workspace" \
-  --env-file .env \
+  -v ~/.claude:/root/.claude \
   ghcr.io/zhangdw156/oh-my-claudepod:latest
 ```
 
@@ -171,13 +160,7 @@ Claude 的用户级配置位于：
 ~/.claude/settings.json
 ```
 
-这条分支会额外维护一个受管状态文件：
-
-```text
-~/.claude/oh-my-claudepod-state.json
-```
-
-它只记录 claudepod 注入过的受管键，避免覆盖你自己写的其它 Claude 偏好。
+这条分支不会再额外生成受管认证状态文件。Claude 的认证和设置都由你自己控制。
 
 ### 项目级配置
 
@@ -217,11 +200,8 @@ oh-my-openpod/
 ├── bin/
 │   ├── claude
 │   ├── claudepod-shell
-│   ├── claudepod-sync-config
 │   └── openpod-shell
 ├── config/
-│   ├── claude/
-│   │   └── settings.base.json
 │   ├── nvim/
 │   ├── .zshrc
 │   └── .p10k.zsh
