@@ -1,0 +1,25 @@
+services:
+  devpod:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.devpod
+      network: host
+    image: oh-my-devpod:0.4.0.dev5
+  claudepod:
+    build:
+      context: ../..
+      dockerfile: docker/claudepod/Dockerfile
+      network: host
+      additional_contexts:
+        devpod: service:devpod
+      args:
+        DEVPOD_BASE_IMAGE: devpod
+    image: oh-my-claudepod:0.4.0.dev5
+    container_name: claudepod
+    stdin_open: true
+    tty: true
+    working_dir: /workspace
+    volumes:
+      - ${PROJECT_DIR:-../..}:/workspace
+    network_mode: host
+    restart: "no"

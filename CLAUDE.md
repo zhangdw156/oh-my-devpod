@@ -17,10 +17,10 @@ The repository vendors shared shell/editor/build assets under `vendor/`, and the
 ### Build and run the flavors
 
 ```bash
-docker compose build devpod openpod claudepod codexpod
-docker compose run --rm openpod -lc 'opencode --version'
-docker compose run --rm claudepod -lc 'claude --version && claude auth status'
-docker compose run --rm codexpod -lc 'codex --help | sed -n "1,20p"'
+docker compose -f docker/openpod/docker-compose.yaml build devpod openpod
+docker compose -f docker/openpod/docker-compose.yaml run --rm openpod -lc 'opencode --version'
+docker compose -f docker/claudepod/docker-compose.yaml run --rm claudepod -lc 'claude --version && claude auth status'
+docker compose -f docker/codexpod/docker-compose.yaml run --rm codexpod -lc 'codex --help | sed -n "1,20p"'
 ```
 
 ### Bootstrap a local flavor without Docker
@@ -52,10 +52,10 @@ bash runtime/openpod/vendor/opencode/packages/superpowers/tests/opencode/run-tes
 
 ## Release and versioning
 
-- The single source of truth for image versions is `docker-compose.yml`.
+- The pod-local compose files under `docker/<flavor>/docker-compose.yaml` are the source of truth for image versions.
 - Development versions use `x.y.z.devN`.
 - Release versions use `x.y.z`.
-- `.github/workflows/publish-ghcr.yml` reads `docker-compose.yml` to decide what tags to publish.
+- `.github/workflows/publish-ghcr.yml` reads the pod-local compose files and requires them to agree on the version to publish.
 - Pushes to `main` only publish to GHCR when the version is not a dev version.
 
 Release flow details live in `DEVELOPMENT.md`.
@@ -68,9 +68,9 @@ Release flow details live in `DEVELOPMENT.md`.
 - `docker/openpod/Dockerfile`, `docker/claudepod/Dockerfile`, and `docker/codexpod/Dockerfile` only add harness-specific layers
 - `runtime/<flavor>/` owns harness-specific launchers, config, installers, skills, and any flavor-specific vendored assets
 
-### 2. `docker-compose.yml` is the local multi-flavor contract
+### 2. Pod-local compose files are the local runtime contract
 
-The compose file defines the canonical local workflow for the shared base and all three flavors. Use it as the source of truth for image names, local smoke commands, and release tags.
+Each `docker/<flavor>/docker-compose.yaml` file defines the canonical local workflow for that flavor and embeds the `devpod` build service needed to resolve its shared base image locally. Use those files as the source of truth for image names, local smoke commands, and release tags.
 
 ### 3. Vendoring is split by ownership
 

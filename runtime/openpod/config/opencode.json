@@ -3,47 +3,9 @@
 
   // ----------------------------------------------------------------
   // openpod 镜像内置的 OpenCode 全局默认配置：
-  // - 通过 .env 提供变量的 provider 定义
   // - 仓库维护的全局 skills 通过 /root/.config/opencode/skills 软链接暴露
   // superpowers 自带 skills 由其插件在运行时自动注册，这里不要重复添加。
+  // provider、模型和凭据由用户自行在 OpenCode 配置中维护。
   // ----------------------------------------------------------------
-  "provider": {
-
-    // ----------------------------------------------------------------
-    // 示例 1：OpenAI 兼容接口（vLLM / Ollama / LiteLLM / 硅基流动 等）
-    // 对应 .env 中的 CUSTOM_OPENAI_* 变量
-    // ----------------------------------------------------------------
-    "custom-openai": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "My OpenAI-Compatible Provider",
-      "options": {
-        "baseURL": "${CUSTOM_OPENAI_BASE_URL}",
-        "apiKey": "${CUSTOM_OPENAI_API_KEY}"
-      },
-      "models": {
-        "${CUSTOM_OPENAI_MODEL}": {
-          "name": "${CUSTOM_OPENAI_MODEL}"
-        }
-      }
-    },
-
-    // ----------------------------------------------------------------
-    // 示例 2：Anthropic 兼容接口（自部署 Claude / AWS Bedrock 代理 等）
-    // 对应 .env 中的 CUSTOM_ANTHROPIC_* 变量
-    // ----------------------------------------------------------------
-    "custom-anthropic": {
-      "npm": "@ai-sdk/anthropic",
-      "name": "My Anthropic-Compatible Provider",
-      "options": {
-        "baseURL": "${CUSTOM_ANTHROPIC_BASE_URL}",
-        "apiKey": "${CUSTOM_ANTHROPIC_API_KEY}"
-      },
-      "models": {
-        "${CUSTOM_ANTHROPIC_MODEL}": {
-          "name": "${CUSTOM_ANTHROPIC_MODEL}"
-        }
-      }
-    }
-
-  }
+  "provider": {}
 }

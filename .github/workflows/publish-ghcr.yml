@@ -27,15 +27,39 @@ jobs:
         run: |
           set -euo pipefail
 
-          image_ref="$(sed -nE 's/^[[:space:]]*image:[[:space:]]*([^[:space:]]+)[[:space:]]*$/\1/p' docker-compose.yml | grep 'oh-my-openpod:' | head -n 1)"
-          if [[ -z "$image_ref" ]]; then
-            echo "Unable to find an image entry in docker-compose.yml" >&2
-            exit 1
-          fi
+          extract_tag() {
+            local compose_file="$1"
+            local image_name="$2"
 
-          version="${image_ref##*:}"
-          if [[ -z "$version" || "$version" == "$image_ref" ]]; then
-            echo "Unable to extract an image tag from: $image_ref" >&2
+            sed -nE "s/^[[:space:]]*image:[[:space:]]*${image_name}:([^[:space:]]+)[[:space:]]*$/\\1/p" "${compose_file}" | head -n 1
+          }
+
+          compose_files=(
+            "docker/openpod/docker-compose.yaml:oh-my-openpod"
+            "docker/claudepod/docker-compose.yaml:oh-my-claudepod"
+            "docker/codexpod/docker-compose.yaml:oh-my-codexpod"
+          )
+
+          tags=()
+          for entry in "${compose_files[@]}"; do
+            compose_file="${entry%%:*}"
+            image_name="${entry##*:}"
+
+            flavor_tag="$(extract_tag "${compose_file}" "${image_name}")"
+            devpod_tag="$(extract_tag "${compose_file}" "oh-my-devpod")"
+
+            if [[ -z "${flavor_tag}" || -z "${devpod_tag}" ]]; then
+              echo "Unable to resolve image tags from ${compose_file}" >&2
+              exit 1
+            fi
+
+            tags+=("${flavor_tag}" "${devpod_tag}")
+          done
+
+          version="$(printf '%s\n' "${tags[@]}" | sort -u | head -n 1)"
+          if [[ "$(printf '%s\n' "${tags[@]}" | sort -u | wc -l | tr -d ' ')" != "1" ]]; then
+            echo "Compose image tags are inconsistent across docker/<flavor>/docker-compose.yaml files" >&2
+            printf 'Resolved tags:\n%s\n' "${tags[*]}" >&2
             exit 1
           fi
 
@@ -60,7 +84,7 @@ jobs:
       - name: Skip dev image versions
         if: steps.version.outputs.publish != 'true'
         run: |
-          echo "docker-compose.yml uses ${VERSION}; skipping GHCR publish."
+          echo "Pod-local compose files use ${VERSION}; skipping GHCR publish."
         env:
           VERSION: ${{ steps.version.outputs.version }}
 
@@ -152,7 +176,7 @@ jobs:
         shell: bash
         run: |
           if [[ "${PUBLISH}" != "true" ]]; then
-            echo "Skipped publishing because docker-compose.yml uses a development version \`${VERSION}\`." >> "$GITHUB_STEP_SUMMARY"
+            echo "Skipped publishing because the pod-local compose files use a development version \`${VERSION}\`." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
 

@@ -10,9 +10,14 @@ fail() {
 
 [[ ! -d "${repo_root}/vendor/opencode" ]] || fail "shared vendor/opencode should not exist"
 [[ ! -f "${repo_root}/config/opencode.json" ]] || fail "shared config/opencode.json should not exist"
+[[ ! -f "${repo_root}/.env.example" ]] || fail "repository should not ship .env.example"
 [[ -f "${repo_root}/runtime/openpod/config/opencode.json" ]] || fail "missing openpod runtime config"
 [[ -d "${repo_root}/runtime/openpod/vendor/opencode/packages/superpowers" ]] || fail "missing openpod vendored superpowers package"
 [[ -d "${repo_root}/runtime/openpod/vendor/opencode/skills" ]] || fail "missing openpod vendored global skills directory"
+
+if rg -q '\\.env|CUSTOM_OPENAI|CUSTOM_ANTHROPIC' "${repo_root}/runtime/openpod/config/opencode.json"; then
+  fail "openpod runtime config should not depend on repository-managed env variables"
+fi
 
 rg -q 'openpod_vendor_dir="\$\{runtime_dir\}/openpod/vendor"' "${repo_root}/build/update-vendor-assets.sh" \
   || fail "update-vendor-assets should define the openpod runtime vendor root"
