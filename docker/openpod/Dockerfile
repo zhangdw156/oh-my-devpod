@@ -1,10 +1,12 @@
 ARG DEVPOD_BASE_IMAGE=devpod
 FROM ${DEVPOD_BASE_IMAGE}
 
+ARG TARGETARCH
 COPY --from=ghcr.io/anomalyco/opencode /usr/local/bin/opencode /usr/local/bin/opencode
 COPY --from=ghcr.io/anomalyco/opencode /usr/lib/libstdc++.so.6 /usr/lib/musl-compat/libstdc++.so.6
 COPY --from=ghcr.io/anomalyco/opencode /usr/lib/libgcc_s.so.1 /usr/lib/musl-compat/libgcc_s.so.1
-RUN echo "/lib:/usr/local/lib:/usr/lib:/usr/lib/musl-compat" > /etc/ld-musl-x86_64.path
+RUN musl_arch="$(case "${TARGETARCH:-$(dpkg --print-architecture)}" in amd64|x86_64) echo x86_64;; arm64|aarch64) echo aarch64;; *) echo x86_64;; esac)" \
+    && echo "/lib:/usr/local/lib:/usr/lib:/usr/lib/musl-compat" > "/etc/ld-musl-${musl_arch}.path"
 
 COPY runtime/openpod/vendor/opencode /opt/vendor/opencode
 COPY runtime/openpod/config/opencode.json /root/.config/opencode/config.json
