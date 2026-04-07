@@ -30,7 +30,7 @@ COPY build/install-yazi.sh /tmp/install-yazi.sh
 RUN bash /tmp/install-yazi.sh && rm -f /tmp/install-yazi.sh
 COPY build/install-neovim.sh /tmp/install-neovim.sh
 RUN bash /tmp/install-neovim.sh && rm -f /tmp/install-neovim.sh
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
+COPY --from=ghcr.io/astral-sh/uv:0.11.3 /uv /uvx /usr/local/bin/
 COPY build/install-python-dev-tools.sh /tmp/install-python-dev-tools.sh
 RUN bash /tmp/install-python-dev-tools.sh && rm -f /tmp/install-python-dev-tools.sh
 COPY config/nvim /opt/devpod-config/nvim
