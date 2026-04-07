@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     musl \
     && rm -rf /var/lib/apt/lists/*
 
-COPY vendor /opt/vendor
+COPY vendor/releases /opt/vendor/releases
 
 ARG TARGETARCH
 COPY build/install-btop.sh /tmp/install-btop.sh
@@ -33,10 +33,14 @@ RUN bash /tmp/install-neovim.sh && rm -f /tmp/install-neovim.sh
 COPY --from=ghcr.io/astral-sh/uv:0.11.3 /uv /uvx /usr/local/bin/
 COPY build/install-python-dev-tools.sh /tmp/install-python-dev-tools.sh
 RUN bash /tmp/install-python-dev-tools.sh && rm -f /tmp/install-python-dev-tools.sh
+
+COPY vendor/nvim /opt/vendor/nvim
 COPY config/nvim /opt/devpod-config/nvim
 COPY build/install-lazyvim.sh /tmp/install-lazyvim.sh
 RUN OPENPOD_NVM_OVERLAY_DIR=/opt/devpod-config/nvim bash /tmp/install-lazyvim.sh && rm -f /tmp/install-lazyvim.sh
 RUN nvim --headless "+Lazy! sync" +qa
+
+COPY vendor/zsh /opt/vendor/zsh
 
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
