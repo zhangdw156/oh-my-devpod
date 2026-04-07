@@ -83,8 +83,7 @@ oh-my-devpod/
 ## 发布实现约定
 
 - 正式版镜像由 `.github/workflows/publish-ghcr.yml` 在 `main` 分支自动发布
-- workflow 登录 GHCR 时优先使用仓库 secret `GHCR_TOKEN`，回退到 `GITHUB_TOKEN`
-- `GHCR_TOKEN` 需要具备至少 `write:packages`；这是保证个人账号下 GHCR 包稳定可写的一次性配置
+- workflow 登录 GHCR 时使用内置的 `GITHUB_TOKEN`（job 已声明 `packages: write` 权限）
 - 发布镜像显式关闭 `provenance`，避免 GHCR 页面出现额外的 `unknown/unknown` attestation 条目
 
 ## 依赖安装约定
