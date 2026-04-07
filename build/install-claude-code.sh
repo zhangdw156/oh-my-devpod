@@ -35,17 +35,16 @@ fi
 platform="linux-${arch_suffix}${libc_suffix}"
 binary_url="${bucket_url}/${version}/${platform}/claude"
 
+manifest_json="$(curl -fsSL "${manifest_url}")"
 expected_sha="$(
-  curl -fsSL "${manifest_url}" | perl -MJSON::PP -e '
-    use strict;
-    use warnings;
-    local $/;
-    my $platform = shift @ARGV;
-    my $manifest = decode_json(<STDIN>);
-    die "missing platform metadata for ${platform}\n" unless $manifest->{platforms}{$platform};
-    print $manifest->{platforms}{$platform}{checksum};
-  ' "${platform}"
+  printf '%s' "${manifest_json}" \
+    | tr -d '[:space:]' \
+    | sed -n "s/.*\"${platform}\":{[^}]*\"checksum\":\"\\([a-fA-F0-9]*\\)\".*/\\1/p"
 )"
+if [[ -z "${expected_sha}" ]]; then
+  echo "failed to extract checksum for platform ${platform} from manifest" >&2
+  exit 1
+fi
 
 if [[ ! -x "${real_bin}" ]]; then
   tmp_dir="$(mktemp -d)"
