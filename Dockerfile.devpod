@@ -54,10 +54,9 @@ ENV OPENPOD_UV_TOOL_DIR=/opt/uv-tools
 ENV TERM=xterm-256color
 ENV SHELL=/bin/zsh
 ENV UV_LINK_MODE=copy
-ENV TZ=Asia/Shanghai
-RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+ENV TZ=UTC
 RUN if command -v fdfind >/dev/null 2>&1 && ! command -v fd >/dev/null 2>&1; then ln -sf "$(command -v fdfind)" /usr/local/bin/fd; fi
-RUN git config --global --add safe.directory '*'
+RUN git config --global --add safe.directory /workspace
 COPY config/.zshrc /root/.zshrc
 COPY config/.p10k.zsh /root/.p10k.zsh
 WORKDIR /workspace
