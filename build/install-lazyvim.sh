@@ -39,7 +39,7 @@ is_managed_install() {
 }
 
 if is_managed_install; then
-  rm -rf "${config_dir}"
+  rm -rf "${config_dir}" "${data_dir}" "${state_dir}" "${cache_dir}"
 else
   backup_path_if_exists "${config_dir}"
   backup_path_if_exists "${data_dir}"
