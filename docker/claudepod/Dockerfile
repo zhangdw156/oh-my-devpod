@@ -17,7 +17,7 @@ RUN cp -a /root/.claude /opt/devpod-skel/.claude \
     && cp -a /root/.claude.json /opt/devpod-skel/.claude.json \
     && mkdir -p /opt/devpod-skel/.local \
     && cp -a /root/.local/share /opt/devpod-skel/.local/share \
-    && cp -a /root/.local/bin /opt/devpod-skel/.local/bin \
+    && if [ -d /root/.local/bin ]; then cp -a /root/.local/bin /opt/devpod-skel/.local/bin; fi \
     && chmod -R a+rX /opt/devpod-skel
 ENV DISABLE_AUTOUPDATER=1
 ENV OPENPOD_CLAUDE_CODE_VERSION=2.1.92
