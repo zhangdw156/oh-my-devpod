@@ -3,9 +3,11 @@ set -euo pipefail
 
 # ── Non-root user init ───────────────────────────────────────────────
 # When the container runs with --user (non-root), config files that
-# were installed under /root at build time are not visible.  This
-# entrypoint copies them into the actual $HOME before exec-ing the
-# requested command.
+# were installed under /root at build time are not visible because
+# /root is mode 700.  A world-readable skeleton copy lives in
+# /opt/devpod-skel; this entrypoint copies it into $HOME.
+
+SKEL=/opt/devpod-skel
 
 if [[ "$(id -u)" -ne 0 ]]; then
   # Ensure $HOME is usable
@@ -14,13 +16,13 @@ if [[ "$(id -u)" -ne 0 ]]; then
   fi
   mkdir -p "${HOME}"
 
-  # Helper: copy a file/dir from /root to $HOME if source exists and
+  # Helper: copy a file/dir from skel to $HOME if source exists and
   # target does not, preserving symlinks.
   _init_copy() {
     local rel="$1"
-    if [[ -e "/root/${rel}" && ! -e "${HOME}/${rel}" ]]; then
+    if [[ -e "${SKEL}/${rel}" && ! -e "${HOME}/${rel}" ]]; then
       mkdir -p "$(dirname "${HOME}/${rel}")"
-      cp -a "/root/${rel}" "${HOME}/${rel}"
+      cp -a "${SKEL}/${rel}" "${HOME}/${rel}"
     fi
   }
 
@@ -37,7 +39,7 @@ if [[ "$(id -u)" -ne 0 ]]; then
   _init_copy .local/state/nvim
   _init_copy .cache/nvim
 
-  # ── Flavor-specific (only copied when the dir exists in the image) ──
+  # ── Flavor-specific (only copied when the dir exists in the skel) ──
   # openpod
   _init_copy .config/opencode
 

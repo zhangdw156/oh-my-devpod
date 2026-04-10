@@ -59,6 +59,18 @@ RUN if command -v fdfind >/dev/null 2>&1 && ! command -v fd >/dev/null 2>&1; the
 RUN git config --global --add safe.directory /workspace
 COPY config/.zshrc /root/.zshrc
 COPY config/.p10k.zsh /root/.p10k.zsh
+
+# Skeleton directory: world-readable copy of home config so that the
+# entrypoint can initialise $HOME for arbitrary --user UIDs.
+RUN mkdir -p /opt/devpod-skel \
+    && cp -a /root/.zshrc /opt/devpod-skel/.zshrc \
+    && cp -a /root/.p10k.zsh /opt/devpod-skel/.p10k.zsh \
+    && cp -a /root/.gitconfig /opt/devpod-skel/.gitconfig \
+    && cp -a /root/.config /opt/devpod-skel/.config \
+    && cp -a /root/.local /opt/devpod-skel/.local \
+    && cp -a /root/.cache /opt/devpod-skel/.cache \
+    && chmod -R a+rX /opt/devpod-skel
+
 COPY config/entrypoint.sh /opt/devpod-entrypoint.sh
 WORKDIR /workspace
 ENTRYPOINT ["/opt/devpod-entrypoint.sh"]
