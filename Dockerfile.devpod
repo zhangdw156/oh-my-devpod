@@ -51,11 +51,13 @@ ENV OPENPOD_NVM_OVERLAY_DIR=/opt/devpod-config/nvim
 ENV OPENPOD_PYRIGHT_VERSION=1.1.408
 ENV OPENPOD_RUFF_VERSION=0.15.9
 ENV OPENPOD_UV_TOOL_DIR=/opt/uv-tools
+ENV HOME=/home/devpod
 ENV TERM=xterm-256color
 ENV SHELL=/bin/zsh
 ENV UV_LINK_MODE=copy
 ENV TZ=UTC
 RUN if command -v fdfind >/dev/null 2>&1 && ! command -v fd >/dev/null 2>&1; then ln -sf "$(command -v fdfind)" /usr/local/bin/fd; fi
+RUN mkdir -p /home/devpod && chmod 777 /home/devpod
 RUN git config --global --add safe.directory /workspace
 COPY config/.zshrc /root/.zshrc
 COPY config/.p10k.zsh /root/.p10k.zsh

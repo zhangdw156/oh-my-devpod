@@ -14,7 +14,10 @@ if [[ "$(id -u)" -ne 0 ]]; then
   if [[ -z "${HOME:-}" || "${HOME}" == "/" ]]; then
     export HOME="/home/devpod"
   fi
-  mkdir -p "${HOME}"
+  if ! mkdir -p "${HOME}" 2>/dev/null; then
+    export HOME="/tmp/devpod-home-$(id -u)"
+    mkdir -p "${HOME}"
+  fi
 
   # Helper: copy a file/dir from skel to $HOME if source exists and
   # target does not, preserving symlinks.
