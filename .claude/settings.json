@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh repo:*)",
+      "Bash(git push:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(ls ~/work/oh-my-devpod/config/.*)",
+      "Bash(chmod +x ~/work/oh-my-devpod/config/entrypoint.sh)",
+      "Bash(docker compose:*)",
+      "Bash(find ~/work/oh-my-devpod -type f \\\\\\( -name \"*.md\" -o -name \"*.yml\" -o -name \"*.yaml\" -o -name \"*.json\" -o -name \"*.sh\" -o -name \"Dockerfile*\" \\\\\\) -exec grep -l \"0\\\\.7\\\\|v0\\\\.7\" {} \\\\;)",
+      "Bash(git tag:*)",
+      "Bash(gh run:*)",
+      "Bash(newgrp docker:*)"
+    ]
+  }
+}
