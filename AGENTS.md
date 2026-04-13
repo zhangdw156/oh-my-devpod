@@ -19,6 +19,9 @@ This repository is Bash- and YAML-heavy. Use `#!/usr/bin/env bash`, keep `set -e
 ## Testing Guidelines
 There is no first-party unit test suite at the root; validation is mostly smoke-based. After behavior changes, run `bash tests/run.sh`, then rebuild and smoke-test affected flavors. When vendored versions change, review `vendor/manifest.lock.json`, `docs/vendor-assets.md`, `runtime/openpod/vendor/opencode/`, and any synchronized flavor skill trees under `runtime/`.
 
+## Development Workflow
+Assume the local environment provides the GitHub CLI `gh`; prefer `gh` for repository operations such as inspecting PRs, issues, workflow runs, and preparing PR metadata when those tasks are requested. Use IDD (interface-driven development) by default for substantive changes: clarify or inspect the target interface/contract first, update tests or verification around that contract, then implement and re-verify the behavior.
+
 ## Commit & Pull Request Guidelines
 Use Conventional Commit messages in `type(scope): summary` format, for example `feat(harness): add copilotpod support` or `chore(version): bump version to 0.9.0.dev1`. Keep subjects imperative and focused; issue refs such as `(#27)` are common. PRs should explain the user-visible effect, list verification commands, link the related issue, and call out any changes to the repository-root `VERSION` file that affect image versions or tags. Include screenshots only when terminal UX, docs examples, or visible config behavior changes.
 
