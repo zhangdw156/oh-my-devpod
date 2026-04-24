@@ -193,7 +193,7 @@ export HOMEBREW_NO_INSTALL_CLEANUP=1
 echo "Installing compiler toolchain via Homebrew..."
 brew install gcc || true
 # Homebrew installs gcc as gcc-{major}; create cc/gcc symlinks for source builds
-gcc_bin="$(find "${homebrew_prefix}/bin" -name 'gcc-[0-9]*' -type f 2>/dev/null | sort -V | tail -1)"
+gcc_bin="$(ls "${homebrew_prefix}/bin"/gcc-[0-9]* 2>/dev/null | sort -V | tail -1)"
 if [[ -n "${gcc_bin}" ]]; then
   ln -sfn "${gcc_bin}" "${homebrew_prefix}/bin/gcc"
   ln -sfn "${gcc_bin}" "${homebrew_prefix}/bin/cc"
