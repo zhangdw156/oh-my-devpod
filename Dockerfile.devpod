@@ -11,8 +11,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     jq \
     make \
-    nodejs \
-    npm \
     ripgrep \
     sqlite3 \
     tzdata \
@@ -38,8 +36,12 @@ RUN bash /tmp/install-btop.sh \
 
 COPY --from=ghcr.io/astral-sh/uv:0.11.3 /uv /uvx /usr/local/bin/
 COPY --from=oven/bun:1.2 /usr/local/bin/bun /usr/local/bin/bun
+COPY --from=node:20-slim /usr/local/bin/node /usr/local/bin/node
+COPY --from=node:20-slim /usr/local/lib/node_modules /usr/local/lib/node_modules
 COPY build/install-python-dev-tools.sh /tmp/install-python-dev-tools.sh
 RUN ln -sf /usr/local/bin/bun /usr/local/bin/bunx \
+    && ln -sf ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+    && ln -sf ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
     && bash /tmp/install-python-dev-tools.sh \
     && rm -f /tmp/install-python-dev-tools.sh
 
@@ -81,7 +83,7 @@ RUN mkdir -p /opt/devpod-skel \
     && cp -a /root/.cache /opt/devpod-skel/.cache \
     && chmod -R a+rX /opt/devpod-skel
 
-RUN mkdir -p /home/devpod && chmod 755 /home/devpod
+RUN mkdir -p /home/devpod && chmod 777 /home/devpod
 ENV HOME=/home/devpod
 
 COPY config/entrypoint.sh /opt/devpod-entrypoint.sh

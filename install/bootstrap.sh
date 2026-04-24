@@ -99,7 +99,7 @@ if [[ "$(uname -s)" != "Linux" ]]; then
   exit 1
 fi
 
-for cmd in bash curl tar; do
+for cmd in bash curl git tar; do
   if ! command -v "$cmd" >/dev/null 2>&1; then
     echo "Missing required command: $cmd" >&2
     exit 1
@@ -171,10 +171,17 @@ fi
 mkdir -p "${prefix}" "${bin_dir}" "${config_home}" "${data_home}" "${state_home}" "${cache_home}" "${shell_dir}"
 
 # ── Homebrew (Linuxbrew) ──────────────────────────────────────────────
-homebrew_prefix="${prefix}/opt/homebrew"
+homebrew_prefix="/home/linuxbrew/.linuxbrew"
 if [[ ! -x "${homebrew_prefix}/bin/brew" ]]; then
   echo "Installing Homebrew to ${homebrew_prefix}..."
-  mkdir -p "${homebrew_prefix}"
+  if ! mkdir -p "${homebrew_prefix}" 2>/dev/null; then
+    if command -v sudo >/dev/null 2>&1; then
+      sudo mkdir -p "${homebrew_prefix}" && sudo chown -R "$(id -u):$(id -g)" "${homebrew_prefix}"
+    else
+      echo "Cannot create ${homebrew_prefix}. Please create it manually and grant write access." >&2
+      exit 1
+    fi
+  fi
   curl -fsSL https://github.com/Homebrew/brew/tarball/master \
     | tar xz --strip-components 1 -C "${homebrew_prefix}"
 fi
@@ -183,7 +190,17 @@ eval "$("${homebrew_prefix}/bin/brew" shellenv)"
 export HOMEBREW_NO_AUTO_UPDATE=1
 export HOMEBREW_NO_INSTALL_CLEANUP=1
 
-brew tap oven-sh/bun
+echo "Installing compiler toolchain via Homebrew..."
+brew install gcc || true
+# Homebrew installs gcc as gcc-{major}; create cc/gcc symlinks for source builds
+gcc_bin="$(find "${homebrew_prefix}/bin" -name 'gcc-[0-9]*' -type f 2>/dev/null | sort -V | tail -1)"
+if [[ -n "${gcc_bin}" ]]; then
+  ln -sfn "${gcc_bin}" "${homebrew_prefix}/bin/gcc"
+  ln -sfn "${gcc_bin}" "${homebrew_prefix}/bin/cc"
+fi
+eval "$("${homebrew_prefix}/bin/brew" shellenv)"
+export HOMEBREW_NO_AUTO_UPDATE=1
+export HOMEBREW_NO_INSTALL_CLEANUP=1
 
 brew_packages=(
   antidote
@@ -192,13 +209,11 @@ brew_packages=(
   fd
   file-formula
   fzf
-  gcc
   git
   jq
   make
   neovim
   node
-  oven-sh/bun/bun
   ripgrep
   sqlite
   unzip
@@ -210,6 +225,12 @@ brew_packages=(
 )
 echo "Installing packages via Homebrew: ${brew_packages[*]}"
 brew install "${brew_packages[@]}"
+
+if [[ ! -x "$(command -v bun 2>/dev/null)" ]]; then
+  BUN_INSTALL="${HOME}/.bun" curl -fsSL https://bun.sh/install | bash
+  ln -sfn "${HOME}/.bun/bin/bun" "${bin_dir}/bun"
+  ln -sfn "${HOME}/.bun/bin/bun" "${bin_dir}/bunx"
+fi
 
 # ── Vendor assets (shell/editor configs) ──────────────────────────────
 rm -rf "${vendor_home}" "${runtime_home}"
