@@ -154,6 +154,8 @@ docker run --rm --network host --user "$(id -u):$(id -g)" -v "$PWD:/workspace" -
 
 ## Bootstrap 用法
 
+Bootstrap 仅需宿主机有 `bash`、`curl` 和 `tar`，会自动安装 Homebrew 并通过 brew 管理所有依赖（无需 sudo）。
+
 统一入口：
 
 ```bash
@@ -180,7 +182,6 @@ geminipod-shell
 
 - 在项目根使用 `opencode.json`
 - 或维护自己的 OpenCode 配置目录
-- 当前 bootstrap 需要宿主机已安装 `node` 和 `npm`
 
 `claudepod`：
 
@@ -191,21 +192,18 @@ geminipod-shell
 
 - 执行 `codex login`
 - 或挂载 / 维护 `~/.codex`
-- 当前 bootstrap 需要宿主机已安装 `node` 和 `npm`
 
 `copilotpod`：
 
 - 首次运行 `copilot` 后执行 `/login`
 - 或通过 `GH_TOKEN` / `GITHUB_TOKEN` 提供认证
 - 可挂载 / 维护 `~/.copilot`
-- 当前 bootstrap 需要宿主机已安装 `node` 和 `npm`
 
 `geminipod`：
 
 - 可使用 Google 登录、`GEMINI_API_KEY` 或 Vertex AI 相关环境变量
 - 可挂载 / 维护 `~/.gemini`
 - headless 场景更建议使用 API key / Vertex AI，而不是浏览器 OAuth
-- 当前 bootstrap 需要宿主机已安装 `Node.js >=20` 和 `npm`
 
 ## 项目结构
 

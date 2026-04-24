@@ -200,6 +200,7 @@ brew_packages=(
   node
   oven-sh/bun/bun
   ripgrep
+  sqlite
   unzip
   uv
   vim

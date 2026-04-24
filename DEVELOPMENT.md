@@ -99,8 +99,10 @@ oh-my-devpod/
 
 ## 依赖安装约定
 
+- Docker 构建路径（`Dockerfile.devpod`）使用 apt 安装系统包，并从 `vendor/releases/` 解压 vendored 二进制；此路径完全离线（除 harness 安装端点外）
+- Bootstrap 路径（`install/bootstrap.sh`）使用 Homebrew (Linuxbrew) 管理所有依赖，无需 sudo，仅需宿主机有 `bash`、`curl` 和 `tar`
 - `build/` 目录存放镜像构建期使用的安装脚本，例如 `install-antidote.sh`、`install-btop.sh`、`install-claude-code.sh`、`install-neovim.sh`、`install-python-dev-tools.sh`、`install-lazyvim.sh`、`install-yazi.sh` 和 `install-zellij.sh`
-- 这些安装脚本同时也是 bootstrap 模式的基础构件；新增脚本时优先保持可通过环境变量改写安装前缀与目标路径
+- 这些安装脚本仅在 Docker 构建路径中使用；bootstrap 路径通过 Homebrew 安装等效工具
 - `build/update-vendor-assets.sh` 用于刷新共享 release 包、LazyVim starter 快照、Zsh 插件快照，并同步 flavor 目录下复用的 skills
 - `config/` 目录只存放共享配置，例如 shell 配置和 `nvim` overlay
 - `runtime/` 目录按 flavor 拆分 harness 相关安装脚本、launcher、config、skills 和 flavor 自己拥有的 vendored 资产

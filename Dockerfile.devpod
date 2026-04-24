@@ -11,7 +11,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     jq \
     make \
+    nodejs \
+    npm \
     ripgrep \
+    sqlite3 \
     tzdata \
     unzip \
     vim \
@@ -23,22 +26,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY vendor/releases /opt/vendor/releases
 
 ARG TARGETARCH
-COPY build/install-btop.sh /tmp/install-btop.sh
-RUN bash /tmp/install-btop.sh && rm -f /tmp/install-btop.sh
-COPY build/install-antidote.sh /tmp/install-antidote.sh
-RUN bash /tmp/install-antidote.sh && rm -f /tmp/install-antidote.sh
-COPY build/install-zellij.sh /tmp/install-zellij.sh
-RUN bash /tmp/install-zellij.sh && rm -f /tmp/install-zellij.sh
-COPY build/install-yazi.sh /tmp/install-yazi.sh
-RUN bash /tmp/install-yazi.sh && rm -f /tmp/install-yazi.sh
-COPY build/install-neovim.sh /tmp/install-neovim.sh
-RUN bash /tmp/install-neovim.sh && rm -f /tmp/install-neovim.sh
+COPY build/install-btop.sh build/install-antidote.sh build/install-zellij.sh \
+     build/install-yazi.sh build/install-neovim.sh /tmp/
+RUN bash /tmp/install-btop.sh \
+    && bash /tmp/install-antidote.sh \
+    && bash /tmp/install-zellij.sh \
+    && bash /tmp/install-yazi.sh \
+    && bash /tmp/install-neovim.sh \
+    && rm -f /tmp/install-btop.sh /tmp/install-antidote.sh /tmp/install-zellij.sh \
+             /tmp/install-yazi.sh /tmp/install-neovim.sh
+
 COPY --from=ghcr.io/astral-sh/uv:0.11.3 /uv /uvx /usr/local/bin/
 COPY --from=oven/bun:1.2 /usr/local/bin/bun /usr/local/bin/bun
-RUN ln -sf /usr/local/bin/bun /usr/local/bin/bunx
-RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm && rm -rf /var/lib/apt/lists/*
 COPY build/install-python-dev-tools.sh /tmp/install-python-dev-tools.sh
-RUN bash /tmp/install-python-dev-tools.sh && rm -f /tmp/install-python-dev-tools.sh
+RUN ln -sf /usr/local/bin/bun /usr/local/bin/bunx \
+    && bash /tmp/install-python-dev-tools.sh \
+    && rm -f /tmp/install-python-dev-tools.sh
 
 COPY vendor/nvim /opt/vendor/nvim
 COPY config/nvim /opt/devpod-config/nvim
@@ -61,14 +64,14 @@ ENV TERM=xterm-256color
 ENV SHELL=/bin/zsh
 ENV UV_LINK_MODE=copy
 ENV TZ=UTC
-RUN if command -v batcat >/dev/null 2>&1 && ! command -v bat >/dev/null 2>&1; then ln -sf "$(command -v batcat)" /usr/local/bin/bat; fi
-RUN if command -v fdfind >/dev/null 2>&1 && ! command -v fd >/dev/null 2>&1; then ln -sf "$(command -v fdfind)" /usr/local/bin/fd; fi
-RUN git config --global --add safe.directory /workspace
+
+RUN if command -v batcat >/dev/null 2>&1 && ! command -v bat >/dev/null 2>&1; then ln -sf "$(command -v batcat)" /usr/local/bin/bat; fi \
+    && if command -v fdfind >/dev/null 2>&1 && ! command -v fd >/dev/null 2>&1; then ln -sf "$(command -v fdfind)" /usr/local/bin/fd; fi \
+    && git config --global --add safe.directory /workspace
+
 COPY config/.zshrc /root/.zshrc
 COPY config/.p10k.zsh /root/.p10k.zsh
 
-# Skeleton directory: world-readable copy of home config so that the
-# entrypoint can initialise $HOME for arbitrary --user UIDs.
 RUN mkdir -p /opt/devpod-skel \
     && cp -a /root/.zshrc /opt/devpod-skel/.zshrc \
     && cp -a /root/.p10k.zsh /opt/devpod-skel/.p10k.zsh \
@@ -78,7 +81,7 @@ RUN mkdir -p /opt/devpod-skel \
     && cp -a /root/.cache /opt/devpod-skel/.cache \
     && chmod -R a+rX /opt/devpod-skel
 
-RUN mkdir -p /home/devpod && chmod 777 /home/devpod
+RUN mkdir -p /home/devpod && chmod 755 /home/devpod
 ENV HOME=/home/devpod
 
 COPY config/entrypoint.sh /opt/devpod-entrypoint.sh

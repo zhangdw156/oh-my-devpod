@@ -17,6 +17,19 @@ source /opt/vendor/zsh/zsh-history-substring-search/zsh-history-substring-search
 source /opt/vendor/zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 source /opt/vendor/zsh/powerlevel10k/powerlevel10k.zsh-theme
 
+bindkey '^[[A' history-substring-search-up
+bindkey '^[[B' history-substring-search-down
+
+if command -v fzf >/dev/null 2>&1; then
+  source <(fzf --zsh 2>/dev/null) || true
+fi
+
+export EDITOR=nvim
+export VISUAL=nvim
+if command -v bat >/dev/null 2>&1; then
+  export MANPAGER="sh -c 'col -bx | bat -l man -p'"
+fi
+
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 

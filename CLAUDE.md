@@ -4,7 +4,7 @@ This file provides guidance to Claude Code when working with code in this reposi
 
 ## Repository purpose
 
-`oh-my-devpod` builds a shared `devpod` base plus three thin runtime flavors:
+`oh-my-devpod` builds a shared `devpod` base plus five thin runtime flavors:
 
 - `openpod` for OpenCode
 - `claudepod` for Claude Code

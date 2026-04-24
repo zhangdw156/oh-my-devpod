@@ -154,6 +154,8 @@ docker run --rm --network host --user "$(id -u):$(id -g)" -v "$PWD:/workspace" -
 
 ## Bootstrap Usage
 
+Bootstrap only requires `bash`, `curl`, and `tar` on the host. It automatically installs Homebrew and manages all dependencies via brew (no sudo required).
+
 Single entrypoint:
 
 ```bash
@@ -180,7 +182,6 @@ geminipod-shell
 
 - can use a project-level `opencode.json`
 - or maintain its own OpenCode config directories
-- bootstrap currently expects `node` and `npm` to already exist on the host
 
 `claudepod`:
 
@@ -191,21 +192,18 @@ geminipod-shell
 
 - use `codex login`
 - or mount / manage `~/.codex`
-- bootstrap currently expects `node` and `npm` to already exist on the host
 
 `copilotpod`:
 
 - use `/login` on first run of `copilot`
 - or provide `GH_TOKEN` / `GITHUB_TOKEN`
 - can mount / manage `~/.copilot`
-- bootstrap currently expects `node` and `npm` to already exist on the host
 
 `geminipod`:
 
 - can use Google login, `GEMINI_API_KEY`, or Vertex AI environment variables
 - can mount / manage `~/.gemini`
 - headless setups should prefer API key / Vertex AI over browser OAuth
-- bootstrap currently expects `Node.js >=20` and `npm` to already exist on the host
 
 ## Repository Layout
 

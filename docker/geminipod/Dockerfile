@@ -1,9 +1,8 @@
 ARG DEVPOD_BASE_IMAGE=devpod
-
-FROM ${DEVPOD_BASE_IMAGE} AS geminipod-base
+FROM ${DEVPOD_BASE_IMAGE}
 
 COPY runtime/geminipod /opt/runtime/geminipod
-RUN OPENPOD_PREFIX=/opt/geminipod OPENPOD_BIN_DIR=/usr/local/bin OPENPOD_CONFIG_HOME=/root/.gemini \
+RUN OPENPOD_REPO_ROOT=/opt OPENPOD_PREFIX=/opt/geminipod OPENPOD_BIN_DIR=/usr/local/bin OPENPOD_CONFIG_HOME=/root/.gemini \
       bash /opt/runtime/geminipod/install-harness.sh
 
 # Sync flavor config into devpod-skel for --user support

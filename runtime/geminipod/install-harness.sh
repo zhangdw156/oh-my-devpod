@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root="${OPENPOD_REPO_ROOT:-/opt}"
+repo_root="${OPENPOD_REPO_ROOT:?missing OPENPOD_REPO_ROOT}"
 prefix="${OPENPOD_PREFIX:?missing OPENPOD_PREFIX}"
 bin_dir="${OPENPOD_BIN_DIR:?missing OPENPOD_BIN_DIR}"
 config_home="${OPENPOD_CONFIG_HOME:?missing OPENPOD_CONFIG_HOME}"
