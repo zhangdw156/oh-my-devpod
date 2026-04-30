@@ -79,19 +79,30 @@ clone_or_pull() {
     git -C "${dest}" pull --quiet 2>/dev/null || true
   else
     rm -rf "${dest}"
-    git clone --depth 1 --quiet "https://github.com/${repo}.git" "${dest}"
+    git clone --depth 1 --quiet "https://github.com/${repo}.git" "${dest}" || return 1
   fi
 }
 
-clone_or_pull "ohmyzsh/ohmyzsh"                        "${DEVPOD_ZSH}/ohmyzsh"
-clone_or_pull "romkatv/powerlevel10k"                   "${DEVPOD_ZSH}/powerlevel10k"
-clone_or_pull "zsh-users/zsh-autosuggestions"           "${DEVPOD_ZSH}/zsh-autosuggestions"
-clone_or_pull "zsh-users/zsh-history-substring-search"  "${DEVPOD_ZSH}/zsh-history-substring-search"
-clone_or_pull "zsh-users/zsh-syntax-highlighting"       "${DEVPOD_ZSH}/zsh-syntax-highlighting"
+zsh_plugin_ok=true
+for _plugin in \
+  "ohmyzsh/ohmyzsh:ohmyzsh" \
+  "romkatv/powerlevel10k:powerlevel10k" \
+  "zsh-users/zsh-autosuggestions:zsh-autosuggestions" \
+  "zsh-users/zsh-history-substring-search:zsh-history-substring-search" \
+  "zsh-users/zsh-syntax-highlighting:zsh-syntax-highlighting"; do
+  _repo="${_plugin%%:*}"
+  _dir="${_plugin##*:}"
+  if ! clone_or_pull "${_repo}" "${DEVPOD_ZSH}/${_dir}"; then
+    warn "Failed to clone ${_repo} (network issue?); skipping"
+    zsh_plugin_ok=false
+  fi
+done
 
 # ── .p10k.zsh ─────────────────────────────────────────────────────────
 info "Downloading powerlevel10k preset..."
-curl -fsSL "${DEVPOD_RAW}/config/.p10k.zsh" -o "${HOME}/.p10k.zsh"
+if ! curl -fsSL --connect-timeout 15 "${DEVPOD_RAW}/config/.p10k.zsh" -o "${HOME}/.p10k.zsh"; then
+  warn "Failed to download .p10k.zsh; skipping"
+fi
 
 # ── .zshrc ────────────────────────────────────────────────────────────
 info "Writing ~/.zshrc..."
@@ -168,8 +179,21 @@ done
 echo ""
 echo "Zsh plugins:"
 for p in ohmyzsh powerlevel10k zsh-autosuggestions zsh-history-substring-search zsh-syntax-highlighting; do
-  printf '  \033[32m✓\033[0m %s\n' "$p"
+  if [[ -d "${DEVPOD_ZSH}/${p}" ]]; then
+    printf '  \033[32m✓\033[0m %s\n' "$p"
+  else
+    printf '  \033[31m✗\033[0m %s\n' "$p"
+  fi
 done
+
+if [[ "${zsh_plugin_ok}" != "true" ]]; then
+  echo ""
+  warn "Some components failed to download (github.com unreachable)."
+  echo "  For offline / restricted-network environments, use bootstrap.sh instead:"
+  echo "    1. Copy the repo to this server (scp, rsync, USB, etc.)"
+  echo "    2. bash install/bootstrap.sh --flavor <flavor> --user"
+  echo "  bootstrap.sh uses vendored assets and does not require github.com access."
+fi
 
 zsh_path="$(command -v zsh 2>/dev/null || true)"
 echo ""
