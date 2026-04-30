@@ -10,3 +10,4 @@ RUN cp -a /root/.copilot /opt/devpod-skel/.copilot \
     && chmod -R a+rX /opt/devpod-skel
 
 ENV OPENPOD_COPILOT_VERSION=1.0.24
+ENV OPENPOD_COPILOT_REAL_BIN=/usr/local/bin/copilot-real

@@ -26,7 +26,7 @@ The repository maintains one shared `devpod` base with common developer tooling:
 - Zsh + Powerlevel10k + vendored shell plugins
 - Neovim + LazyVim starter
 - uv + Python dev tools
-- zellij, btop, yazi, git, rg, fd, and other common CLI tooling
+- zellij, btop, yazi, git, rg, fd, atuin, harlequin, and other common CLI tooling
 
 On top of that base, the repo builds five runtime flavors:
 
@@ -164,8 +164,8 @@ The host only needs `bash`, `curl`, and `git`. The script installs Homebrew and 
 
 - **Search/Navigation**: bat, fd, fzf, ripgrep
 - **Editor**: neovim (LazyVim preset)
-- **Terminal**: zellij, yazi, btop, zsh
-- **Development**: gcc, make, node, npm, bun, uv, jq, sqlite
+- **Terminal**: zellij, yazi, btop, zsh, atuin
+- **Development**: gcc, make, node, npm, bun, uv, jq, sqlite, harlequin
 - **Shell plugins**: oh-my-zsh, powerlevel10k, autosuggestions, history-substring-search, syntax-highlighting
 
 After installation, run `exec zsh` to enter the configured zsh environment.

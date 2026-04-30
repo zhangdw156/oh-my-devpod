@@ -10,3 +10,4 @@ RUN cp -a /root/.gemini /opt/devpod-skel/.gemini \
     && chmod -R a+rX /opt/devpod-skel
 
 ENV OPENPOD_GEMINI_VERSION=0.37.1
+ENV OPENPOD_GEMINI_REAL_BIN=/usr/local/bin/gemini-real

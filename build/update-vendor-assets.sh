@@ -27,6 +27,7 @@ antidote_version="v2.0.10"
 zellij_version="v0.44.0"
 yazi_version="v26.1.22"
 neovim_version="v0.12.0"
+atuin_version="v18.15.2"
 superpowers_version="v5.0.7"
 lazyvim_starter_commit="803bc181d7c0d6d5eeba9274d9be49b287294d99"
 
@@ -126,6 +127,14 @@ download_release_assets \
   "https://github.com/sxyazi/yazi/releases/download/${yazi_version}/yazi-aarch64-unknown-linux-gnu.deb" \
   "yazi-x86_64-unknown-linux-gnu.deb" \
   "https://github.com/sxyazi/yazi/releases/download/${yazi_version}/yazi-x86_64-unknown-linux-gnu.deb"
+
+download_release_assets \
+  "atuin" \
+  "${atuin_version}" \
+  "atuin-aarch64-unknown-linux-musl.tar.gz" \
+  "https://github.com/atuinsh/atuin/releases/download/${atuin_version}/atuin-aarch64-unknown-linux-musl.tar.gz" \
+  "atuin-x86_64-unknown-linux-musl.tar.gz" \
+  "https://github.com/atuinsh/atuin/releases/download/${atuin_version}/atuin-x86_64-unknown-linux-musl.tar.gz"
 
 download_plugin_snapshot "ohmyzsh/ohmyzsh" "${ohmyzsh_commit}" "${vendor_dir}/zsh/ohmyzsh"
 download_plugin_snapshot "romkatv/powerlevel10k" "${powerlevel10k_commit}" "${vendor_dir}/zsh/powerlevel10k"

@@ -53,7 +53,7 @@ eval "$("${HOMEBREW_PREFIX}/bin/brew" shellenv)"
 
 # ── Core tools ────────────────────────────────────────────────────────
 packages=(
-  antidote bat btop fd fzf jq make neovim node
+  antidote atuin bat btop fd fzf jq make neovim node pigz
   ripgrep sqlite unzip uv vim yazi zellij zsh
 )
 info "Installing packages: ${packages[*]}"
@@ -64,6 +64,10 @@ if ! command -v bun >/dev/null 2>&1; then
   info "Installing bun..."
   BUN_INSTALL="${HOME}/.bun" curl -fsSL https://bun.sh/install | bash
 fi
+
+# ── Python tools ──────────────────────────────────────────────────────
+info "Installing harlequin..."
+uv tool install --force "harlequin==2.5.2"
 
 # ── Zsh plugins ───────────────────────────────────────────────────────
 info "Setting up zsh plugins..."
@@ -124,6 +128,10 @@ if command -v fzf >/dev/null 2>&1; then
   source <(fzf --zsh 2>/dev/null) || true
 fi
 
+if command -v atuin >/dev/null 2>&1; then
+  eval "$(atuin init zsh --disable-up-arrow)"
+fi
+
 export EDITOR=nvim
 export VISUAL=nvim
 if command -v bat >/dev/null 2>&1; then
@@ -149,7 +157,7 @@ echo ""
 info "Installation complete!"
 echo ""
 echo "Installed tools:"
-for tool in bat btop bun fd fzf gcc git jq make nvim node npm rg sqlite3 uv vim yazi zellij zsh; do
+for tool in atuin bat btop bun fd fzf gcc git harlequin jq make nvim node npm rg sqlite3 uv vim yazi zellij zsh; do
   if command -v "$tool" >/dev/null 2>&1; then
     printf '  \033[32m✓\033[0m %s\n' "$tool"
   else

@@ -8,3 +8,6 @@ RUN OPENPOD_REPO_ROOT=/opt OPENPOD_PREFIX=/opt/codexpod OPENPOD_BIN_DIR=/usr/loc
 # Sync flavor config into devpod-skel for --user support
 RUN cp -a /root/.codex /opt/devpod-skel/.codex \
     && chmod -R a+rX /opt/devpod-skel
+
+ENV OPENPOD_CODEX_VERSION=0.118.0
+ENV OPENPOD_CODEX_REAL_BIN=/usr/local/bin/codex-real

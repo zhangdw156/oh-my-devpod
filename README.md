@@ -26,7 +26,7 @@
 - Zsh + Powerlevel10k + vendored shell plugins
 - Neovim + LazyVim starter
 - uv + Python 开发工具
-- zellij、btop、yazi、git、rg、fd 等通用开发工具
+- zellij、btop、yazi、git、rg、fd、atuin、harlequin 等通用开发工具
 
 在这套共同基座上，产出 5 个 flavor：
 
@@ -164,8 +164,8 @@ curl -fsSL https://raw.githubusercontent.com/zhangdw156/oh-my-devpod/main/instal
 
 - **搜索/导航**: bat, fd, fzf, ripgrep
 - **编辑器**: neovim (LazyVim preset)
-- **终端**: zellij, yazi, btop, zsh
-- **开发**: gcc, make, node, npm, bun, uv, jq, sqlite
+- **终端**: zellij, yazi, btop, zsh, atuin
+- **开发**: gcc, make, node, npm, bun, uv, jq, sqlite, harlequin
 - **Shell 插件**: oh-my-zsh, powerlevel10k, autosuggestions, history-substring-search, syntax-highlighting
 
 安装完成后运行 `exec zsh` 即可进入配置好的 zsh 环境。

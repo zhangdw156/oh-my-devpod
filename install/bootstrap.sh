@@ -204,6 +204,7 @@ export HOMEBREW_NO_INSTALL_CLEANUP=1
 
 brew_packages=(
   antidote
+  atuin
   bat
   btop
   fd
@@ -214,6 +215,7 @@ brew_packages=(
   make
   neovim
   node
+  pigz
   ripgrep
   sqlite
   unzip
@@ -276,6 +278,9 @@ source "${vendor_home}/zsh/zsh-history-substring-search/zsh-history-substring-se
 source "${vendor_home}/zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
 source "${vendor_home}/zsh/powerlevel10k/powerlevel10k.zsh-theme"
 [[ ! -f "${shell_dir}/.p10k.zsh" ]] || source "${shell_dir}/.p10k.zsh"
+if command -v atuin >/dev/null 2>&1; then
+  eval "\$(atuin init zsh --disable-up-arrow)"
+fi
 alias cc=clear
 alias zj=zellij
 function y() {
@@ -327,6 +332,7 @@ export OPENPOD_NVM_CACHE_DIR="${xdg_cache_home}/nvim"
 export OPENPOD_NVM_OVERLAY_DIR="${repo_root}/config/nvim"
 export OPENPOD_PYRIGHT_VERSION="1.1.408"
 export OPENPOD_RUFF_VERSION="0.15.9"
+export OPENPOD_HARLEQUIN_VERSION="2.5.2"
 export OPENPOD_UV_BIN="${homebrew_prefix}/bin/uv"
 export OPENPOD_UV_TOOL_DIR="${prefix}/opt/uv-tools"
 export OPENPOD_REPO_ROOT="${repo_root}"

@@ -24,6 +24,10 @@ if command -v fzf >/dev/null 2>&1; then
   source <(fzf --zsh 2>/dev/null) || true
 fi
 
+if command -v atuin >/dev/null 2>&1; then
+  eval "$(atuin init zsh --disable-up-arrow)"
+fi
+
 export EDITOR=nvim
 export VISUAL=nvim
 if command -v bat >/dev/null 2>&1; then

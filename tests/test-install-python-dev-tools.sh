@@ -41,6 +41,9 @@ case "$*" in
   *ruff*)
     : > "${UV_TOOL_BIN_DIR}/ruff"
     ;;
+  *harlequin*)
+    : > "${UV_TOOL_BIN_DIR}/harlequin"
+    ;;
 esac
 EOF
 chmod +x "${fake_uv}"
@@ -54,7 +57,9 @@ bash "${repo_root}/build/install-python-dev-tools.sh"
 assert_file "${bin_dir}/pyright"
 assert_file "${bin_dir}/pyright-langserver"
 assert_file "${bin_dir}/ruff"
+assert_file "${bin_dir}/harlequin"
 assert_contains "UV_TOOL_BIN_DIR=${bin_dir}" "${log_file}"
 assert_contains "UV_TOOL_DIR=${tool_dir}" "${log_file}"
 assert_contains "ARGS=tool install --force pyright[nodejs]==1.1.408" "${log_file}"
 assert_contains "ARGS=tool install --force ruff==0.15.9" "${log_file}"
+assert_contains "ARGS=tool install --force harlequin==2.5.2" "${log_file}"

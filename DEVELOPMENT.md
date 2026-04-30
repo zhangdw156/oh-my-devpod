@@ -168,10 +168,13 @@ git push -u origin release/x.y.z
 
 # 3. 提 PR 合并到 main
 #    合并后，GitHub Actions 会自动构建并发布：
+#    ghcr.io/zhangdw156/devpod:x.y.z
 #    ghcr.io/zhangdw156/openpod:x.y.z
-#    ghcr.io/zhangdw156/openpod:latest
+#    ghcr.io/zhangdw156/claudepod:x.y.z
+#    ghcr.io/zhangdw156/codexpod:x.y.z
 #    ghcr.io/zhangdw156/copilotpod:x.y.z
 #    ghcr.io/zhangdw156/geminipod:x.y.z
+#    （每个镜像同时推送 x.y.z 和 latest 两个 tag）
 
 # 4. 发布成功后，给 release commit 打 tag 并创建 GitHub Release
 git checkout main
