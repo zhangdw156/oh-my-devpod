@@ -101,6 +101,16 @@ OpenCode-specific vendored assets live under:
 - `docs/vendor-assets.md`: authoritative explanation of vendored assets and refresh workflow
 - `docs/environment-variables.md`: complete reference for all `OHMYDEVPOD_*` environment variables
 
+## GitHub CLI authentication
+
+All `gh` commands **must** use the project `.env` token to authenticate as zhangdw156:
+
+```bash
+source .env && GH_TOKEN=$GH_TOKEN gh ...
+```
+
+Never use bare `gh` — the default `gh auth` may be logged into a different account.
+
 ## Repository-specific constraints
 
 - Do not treat `runtime/openpod/vendor/opencode/packages/superpowers` as a normal local refactor target unless the task is explicitly about updating the vendored upstream package
