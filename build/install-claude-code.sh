@@ -45,11 +45,7 @@ platform="linux-${arch_suffix}${libc_suffix}"
 binary_url="${bucket_url}/${version}/${platform}/claude"
 
 manifest_json="$(curl -fsSL "${manifest_url}")"
-expected_sha="$(
-  printf '%s' "${manifest_json}" \
-    | tr -d '[:space:]' \
-    | sed -n "s/.*\"${platform}\":{[^}]*\"checksum\":\"\\([a-fA-F0-9]*\\)\".*/\\1/p"
-)"
+expected_sha="$(printf '%s' "${manifest_json}" | jq -r --arg p "${platform}" '.[$p].checksum // empty')"
 if [[ -z "${expected_sha}" ]]; then
   echo "failed to extract checksum for platform ${platform} from manifest" >&2
   exit 1

@@ -114,7 +114,7 @@ docker compose -f docker/copilotpod/docker-compose.yaml run --rm -it copilotpod
 docker compose -f docker/geminipod/docker-compose.yaml run --rm -it geminipod
 ```
 
-compose 默认从 `ghcr.io/zhangdw156/{flavor}:latest` 拉取镜像。如需指定版本：
+compose 默认从 `ghcr.io/zhangdw156/{flavor}:latest` 拉取镜像。镜像版本由仓库根目录 `VERSION` 文件管理；如需指定版本：
 
 ```bash
 IMAGE_VERSION=0.10.0 docker compose -f docker/claudepod/docker-compose.yaml run --rm -it claudepod

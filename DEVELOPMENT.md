@@ -76,7 +76,7 @@ oh-my-devpod/
 
 仓库根目录 `versions.env` 是所有工具版本的唯一真源。构建脚本（`build/update-vendor-assets.sh`）直接 source 此文件；安装脚本（`build/install-*.sh`）通过环境变量接收版本并保留回退默认值；Dockerfile 通过 ARG 声明版本（默认值与 `versions.env` 保持同步）。更新工具版本时，先改 `versions.env`，然后同步 Dockerfile ARG 默认值和 install 脚本回退默认值。`tests/test-versions-env.sh` 会验证这些值的一致性。
 
-`docker/<flavor>/docker-compose.yaml` 默认从 `ghcr.io/zhangdw156/{flavor}:${IMAGE_VERSION:-latest}` 拉取官方镜像。如需本地构建，可取消注释 compose 文件中的 `build:` 段。`VERSION` 文件是版本真源，compose 不会自动读取它。
+`docker/<flavor>/docker-compose.yaml` 默认从 `ghcr.io/zhangdw156/{flavor}:${IMAGE_VERSION:-latest}` 拉取官方镜像。如需本地构建，可取消注释 compose 文件中的 `build:` 段。`VERSION` 文件是版本真源，compose 不会自动读取 `VERSION`。使用指定版本时需手动注入：`export IMAGE_VERSION=$(cat VERSION)`。
 
 | 版本格式 | 含义 |
 |----------|------|

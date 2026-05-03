@@ -52,6 +52,10 @@ check "install-antidote.sh fallback" \
   "ANTIDOTE_VERSION:-${ANTIDOTE_VERSION}"
 
 # Verify Dockerfile ARG defaults match versions.env
+check "Dockerfile.devpod ARG ANTIDOTE_VERSION" \
+  "${repo_root}/Dockerfile.devpod" \
+  "ARG ANTIDOTE_VERSION=${ANTIDOTE_VERSION}"
+
 check "Dockerfile.devpod ARG ATUIN_VERSION" \
   "${repo_root}/Dockerfile.devpod" \
   "ARG ATUIN_VERSION=${ATUIN_VERSION}"
