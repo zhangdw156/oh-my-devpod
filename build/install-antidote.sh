@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-version="v2.0.10"
+version="${ANTIDOTE_VERSION:-v2.0.10}"
 asset_root="${OHMYDEVPOD_ASSET_ROOT:-/opt/vendor/releases}"
 asset_dir="${asset_root}/antidote/${version}"
 archive_name="antidote-${version}.tar.gz"

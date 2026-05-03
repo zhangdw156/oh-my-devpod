@@ -6,7 +6,7 @@ This repository keeps shared build-time assets under `vendor/` so the common `de
 
 Shared vendored assets include:
 
-- release archives for `antidote`, `btop`, `neovim`, `zellij`, and `yazi`
+- release archives for `antidote`, `atuin`, `btop`, `neovim`, `zellij`, and `yazi`
 - Zsh plugin snapshots
 - the LazyVim starter snapshot
 
@@ -23,6 +23,7 @@ vendor/
 │   └── lazyvim-starter/
 ├── releases/
 │   ├── antidote/
+│   ├── atuin/
 │   ├── btop/
 │   ├── neovim/
 │   ├── yazi/
@@ -62,6 +63,7 @@ runtime/openpod/
 | Component | Version | Local path |
 |-----------|---------|------------|
 | Antidote | `v2.0.10` | `vendor/releases/antidote/v2.0.10/` |
+| Atuin | `v18.15.2` | `vendor/releases/atuin/v18.15.2/` |
 | btop | `v1.4.6` | `vendor/releases/btop/v1.4.6/` |
 | Neovim | `v0.12.0` | `vendor/releases/neovim/v0.12.0/` |
 | Zellij | `v0.44.0` | `vendor/releases/zellij/v0.44.0/` |

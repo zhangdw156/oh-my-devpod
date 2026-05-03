@@ -2,7 +2,7 @@
 set -euo pipefail
 
 target_arch="${TARGETARCH:-}"
-version="v1.4.6"
+version="${BTOP_VERSION:-v1.4.6}"
 asset_root="${OHMYDEVPOD_ASSET_ROOT:-/opt/vendor/releases}"
 asset_dir="${asset_root}/btop/${version}"
 bin_dir="${OHMYDEVPOD_BIN_DIR:-/usr/local/bin}"

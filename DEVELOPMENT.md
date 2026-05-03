@@ -74,6 +74,8 @@ oh-my-devpod/
 
 仓库根目录 `VERSION` 文件是六个镜像唯一的版本真源，格式为 `x.y.z.devN`（开发）或 `x.y.z`（正式发布）。
 
+仓库根目录 `versions.env` 是所有工具版本的唯一真源。构建脚本（`build/update-vendor-assets.sh`）直接 source 此文件；安装脚本（`build/install-*.sh`）通过环境变量接收版本并保留回退默认值；Dockerfile 通过 ARG 声明版本（默认值与 `versions.env` 保持同步）。更新工具版本时，先改 `versions.env`，然后同步 Dockerfile ARG 默认值和 install 脚本回退默认值。`tests/test-versions-env.sh` 会验证这些值的一致性。
+
 `docker/<flavor>/docker-compose.yaml` 默认从 `ghcr.io/zhangdw156/{flavor}:${IMAGE_VERSION:-latest}` 拉取官方镜像。如需本地构建，可取消注释 compose 文件中的 `build:` 段。`VERSION` 文件是版本真源，compose 不会自动读取它。
 
 | 版本格式 | 含义 |
@@ -111,6 +113,7 @@ oh-my-devpod/
 - `runtime/claudepod/skills/`、`runtime/codexpod/skills/`、`runtime/copilotpod/skills/`、`runtime/geminipod/skills/` 可承载从 OpenCode vendored superpowers 同步出的 flavor-owned skills
 - `tests/` 目录存放仓库维护的 shell 级回归测试；优先覆盖 flavor 编排、安装脚本行为和关键接线关系
 - `vendor/manifest.lock.json` 和 `docs/vendor-assets.md` 一起维护本地资产的来源、版本、校验和与更新方式
+- `docs/environment-variables.md` 提供所有 `OHMYDEVPOD_*` 环境变量的完整参考文档
 - 默认本地 `docker build` 不再依赖 GitHub release、Zsh 插件仓库或 OpenCode 插件仓库的运行时拉取，但仍需要访问基础镜像来源，例如 Docker Hub 和 GHCR，以及未 vendored 的 harness 安装端点
 
 ### Neovim / LazyVim 资产约定
@@ -136,9 +139,12 @@ oh-my-devpod/
 
 ### 其他 harness 约定
 
+- `claudepod` 使用原生二进制安装（`build/install-claude-code.sh`），不通过 npm；安装目录为 `~/.local/share/claude/versions/`，与其他 npm-based flavor 不同
+- `openpod` 通过 `COPY --from=ghcr.io/anomalyco/opencode` 直接获取二进制，不使用 CLI wrapper 脚本（其他 flavor 均通过 `OHMYDEVPOD_*_REAL_BIN` 间接调用）
 - `codexpod` 使用 `@openai/codex`
 - `copilotpod` 使用 `@github/copilot`
-- `geminipod` 使用 `@google/gemini-cli`，要求 `Node.js >=20`
+- `geminipod` 使用 `@google/gemini-cli`
+- `codexpod`、`copilotpod`、`geminipod` 均要求 `Node.js >=20`
 - `copilotpod` 的用户级配置目录为 `~/.copilot/`，可通过 `GH_TOKEN` / `GITHUB_TOKEN` 提供非交互认证
 - `geminipod` 的用户级配置目录为 `~/.gemini/`，headless 场景优先使用 `GEMINI_API_KEY` 或 Vertex AI 相关环境变量
 

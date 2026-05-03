@@ -1,5 +1,15 @@
 FROM ubuntu:24.04 AS devpod-base
 
+ARG ATUIN_VERSION=v18.15.2
+ARG BTOP_VERSION=v1.4.6
+ARG NEOVIM_VERSION=v0.12.0
+ARG YAZI_VERSION=v26.1.22
+ARG ZELLIJ_VERSION=v0.44.0
+ARG PYRIGHT_VERSION=1.1.408
+ARG RUFF_VERSION=0.15.9
+ARG HARLEQUIN_VERSION=2.5.2
+ARG LAZYVIM_STARTER_COMMIT=803bc181d7c0d6d5eeba9274d9be49b287294d99
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bat \
     bzip2 \
@@ -27,12 +37,12 @@ COPY vendor/releases /opt/vendor/releases
 ARG TARGETARCH
 COPY build/install-btop.sh build/install-antidote.sh build/install-zellij.sh \
      build/install-yazi.sh build/install-neovim.sh build/install-atuin.sh /tmp/
-RUN bash /tmp/install-btop.sh \
-    && bash /tmp/install-antidote.sh \
-    && bash /tmp/install-zellij.sh \
-    && bash /tmp/install-yazi.sh \
-    && bash /tmp/install-neovim.sh \
-    && bash /tmp/install-atuin.sh \
+RUN BTOP_VERSION=${BTOP_VERSION} bash /tmp/install-btop.sh \
+    && ANTIDOTE_VERSION=${ANTIDOTE_VERSION} bash /tmp/install-antidote.sh \
+    && ZELLIJ_VERSION=${ZELLIJ_VERSION} bash /tmp/install-zellij.sh \
+    && YAZI_VERSION=${YAZI_VERSION} bash /tmp/install-yazi.sh \
+    && NEOVIM_VERSION=${NEOVIM_VERSION} bash /tmp/install-neovim.sh \
+    && ATUIN_VERSION=${ATUIN_VERSION} bash /tmp/install-atuin.sh \
     && rm -f /tmp/install-btop.sh /tmp/install-antidote.sh /tmp/install-zellij.sh \
              /tmp/install-yazi.sh /tmp/install-neovim.sh /tmp/install-atuin.sh
 
@@ -44,27 +54,27 @@ COPY build/install-python-dev-tools.sh /tmp/install-python-dev-tools.sh
 RUN ln -sf /usr/local/bin/bun /usr/local/bin/bunx \
     && ln -sf ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
     && ln -sf ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
-    && bash /tmp/install-python-dev-tools.sh \
+    && OHMYDEVPOD_PYRIGHT_VERSION=${PYRIGHT_VERSION} OHMYDEVPOD_RUFF_VERSION=${RUFF_VERSION} OHMYDEVPOD_HARLEQUIN_VERSION=${HARLEQUIN_VERSION} bash /tmp/install-python-dev-tools.sh \
     && rm -f /tmp/install-python-dev-tools.sh
 
 COPY vendor/nvim /opt/vendor/nvim
 COPY config/nvim /opt/devpod-config/nvim
 COPY build/install-lazyvim.sh /tmp/install-lazyvim.sh
-RUN OHMYDEVPOD_NVM_OVERLAY_DIR=/opt/devpod-config/nvim bash /tmp/install-lazyvim.sh && rm -f /tmp/install-lazyvim.sh
+RUN OHMYDEVPOD_NVM_OVERLAY_DIR=/opt/devpod-config/nvim OHMYDEVPOD_LAZYVIM_STARTER_COMMIT=${LAZYVIM_STARTER_COMMIT} bash /tmp/install-lazyvim.sh && rm -f /tmp/install-lazyvim.sh
 RUN nvim --headless "+Lazy! sync" +qa
 
 COPY vendor/zsh /opt/vendor/zsh
 
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
-ENV OHMYDEVPOD_ATUIN_VERSION=18.15.2
-ENV OHMYDEVPOD_HARLEQUIN_VERSION=2.5.2
-ENV OHMYDEVPOD_LAZYVIM_STARTER_COMMIT=803bc181d7c0d6d5eeba9274d9be49b287294d99
+ENV OHMYDEVPOD_ATUIN_VERSION=${ATUIN_VERSION}
+ENV OHMYDEVPOD_HARLEQUIN_VERSION=${HARLEQUIN_VERSION}
+ENV OHMYDEVPOD_LAZYVIM_STARTER_COMMIT=${LAZYVIM_STARTER_COMMIT}
 ENV OHMYDEVPOD_LAZYVIM_SOURCE_DIR=/opt/vendor/nvim/lazyvim-starter
 ENV OHMYDEVPOD_NEOVIM_DIR=/opt/neovim
 ENV OHMYDEVPOD_NVM_OVERLAY_DIR=/opt/devpod-config/nvim
-ENV OHMYDEVPOD_PYRIGHT_VERSION=1.1.408
-ENV OHMYDEVPOD_RUFF_VERSION=0.15.9
+ENV OHMYDEVPOD_PYRIGHT_VERSION=${PYRIGHT_VERSION}
+ENV OHMYDEVPOD_RUFF_VERSION=${RUFF_VERSION}
 ENV OHMYDEVPOD_UV_TOOL_DIR=/opt/uv-tools
 ENV TERM=xterm-256color
 ENV SHELL=/bin/zsh

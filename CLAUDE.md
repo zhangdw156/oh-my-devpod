@@ -50,6 +50,7 @@ bash runtime/openpod/vendor/opencode/packages/superpowers/tests/opencode/run-tes
 ## Release and versioning
 
 - The single source of truth for image and release versions is the root `VERSION` file.
+- The single source of truth for tool versions (atuin, btop, neovim, etc.) is `versions.env`. Build scripts source it; Dockerfiles declare matching ARG defaults; install scripts use env var fallbacks. Run `bash tests/test-versions-env.sh` to verify consistency.
 - Pod-local compose files stay the local runtime contract for each flavor and pull from `ghcr.io/zhangdw156/{flavor}:${IMAGE_VERSION:-latest}`; they do not read `VERSION` automatically.
 - `.github/workflows/publish-ghcr.yml` reads `VERSION` directly.
 - Releases go through PRs with `gh pr merge --squash --delete-branch` to keep a clean branch history. The release machine has `gh` available.
@@ -98,6 +99,7 @@ OpenCode-specific vendored assets live under:
 - `README.md` / `README_EN.md`: user-facing usage
 - `DEVELOPMENT.md`: maintainer rules such as versioning, releases, and asset ownership
 - `docs/vendor-assets.md`: authoritative explanation of vendored assets and refresh workflow
+- `docs/environment-variables.md`: complete reference for all `OHMYDEVPOD_*` environment variables
 
 ## Repository-specific constraints
 

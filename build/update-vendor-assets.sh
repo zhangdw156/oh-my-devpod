@@ -2,6 +2,10 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# shellcheck source=../versions.env
+source "${repo_root}/versions.env"
+
 vendor_dir="${repo_root}/vendor"
 runtime_dir="${repo_root}/runtime"
 openpod_vendor_dir="${runtime_dir}/openpod/vendor"
@@ -22,20 +26,20 @@ curl_retry=(
   --connect-timeout 15
 )
 
-btop_version="v1.4.6"
-antidote_version="v2.0.10"
-zellij_version="v0.44.0"
-yazi_version="v26.1.22"
-neovim_version="v0.12.0"
-atuin_version="v18.15.2"
-superpowers_version="v5.0.7"
-lazyvim_starter_commit="803bc181d7c0d6d5eeba9274d9be49b287294d99"
+btop_version="${BTOP_VERSION}"
+antidote_version="${ANTIDOTE_VERSION}"
+zellij_version="${ZELLIJ_VERSION}"
+yazi_version="${YAZI_VERSION}"
+neovim_version="${NEOVIM_VERSION}"
+atuin_version="${ATUIN_VERSION}"
+superpowers_version="${SUPERPOWERS_VERSION}"
+lazyvim_starter_commit="${LAZYVIM_STARTER_COMMIT}"
 
-ohmyzsh_commit="9e2c1548c3dfeefd055e1c6606f66657093ae928"
-powerlevel10k_commit="604f19a9eaa18e76db2e60b8d446d5f879065f90"
-autosuggestions_commit="85919cd1ffa7d2d5412f6d3fe437ebdbeeec4fc5"
-history_substring_search_commit="14c8d2e0ffaee98f2df9850b19944f32546fdea5"
-syntax_highlighting_commit="1d85c692615a25fe2293bdd44b34c217d5d2bf04"
+ohmyzsh_commit="${OHMYZSH_COMMIT}"
+powerlevel10k_commit="${POWERLEVEL10K_COMMIT}"
+autosuggestions_commit="${AUTOSUGGESTIONS_COMMIT}"
+history_substring_search_commit="${HISTORY_SUBSTRING_SEARCH_COMMIT}"
+syntax_highlighting_commit="${SYNTAX_HIGHLIGHTING_COMMIT}"
 
 download() {
   local url="$1"

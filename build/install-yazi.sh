@@ -2,7 +2,7 @@
 set -euo pipefail
 
 target_arch="${TARGETARCH:-}"
-version="v26.1.22"
+version="${YAZI_VERSION:-v26.1.22}"
 asset_root="${OHMYDEVPOD_ASSET_ROOT:-/opt/vendor/releases}"
 asset_dir="${asset_root}/yazi/${version}"
 bin_dir="${OHMYDEVPOD_BIN_DIR:-/usr/local/bin}"

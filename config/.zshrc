@@ -12,10 +12,14 @@ ZSH_THEME=""
 plugins=(git extract)
 
 source "${ZSH}/oh-my-zsh.sh"
-source /opt/vendor/zsh/zsh-autosuggestions/zsh-autosuggestions.zsh
-source /opt/vendor/zsh/zsh-history-substring-search/zsh-history-substring-search.zsh
-source /opt/vendor/zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-source /opt/vendor/zsh/powerlevel10k/powerlevel10k.zsh-theme
+[[ -f /opt/vendor/zsh/zsh-autosuggestions/zsh-autosuggestions.zsh ]] && \
+  source /opt/vendor/zsh/zsh-autosuggestions/zsh-autosuggestions.zsh
+[[ -f /opt/vendor/zsh/zsh-history-substring-search/zsh-history-substring-search.zsh ]] && \
+  source /opt/vendor/zsh/zsh-history-substring-search/zsh-history-substring-search.zsh
+[[ -f /opt/vendor/zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]] && \
+  source /opt/vendor/zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+[[ -f /opt/vendor/zsh/powerlevel10k/powerlevel10k.zsh-theme ]] && \
+  source /opt/vendor/zsh/powerlevel10k/powerlevel10k.zsh-theme
 
 bindkey '^[[A' history-substring-search-up
 bindkey '^[[B' history-substring-search-down

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 target_arch="${TARGETARCH:-}"
-version="v18.15.2"
+version="${ATUIN_VERSION:-v18.15.2}"
 asset_root="${OHMYDEVPOD_ASSET_ROOT:-/opt/vendor/releases}"
 asset_dir="${asset_root}/atuin/${version}"
 bin_dir="${OHMYDEVPOD_BIN_DIR:-/usr/local/bin}"

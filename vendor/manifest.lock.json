@@ -93,12 +93,12 @@
       "assets": [
         {
           "name": "atuin-aarch64-unknown-linux-musl.tar.gz",
-          "sha256": "pending-update-vendor-assets",
+          "sha256": "fe28ceb65bf382f987634d5cafc12f2fd323d4f4d0cafc765e0d111815799e87",
           "source_url": "https://github.com/atuinsh/atuin/releases/download/v18.15.2/atuin-aarch64-unknown-linux-musl.tar.gz"
         },
         {
           "name": "atuin-x86_64-unknown-linux-musl.tar.gz",
-          "sha256": "pending-update-vendor-assets",
+          "sha256": "84c76ad3e61cb0a3cdbdcc768374d4bcc400e4a8f376d1302c37059d0d9affb1",
           "source_url": "https://github.com/atuinsh/atuin/releases/download/v18.15.2/atuin-x86_64-unknown-linux-musl.tar.gz"
         }
       ]

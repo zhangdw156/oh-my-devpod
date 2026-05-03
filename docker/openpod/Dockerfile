@@ -8,6 +8,8 @@ COPY --from=ghcr.io/anomalyco/opencode /usr/lib/libgcc_s.so.1 /usr/lib/musl-comp
 RUN musl_arch="$(case "${TARGETARCH:-$(dpkg --print-architecture)}" in amd64|x86_64) echo x86_64;; arm64|aarch64) echo aarch64;; *) echo x86_64;; esac)" \
     && echo "/lib:/usr/local/lib:/usr/lib:/usr/lib/musl-compat" > "/etc/ld-musl-${musl_arch}.path"
 
+ENV OHMYDEVPOD_OPENCODE_VERSION=""
+
 COPY runtime/openpod/vendor/opencode /opt/vendor/opencode
 COPY runtime/openpod/config/opencode.json /root/.config/opencode/config.json
 COPY runtime/openpod/bin/openpod-shell /usr/local/bin/openpod-shell

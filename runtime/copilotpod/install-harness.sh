@@ -14,6 +14,12 @@ if ! command -v node >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1; then
   exit 1
 fi
 
+node_major="$(node -p 'process.versions.node.split(".")[0]')"
+if [[ -z "${node_major}" || "${node_major}" -lt 20 ]]; then
+  echo "copilotpod requires Node.js >=20; found $(node --version)" >&2
+  exit 1
+fi
+
 mkdir -p "${copilot_prefix}" "${config_home}"
 copilot_pkg="@github/copilot"
 [[ -n "${copilot_version}" ]] && copilot_pkg="${copilot_pkg}@${copilot_version}"

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 target_arch="${TARGETARCH:-}"
-version="v0.44.0"
+version="${ZELLIJ_VERSION:-v0.44.0}"
 asset_root="${OHMYDEVPOD_ASSET_ROOT:-/opt/vendor/releases}"
 asset_dir="${asset_root}/zellij/${version}"
 bin_dir="${OHMYDEVPOD_BIN_DIR:-/usr/local/bin}"
@@ -41,7 +41,7 @@ tar -xzf "${archive_path}" -C "${tmp_dir}"
 expected_sha="$(awk '{print $1}' "${checksum_path}")"
 actual_sha="$(sha256sum "${tmp_dir}/zellij" | awk '{print $1}')"
 
-if [[ "${actual_sha}" != "${expected_sha}" ]]; then
+if [[ -z "${expected_sha}" || "${actual_sha}" != "${expected_sha}" ]]; then
   echo "Checksum mismatch for zellij ${version} (${zellij_arch})" >&2
   echo "Expected: ${expected_sha}" >&2
   echo "Actual:   ${actual_sha}" >&2

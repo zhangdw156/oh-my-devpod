@@ -252,10 +252,14 @@ ZSH_THEME=""
 plugins=(git extract)
 
 source "${ZSH}/oh-my-zsh.sh"
-source "$HOME/.local/share/devpod/zsh/zsh-autosuggestions/zsh-autosuggestions.zsh"
-source "$HOME/.local/share/devpod/zsh/zsh-history-substring-search/zsh-history-substring-search.zsh"
-source "$HOME/.local/share/devpod/zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
-source "$HOME/.local/share/devpod/zsh/powerlevel10k/powerlevel10k.zsh-theme"
+[[ -f "$HOME/.local/share/devpod/zsh/zsh-autosuggestions/zsh-autosuggestions.zsh" ]] && \
+  source "$HOME/.local/share/devpod/zsh/zsh-autosuggestions/zsh-autosuggestions.zsh"
+[[ -f "$HOME/.local/share/devpod/zsh/zsh-history-substring-search/zsh-history-substring-search.zsh" ]] && \
+  source "$HOME/.local/share/devpod/zsh/zsh-history-substring-search/zsh-history-substring-search.zsh"
+[[ -f "$HOME/.local/share/devpod/zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]] && \
+  source "$HOME/.local/share/devpod/zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+[[ -f "$HOME/.local/share/devpod/zsh/powerlevel10k/powerlevel10k.zsh-theme" ]] && \
+  source "$HOME/.local/share/devpod/zsh/powerlevel10k/powerlevel10k.zsh-theme"
 
 bindkey '^[[A' history-substring-search-up
 bindkey '^[[B' history-substring-search-down
