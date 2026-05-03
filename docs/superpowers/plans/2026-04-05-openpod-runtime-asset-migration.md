@@ -115,14 +115,14 @@ cp -R "${repo_root}/vendor" "${vendor_home}"
 if [[ "${flavor_name}" == "openpod" ]]; then
   mkdir -p "${openpod_runtime_vendor_home}"
   cp -R "${repo_root}/runtime/openpod/vendor/opencode" "${openpod_runtime_vendor_home}/opencode"
-  export OPENPOD_OPENPOD_VENDOR_HOME="${openpod_runtime_vendor_home}"
+  export OHMYDEVPOD_OHMYDEVPOD_VENDOR_HOME="${openpod_runtime_vendor_home}"
 fi
 ```
 
 - [ ] **Step 4: Update the OpenCode harness installer to read from the new runtime vendor root**
 
 ```bash
-openpod_vendor_home="${OPENPOD_OPENPOD_VENDOR_HOME:-${vendor_home}}"
+openpod_vendor_home="${OHMYDEVPOD_OHMYDEVPOD_VENDOR_HOME:-${vendor_home}}"
 
 mkdir -p "${config_home}/plugins"
 cp "${repo_root}/runtime/openpod/config/opencode.json" "${config_home}/config.json"

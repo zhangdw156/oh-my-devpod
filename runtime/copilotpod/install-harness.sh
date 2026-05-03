@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root="${OPENPOD_REPO_ROOT:?missing OPENPOD_REPO_ROOT}"
-prefix="${OPENPOD_PREFIX:?missing OPENPOD_PREFIX}"
-bin_dir="${OPENPOD_BIN_DIR:?missing OPENPOD_BIN_DIR}"
-config_home="${OPENPOD_CONFIG_HOME:?missing OPENPOD_CONFIG_HOME}"
+repo_root="${OHMYDEVPOD_REPO_ROOT:?missing OHMYDEVPOD_REPO_ROOT}"
+prefix="${OHMYDEVPOD_PREFIX:?missing OHMYDEVPOD_PREFIX}"
+bin_dir="${OHMYDEVPOD_BIN_DIR:?missing OHMYDEVPOD_BIN_DIR}"
+config_home="${OHMYDEVPOD_CONFIG_HOME:?missing OHMYDEVPOD_CONFIG_HOME}"
 copilot_prefix="${prefix}/opt/copilot-cli"
-copilot_version="${OPENPOD_COPILOT_VERSION:-1.0.24}"
+copilot_version="${OHMYDEVPOD_COPILOT_VERSION:-1.0.24}"
 skills_root="${repo_root}/runtime/copilotpod/skills"
 
 if ! command -v node >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1; then

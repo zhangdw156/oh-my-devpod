@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-claude_install_home="${OPENPOD_CLAUDE_INSTALL_HOME:?missing OPENPOD_CLAUDE_INSTALL_HOME}"
-bin_dir="${OPENPOD_BIN_DIR:?missing OPENPOD_BIN_DIR}"
-version="${OPENPOD_CLAUDE_CODE_VERSION:-2.1.92}"
-bucket_url="${OPENPOD_CLAUDE_CODE_BUCKET_URL:-https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases}"
+claude_install_home="${OHMYDEVPOD_CLAUDE_INSTALL_HOME:?missing OHMYDEVPOD_CLAUDE_INSTALL_HOME}"
+bin_dir="${OHMYDEVPOD_BIN_DIR:?missing OHMYDEVPOD_BIN_DIR}"
+version="${OHMYDEVPOD_CLAUDE_CODE_VERSION:-2.1.92}"
+bucket_url="${OHMYDEVPOD_CLAUDE_CODE_BUCKET_URL:-https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases}"
 manifest_url="${bucket_url}/${version}/manifest.json"
 native_versions_dir="${claude_install_home}/.local/share/claude/versions"
 real_bin="${native_versions_dir}/${version}"

@@ -35,9 +35,9 @@ archive_name="nvim-linux-x86_64.tar.gz"
 tar -czf "${release_dir}/${archive_name}" -C "${tmp_dir}/staging" "nvim-linux-x86_64"
 (cd "${release_dir}" && sha256sum "${archive_name}" > SHA256SUMS)
 
-OPENPOD_ASSET_ROOT="${asset_root}" \
-OPENPOD_BIN_DIR="${bin_dir}" \
-OPENPOD_NEOVIM_DIR="${neovim_dir}" \
+OHMYDEVPOD_ASSET_ROOT="${asset_root}" \
+OHMYDEVPOD_BIN_DIR="${bin_dir}" \
+OHMYDEVPOD_NEOVIM_DIR="${neovim_dir}" \
 TARGETARCH=amd64 \
 bash "${repo_root}/build/install-neovim.sh"
 

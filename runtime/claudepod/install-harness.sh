@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root="${OPENPOD_REPO_ROOT:?missing OPENPOD_REPO_ROOT}"
-bin_dir="${OPENPOD_BIN_DIR:?missing OPENPOD_BIN_DIR}"
-config_home="${OPENPOD_CONFIG_HOME:?missing OPENPOD_CONFIG_HOME}"
+repo_root="${OHMYDEVPOD_REPO_ROOT:?missing OHMYDEVPOD_REPO_ROOT}"
+bin_dir="${OHMYDEVPOD_BIN_DIR:?missing OHMYDEVPOD_BIN_DIR}"
+config_home="${OHMYDEVPOD_CONFIG_HOME:?missing OHMYDEVPOD_CONFIG_HOME}"
 
 mkdir -p "${config_home}"
-export OPENPOD_BIN_DIR="${bin_dir}"
-export OPENPOD_CLAUDE_INSTALL_HOME="${HOME}"
-export OPENPOD_CLAUDE_CODE_VERSION="${OPENPOD_CLAUDE_CODE_VERSION:-2.1.92}"
+export OHMYDEVPOD_BIN_DIR="${bin_dir}"
+export OHMYDEVPOD_CLAUDE_INSTALL_HOME="${HOME}"
+export OHMYDEVPOD_CLAUDE_CODE_VERSION="${OHMYDEVPOD_CLAUDE_CODE_VERSION:-2.1.92}"
 
 bash "${repo_root}/build/install-claude-code.sh"
 

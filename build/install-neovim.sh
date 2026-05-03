@@ -3,10 +3,10 @@ set -euo pipefail
 
 target_arch="${TARGETARCH:-}"
 version="v0.12.0"
-asset_root="${OPENPOD_ASSET_ROOT:-/opt/vendor/releases}"
+asset_root="${OHMYDEVPOD_ASSET_ROOT:-/opt/vendor/releases}"
 asset_dir="${asset_root}/neovim/${version}"
-bin_dir="${OPENPOD_BIN_DIR:-/usr/local/bin}"
-neovim_dir="${OPENPOD_NEOVIM_DIR:-/opt/neovim}"
+bin_dir="${OHMYDEVPOD_BIN_DIR:-/usr/local/bin}"
+neovim_dir="${OHMYDEVPOD_NEOVIM_DIR:-/opt/neovim}"
 
 if [[ -z "${target_arch}" ]]; then
   target_arch="$(dpkg --print-architecture)"
