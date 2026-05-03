@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-real_bin="${OPENPOD_CODEX_REAL_BIN:-${OPENPOD_BIN_DIR:-/usr/local/bin}/codex-real}"
+real_bin="${OHMYDEVPOD_CODEX_REAL_BIN:-${OHMYDEVPOD_BIN_DIR:-/usr/local/bin}/codex-real}"
 if [[ -z "${real_bin}" || ! -x "${real_bin}" ]]; then
   echo "codex real binary not found: ${real_bin:-unset}" >&2
   exit 1

@@ -3,9 +3,9 @@ set -euo pipefail
 
 target_arch="${TARGETARCH:-}"
 version="v26.1.22"
-asset_root="${OPENPOD_ASSET_ROOT:-/opt/vendor/releases}"
+asset_root="${OHMYDEVPOD_ASSET_ROOT:-/opt/vendor/releases}"
 asset_dir="${asset_root}/yazi/${version}"
-bin_dir="${OPENPOD_BIN_DIR:-/usr/local/bin}"
+bin_dir="${OHMYDEVPOD_BIN_DIR:-/usr/local/bin}"
 
 if [[ -z "${target_arch}" ]]; then
   target_arch="$(dpkg --print-architecture)"

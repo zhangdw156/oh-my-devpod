@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-prefix="${OPENPOD_PREFIX:-${HOME}/.local/copilotpod}"
+prefix="${OHMYDEVPOD_PREFIX:-${HOME}/.local/copilotpod}"
 
 if [[ -f "${prefix}/env.sh" ]]; then
   # shellcheck disable=SC1090
   source "${prefix}/env.sh"
 fi
 
-shell_dir="${OPENPOD_PREFIX:-${prefix}}/shell"
+shell_dir="${OHMYDEVPOD_PREFIX:-${prefix}}/shell"
 
 if [[ $# -eq 0 ]]; then
   exec env ZDOTDIR="${shell_dir}" zsh -i

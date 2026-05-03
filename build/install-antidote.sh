@@ -2,12 +2,12 @@
 set -euo pipefail
 
 version="v2.0.10"
-asset_root="${OPENPOD_ASSET_ROOT:-/opt/vendor/releases}"
+asset_root="${OHMYDEVPOD_ASSET_ROOT:-/opt/vendor/releases}"
 asset_dir="${asset_root}/antidote/${version}"
 archive_name="antidote-${version}.tar.gz"
 archive_path="${asset_dir}/${archive_name}"
 checksum_file="${asset_dir}/SHA256SUMS"
-antidote_dir="${OPENPOD_ANTIDOTE_DIR:-/opt/antidote}"
+antidote_dir="${OHMYDEVPOD_ANTIDOTE_DIR:-/opt/antidote}"
 
 expected_sha="$(awk -v name="${archive_name}" '$2 == name {print $1}' "${checksum_file}")"
 actual_sha="$(sha256sum "${archive_path}" | awk '{print $1}')"

@@ -203,7 +203,7 @@ jobs:
           {
             echo "Published Docker images:"
             echo "- \`${BASE_IMAGE}:${VERSION}\`"
-            echo "- \`${OPENPOD_IMAGE}:${VERSION}\`"
+            echo "- \`${OHMYDEVPOD_IMAGE}:${VERSION}\`"
             echo "- \`${CLAUDEPOD_IMAGE}:${VERSION}\`"
             echo "- \`${CODEXPOD_IMAGE}:${VERSION}\`"
             echo "- \`${COPILOTPOD_IMAGE}:${VERSION}\`"
@@ -211,7 +211,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
         env:
           BASE_IMAGE: ${{ steps.version.outputs.base_image_name }}
-          OPENPOD_IMAGE: ${{ steps.version.outputs.openpod_image_name }}
+          OHMYDEVPOD_IMAGE: ${{ steps.version.outputs.openpod_image_name }}
           CLAUDEPOD_IMAGE: ${{ steps.version.outputs.claudepod_image_name }}
           CODEXPOD_IMAGE: ${{ steps.version.outputs.codexpod_image_name }}
           COPILOTPOD_IMAGE: ${{ steps.version.outputs.copilotpod_image_name }}

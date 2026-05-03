@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root="${OPENPOD_REPO_ROOT:?missing OPENPOD_REPO_ROOT}"
-bin_dir="${OPENPOD_BIN_DIR:?missing OPENPOD_BIN_DIR}"
-config_home="${OPENPOD_CONFIG_HOME:?missing OPENPOD_CONFIG_HOME}"
-runtime_vendor_home="${OPENPOD_RUNTIME_VENDOR_HOME:?missing OPENPOD_RUNTIME_VENDOR_HOME}"
-prefix="${OPENPOD_PREFIX:?missing OPENPOD_PREFIX}"
-shell_dir="${OPENPOD_SHELL_DIR:?missing OPENPOD_SHELL_DIR}"
+repo_root="${OHMYDEVPOD_REPO_ROOT:?missing OHMYDEVPOD_REPO_ROOT}"
+bin_dir="${OHMYDEVPOD_BIN_DIR:?missing OHMYDEVPOD_BIN_DIR}"
+config_home="${OHMYDEVPOD_CONFIG_HOME:?missing OHMYDEVPOD_CONFIG_HOME}"
+runtime_vendor_home="${OHMYDEVPOD_RUNTIME_VENDOR_HOME:?missing OHMYDEVPOD_RUNTIME_VENDOR_HOME}"
+prefix="${OHMYDEVPOD_PREFIX:?missing OHMYDEVPOD_PREFIX}"
+shell_dir="${OHMYDEVPOD_SHELL_DIR:?missing OHMYDEVPOD_SHELL_DIR}"
 openpod_vendor_home="${runtime_vendor_home}/opencode"
 
 if [[ ! -d "${openpod_vendor_home}" ]]; then

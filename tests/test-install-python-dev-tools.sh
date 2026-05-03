@@ -29,9 +29,9 @@ fake_uv="${tmp_dir}/fake-uv"
 cat > "${fake_uv}" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
-printf 'UV_TOOL_BIN_DIR=%s\n' "${UV_TOOL_BIN_DIR:-}" >> "${OPENPOD_UV_LOG}"
-printf 'UV_TOOL_DIR=%s\n' "${UV_TOOL_DIR:-}" >> "${OPENPOD_UV_LOG}"
-printf 'ARGS=%s\n' "$*" >> "${OPENPOD_UV_LOG}"
+printf 'UV_TOOL_BIN_DIR=%s\n' "${UV_TOOL_BIN_DIR:-}" >> "${OHMYDEVPOD_UV_LOG}"
+printf 'UV_TOOL_DIR=%s\n' "${UV_TOOL_DIR:-}" >> "${OHMYDEVPOD_UV_LOG}"
+printf 'ARGS=%s\n' "$*" >> "${OHMYDEVPOD_UV_LOG}"
 mkdir -p "${UV_TOOL_BIN_DIR}"
 case "$*" in
   *pyright*)
@@ -48,10 +48,10 @@ esac
 EOF
 chmod +x "${fake_uv}"
 
-OPENPOD_UV_BIN="${fake_uv}" \
-OPENPOD_UV_LOG="${log_file}" \
-OPENPOD_BIN_DIR="${bin_dir}" \
-OPENPOD_UV_TOOL_DIR="${tool_dir}" \
+OHMYDEVPOD_UV_BIN="${fake_uv}" \
+OHMYDEVPOD_UV_LOG="${log_file}" \
+OHMYDEVPOD_BIN_DIR="${bin_dir}" \
+OHMYDEVPOD_UV_TOOL_DIR="${tool_dir}" \
 bash "${repo_root}/build/install-python-dev-tools.sh"
 
 assert_file "${bin_dir}/pyright"

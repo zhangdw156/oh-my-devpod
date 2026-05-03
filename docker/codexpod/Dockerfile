@@ -2,12 +2,12 @@ ARG DEVPOD_BASE_IMAGE=devpod
 FROM ${DEVPOD_BASE_IMAGE}
 
 COPY runtime/codexpod /opt/runtime/codexpod
-RUN OPENPOD_REPO_ROOT=/opt OPENPOD_PREFIX=/opt/codexpod OPENPOD_BIN_DIR=/usr/local/bin OPENPOD_CONFIG_HOME=/root/.codex \
+RUN OHMYDEVPOD_REPO_ROOT=/opt OHMYDEVPOD_PREFIX=/opt/codexpod OHMYDEVPOD_BIN_DIR=/usr/local/bin OHMYDEVPOD_CONFIG_HOME=/root/.codex \
       bash /opt/runtime/codexpod/install-harness.sh
 
 # Sync flavor config into devpod-skel for --user support
 RUN cp -a /root/.codex /opt/devpod-skel/.codex \
     && chmod -R a+rX /opt/devpod-skel
 
-ENV OPENPOD_CODEX_VERSION=0.118.0
-ENV OPENPOD_CODEX_REAL_BIN=/usr/local/bin/codex-real
+ENV OHMYDEVPOD_CODEX_VERSION=0.118.0
+ENV OHMYDEVPOD_CODEX_REAL_BIN=/usr/local/bin/codex-real

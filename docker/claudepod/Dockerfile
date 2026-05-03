@@ -2,7 +2,7 @@ ARG DEVPOD_BASE_IMAGE=devpod
 FROM ${DEVPOD_BASE_IMAGE}
 
 COPY build/install-claude-code.sh /tmp/install-claude-code.sh
-RUN OPENPOD_BIN_DIR=/usr/local/bin OPENPOD_CLAUDE_INSTALL_HOME=/root bash /tmp/install-claude-code.sh \
+RUN OHMYDEVPOD_BIN_DIR=/usr/local/bin OHMYDEVPOD_CLAUDE_INSTALL_HOME=/root bash /tmp/install-claude-code.sh \
     && rm -f /tmp/install-claude-code.sh
 
 COPY runtime/claudepod /opt/runtime/claudepod
@@ -20,6 +20,6 @@ RUN cp -a /root/.claude /opt/devpod-skel/.claude \
     && if [ -d /root/.local/bin ]; then cp -a /root/.local/bin /opt/devpod-skel/.local/bin; fi \
     && chmod -R a+rX /opt/devpod-skel
 ENV DISABLE_AUTOUPDATER=1
-ENV OPENPOD_CLAUDE_CODE_VERSION=2.1.92
-ENV OPENPOD_CLAUDE_REAL_BIN=/usr/local/bin/claude-real
+ENV OHMYDEVPOD_CLAUDE_CODE_VERSION=2.1.92
+ENV OHMYDEVPOD_CLAUDE_REAL_BIN=/usr/local/bin/claude-real
 ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/.local/bin

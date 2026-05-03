@@ -3,10 +3,10 @@ set -euo pipefail
 
 target_arch="${TARGETARCH:-}"
 version="v1.4.6"
-asset_root="${OPENPOD_ASSET_ROOT:-/opt/vendor/releases}"
+asset_root="${OHMYDEVPOD_ASSET_ROOT:-/opt/vendor/releases}"
 asset_dir="${asset_root}/btop/${version}"
-bin_dir="${OPENPOD_BIN_DIR:-/usr/local/bin}"
-btop_dir="${OPENPOD_BTOP_DIR:-/opt/btop}"
+bin_dir="${OHMYDEVPOD_BIN_DIR:-/usr/local/bin}"
+btop_dir="${OHMYDEVPOD_BTOP_DIR:-/opt/btop}"
 
 if [[ -z "${target_arch}" ]]; then
   target_arch="$(dpkg --print-architecture)"

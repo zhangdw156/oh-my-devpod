@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-uv_bin="${OPENPOD_UV_BIN:-uv}"
-bin_dir="${OPENPOD_BIN_DIR:-/usr/local/bin}"
-tool_dir="${OPENPOD_UV_TOOL_DIR:-/opt/uv-tools}"
-pyright_version="${OPENPOD_PYRIGHT_VERSION:-1.1.408}"
-ruff_version="${OPENPOD_RUFF_VERSION:-0.15.9}"
-harlequin_version="${OPENPOD_HARLEQUIN_VERSION:-2.5.2}"
+uv_bin="${OHMYDEVPOD_UV_BIN:-uv}"
+bin_dir="${OHMYDEVPOD_BIN_DIR:-/usr/local/bin}"
+tool_dir="${OHMYDEVPOD_UV_TOOL_DIR:-/opt/uv-tools}"
+pyright_version="${OHMYDEVPOD_PYRIGHT_VERSION:-1.1.408}"
+ruff_version="${OHMYDEVPOD_RUFF_VERSION:-0.15.9}"
+harlequin_version="${OHMYDEVPOD_HARLEQUIN_VERSION:-2.5.2}"
 
 mkdir -p "${bin_dir}" "${tool_dir}"
 

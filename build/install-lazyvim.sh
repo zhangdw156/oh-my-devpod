@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-source_dir="${OPENPOD_LAZYVIM_SOURCE_DIR:-/opt/vendor/nvim/lazyvim-starter}"
-overlay_dir="${OPENPOD_NVM_OVERLAY_DIR:-}"
-config_dir="${OPENPOD_NVM_CONFIG_DIR:-${XDG_CONFIG_HOME:-${HOME}/.config}/nvim}"
-data_dir="${OPENPOD_NVM_DATA_DIR:-${XDG_DATA_HOME:-${HOME}/.local/share}/nvim}"
-state_dir="${OPENPOD_NVM_STATE_DIR:-${XDG_STATE_HOME:-${HOME}/.local/state}/nvim}"
-cache_dir="${OPENPOD_NVM_CACHE_DIR:-${XDG_CACHE_HOME:-${HOME}/.cache}/nvim}"
-marker_name="${OPENPOD_MANAGED_MARKER:-.openpod-managed.json}"
+source_dir="${OHMYDEVPOD_LAZYVIM_SOURCE_DIR:-/opt/vendor/nvim/lazyvim-starter}"
+overlay_dir="${OHMYDEVPOD_NVM_OVERLAY_DIR:-}"
+config_dir="${OHMYDEVPOD_NVM_CONFIG_DIR:-${XDG_CONFIG_HOME:-${HOME}/.config}/nvim}"
+data_dir="${OHMYDEVPOD_NVM_DATA_DIR:-${XDG_DATA_HOME:-${HOME}/.local/share}/nvim}"
+state_dir="${OHMYDEVPOD_NVM_STATE_DIR:-${XDG_STATE_HOME:-${HOME}/.local/state}/nvim}"
+cache_dir="${OHMYDEVPOD_NVM_CACHE_DIR:-${XDG_CACHE_HOME:-${HOME}/.cache}/nvim}"
+marker_name="${OHMYDEVPOD_MANAGED_MARKER:-.ohmydevpod-managed.json}"
 marker_path="${config_dir}/${marker_name}"
-starter_commit="${OPENPOD_LAZYVIM_STARTER_COMMIT:-}"
-openpod_version="${OPENPOD_VERSION:-unknown}"
+starter_commit="${OHMYDEVPOD_LAZYVIM_STARTER_COMMIT:-}"
+openpod_version="${OHMYDEVPOD_VERSION:-unknown}"
 timestamp="$(date -u +%Y%m%d%H%M%SZ)"
 
 if [[ ! -d "${source_dir}" ]]; then
