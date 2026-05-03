@@ -1,20 +1,15 @@
 services:
-  devpod:
-    build:
-      context: ../..
-      dockerfile: Dockerfile.devpod
-      network: host
-    image: devpod:${IMAGE_VERSION:-local}
   codexpod:
-    build:
-      context: ../..
-      dockerfile: docker/codexpod/Dockerfile
-      network: host
-      additional_contexts:
-        devpod: service:devpod
-      args:
-        DEVPOD_BASE_IMAGE: devpod
-    image: codexpod:${IMAGE_VERSION:-local}
+    image: ghcr.io/zhangdw156/codexpod:${IMAGE_VERSION:-latest}
+    # To build locally instead of pulling, uncomment the build section
+    # and first build the devpod base image:
+    #   docker build -f Dockerfile.devpod -t ghcr.io/zhangdw156/devpod:local .
+    # build:
+    #   context: ../..
+    #   dockerfile: docker/codexpod/Dockerfile
+    #   network: host
+    #   args:
+    #     DEVPOD_BASE_IMAGE: ghcr.io/zhangdw156/devpod:${IMAGE_VERSION:-latest}
     container_name: codexpod
     user: "${UID:-1000}:${GID:-1000}"
     stdin_open: true
