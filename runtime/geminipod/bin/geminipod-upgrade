@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+version="${1:-}"
+prefix="${OHMYDEVPOD_PREFIX:-${HOME}/.local/geminipod}"
+bin_dir="${OHMYDEVPOD_BIN_DIR:-/usr/local/bin}"
+cli_prefix="${prefix}/opt/gemini-cli"
+
+old_version="$(gemini-real --version 2>/dev/null || echo 'unknown')"
+
+pkg="@google/gemini-cli"
+[[ -n "${version}" ]] && pkg="${pkg}@${version}"
+
+npm install -g --prefix "${cli_prefix}" "${pkg}"
+ln -sfn "${cli_prefix}/bin/gemini" "${bin_dir}/gemini-real"
+
+new_version="$(gemini-real --version 2>/dev/null || echo 'unknown')"
+echo "Upgraded gemini: ${old_version} -> ${new_version}"

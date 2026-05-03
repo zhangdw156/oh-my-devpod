@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+version="${1:-}"
+bin_dir="${OHMYDEVPOD_BIN_DIR:-/usr/local/bin}"
+repo_root="${OHMYDEVPOD_REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)}"
+
+old_version="$(claude-real --version 2>/dev/null || echo 'unknown')"
+
+export OHMYDEVPOD_CLAUDE_CODE_VERSION="${version}"
+export OHMYDEVPOD_CLAUDE_INSTALL_HOME="${HOME}"
+export OHMYDEVPOD_BIN_DIR="${bin_dir}"
+
+install_script="${repo_root}/build/install-claude-code.sh"
+if [[ ! -f "${install_script}" ]]; then
+  install_script="/opt/build/install-claude-code.sh"
+fi
+
+bash "${install_script}"
+
+new_version="$(claude-real --version 2>/dev/null || echo 'unknown')"
+echo "Upgraded claude: ${old_version} -> ${new_version}"

@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+version="${1:-}"
+prefix="${OHMYDEVPOD_PREFIX:-${HOME}/.local/copilotpod}"
+bin_dir="${OHMYDEVPOD_BIN_DIR:-/usr/local/bin}"
+cli_prefix="${prefix}/opt/copilot-cli"
+
+old_version="$(copilot-real --version 2>/dev/null || echo 'unknown')"
+
+pkg="@github/copilot"
+[[ -n "${version}" ]] && pkg="${pkg}@${version}"
+
+npm install -g --prefix "${cli_prefix}" "${pkg}"
+ln -sfn "${cli_prefix}/bin/copilot" "${bin_dir}/copilot-real"
+
+new_version="$(copilot-real --version 2>/dev/null || echo 'unknown')"
+echo "Upgraded copilot: ${old_version} -> ${new_version}"
