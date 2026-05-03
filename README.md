@@ -18,6 +18,30 @@
 
 ---
 
+## 一键安装工具链
+
+在任意 Linux 服务器上运行以下命令，即可安装 devpod 全部共享工具链（无需 sudo）：
+
+```bash
+# GitHub（默认）
+curl -fsSL https://raw.githubusercontent.com/zhangdw156/oh-my-devpod/main/install/setup.sh | bash
+
+# Gitee（国内镜像，GitHub 不可达时使用）
+curl -fsSL https://gitee.com/zhangdw156/oh-my-devpod/raw/main/install/setup.sh | bash
+```
+
+脚本会自动探测 github.com / gitee.com 的可达性，从可用源下载所有依赖。
+
+宿主机仅需预装 `bash`、`curl` 和 `git`。脚本会自动安装 Homebrew 并通过 brew 管理所有依赖：
+
+- **搜索/导航**: bat, fd, fzf, ripgrep
+- **编辑器**: neovim (LazyVim preset)
+- **终端**: zellij, yazi, btop, zsh, atuin
+- **开发**: gcc, make, node, npm, bun, uv, jq, sqlite, harlequin
+- **Shell 插件**: oh-my-zsh, powerlevel10k, autosuggestions, history-substring-search, syntax-highlighting
+
+安装完成后运行 `exec zsh` 即可进入配置好的 zsh 环境。
+
 ## 项目概览
 
 当前仓库维护一套共享的 `devpod` 基座：
@@ -134,33 +158,6 @@ docker build -f docker/geminipod/Dockerfile --build-arg DEVPOD_BASE_IMAGE=devpod
 ```
 
 也可以在 compose 文件中取消注释 `build:` 段来通过 compose 构建。
-
-## 一键安装工具链
-
-在任意 Linux 服务器上运行以下命令，即可安装 devpod 全部共享工具链（无需 sudo）：
-
-```bash
-# GitHub（默认）
-curl -fsSL https://raw.githubusercontent.com/zhangdw156/oh-my-devpod/main/install/setup.sh | bash
-
-# Gitee（国内镜像，GitHub 不可达时使用）
-curl -fsSL https://gitee.com/zhangdw156/oh-my-devpod/raw/main/install/setup.sh | bash
-
-# GitLab
-curl -fsSL https://gitlab.com/zhangdw156/oh-my-devpod/-/raw/main/install/setup.sh | bash
-```
-
-脚本会自动探测 github.com / gitee.com / gitlab.com 的可达性，从可用源下载所有依赖。
-
-宿主机仅需预装 `bash`、`curl` 和 `git`。脚本会自动安装 Homebrew 并通过 brew 管理所有依赖：
-
-- **搜索/导航**: bat, fd, fzf, ripgrep
-- **编辑器**: neovim (LazyVim preset)
-- **终端**: zellij, yazi, btop, zsh, atuin
-- **开发**: gcc, make, node, npm, bun, uv, jq, sqlite, harlequin
-- **Shell 插件**: oh-my-zsh, powerlevel10k, autosuggestions, history-substring-search, syntax-highlighting
-
-安装完成后运行 `exec zsh` 即可进入配置好的 zsh 环境。
 
 ## 项目结构
 

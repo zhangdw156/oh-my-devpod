@@ -18,6 +18,30 @@
 
 ---
 
+## One-line Toolchain Install
+
+Run the following command on any Linux server to install the full devpod shared toolchain (no sudo required):
+
+```bash
+# GitHub (default)
+curl -fsSL https://raw.githubusercontent.com/zhangdw156/oh-my-devpod/main/install/setup.sh | bash
+
+# Gitee (China mirror, use when GitHub is unreachable)
+curl -fsSL https://gitee.com/zhangdw156/oh-my-devpod/raw/main/install/setup.sh | bash
+```
+
+The script auto-detects reachable git hosts (github.com / gitee.com) and downloads all dependencies from the first available source.
+
+The host only needs `bash`, `curl`, and `git`. The script installs Homebrew and manages all dependencies via brew:
+
+- **Search/Navigation**: bat, fd, fzf, ripgrep
+- **Editor**: neovim (LazyVim preset)
+- **Terminal**: zellij, yazi, btop, zsh, atuin
+- **Development**: gcc, make, node, npm, bun, uv, jq, sqlite, harlequin
+- **Shell plugins**: oh-my-zsh, powerlevel10k, autosuggestions, history-substring-search, syntax-highlighting
+
+After installation, run `exec zsh` to enter the configured zsh environment.
+
 ## Overview
 
 The repository maintains one shared `devpod` base with common developer tooling:
@@ -134,33 +158,6 @@ docker build -f docker/geminipod/Dockerfile --build-arg DEVPOD_BASE_IMAGE=devpod
 ```
 
 Alternatively, uncomment the `build:` section in the compose files to build via compose.
-
-## One-line Toolchain Install
-
-Run the following command on any Linux server to install the full devpod shared toolchain (no sudo required):
-
-```bash
-# GitHub (default)
-curl -fsSL https://raw.githubusercontent.com/zhangdw156/oh-my-devpod/main/install/setup.sh | bash
-
-# Gitee (China mirror, use when GitHub is unreachable)
-curl -fsSL https://gitee.com/zhangdw156/oh-my-devpod/raw/main/install/setup.sh | bash
-
-# GitLab
-curl -fsSL https://gitlab.com/zhangdw156/oh-my-devpod/-/raw/main/install/setup.sh | bash
-```
-
-The script auto-detects reachable git hosts (github.com / gitee.com / gitlab.com) and downloads all dependencies from the first available source.
-
-The host only needs `bash`, `curl`, and `git`. The script installs Homebrew and manages all dependencies via brew:
-
-- **Search/Navigation**: bat, fd, fzf, ripgrep
-- **Editor**: neovim (LazyVim preset)
-- **Terminal**: zellij, yazi, btop, zsh, atuin
-- **Development**: gcc, make, node, npm, bun, uv, jq, sqlite, harlequin
-- **Shell plugins**: oh-my-zsh, powerlevel10k, autosuggestions, history-substring-search, syntax-highlighting
-
-After installation, run `exec zsh` to enter the configured zsh environment.
 
 ## Repository Layout
 
