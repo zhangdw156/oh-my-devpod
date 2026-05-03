@@ -22,24 +22,34 @@ flavor_smoke_cmds=(
   "gemini --version"
 )
 
+test_tag="integ-test"
+
 cleanup() {
-  echo "Cleaning up compose resources..."
+  echo "Cleaning up test images..."
   for flavor in "${flavors[@]}"; do
-    $COMPOSE -f "${repo_root}/docker/${flavor}/docker-compose.yaml" down --rmi local --remove-orphans 2>/dev/null || true
+    docker rmi "ghcr.io/zhangdw156/${flavor}:${test_tag}" 2>/dev/null || true
   done
+  docker rmi "ghcr.io/zhangdw156/devpod:${test_tag}" 2>/dev/null || true
 }
 trap cleanup EXIT
+
+echo "=== Building devpod base image ==="
+docker build -f "${repo_root}/Dockerfile.devpod" \
+  -t "ghcr.io/zhangdw156/devpod:${test_tag}" "${repo_root}"
 
 for i in "${!flavors[@]}"; do
   flavor="${flavors[$i]}"
   smoke_cmd="${flavor_smoke_cmds[$i]}"
   compose_file="${repo_root}/docker/${flavor}/docker-compose.yaml"
 
-  echo "=== Building ${flavor} via compose ==="
-  $COMPOSE -f "${compose_file}" build
+  echo "=== Building ${flavor} image ==="
+  docker build -f "${repo_root}/docker/${flavor}/Dockerfile" \
+    --build-arg "DEVPOD_BASE_IMAGE=ghcr.io/zhangdw156/devpod:${test_tag}" \
+    -t "ghcr.io/zhangdw156/${flavor}:${test_tag}" "${repo_root}"
 
   echo "=== Running ${flavor} smoke test ==="
-  $COMPOSE -f "${compose_file}" run --rm --user "$(id -u):$(id -g)" "${flavor}" \
+  IMAGE_VERSION="${test_tag}" $COMPOSE -f "${compose_file}" run --rm \
+    --user "$(id -u):$(id -g)" "${flavor}" \
     -lc "${smoke_cmd}" >/dev/null 2>&1 \
     || fail "${flavor}: '${smoke_cmd}' failed"
   echo "  ${flavor}: ok"

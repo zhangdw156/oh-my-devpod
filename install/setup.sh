@@ -313,11 +313,7 @@ done
 
 if [[ "${zsh_plugin_ok}" != "true" ]]; then
   echo ""
-  warn "Some components failed to install."
-  echo "  For fully offline environments, use bootstrap.sh instead:"
-  echo "    1. Copy the repo to this server (scp, rsync, USB, etc.)"
-  echo "    2. bash install/bootstrap.sh --user"
-  echo "  bootstrap.sh uses vendored assets and does not require internet access."
+  warn "Some components failed to install. Check network connectivity and retry."
 fi
 
 zsh_path="$(command -v zsh 2>/dev/null || true)"

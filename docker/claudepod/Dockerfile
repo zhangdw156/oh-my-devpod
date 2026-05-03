@@ -6,7 +6,7 @@ RUN OHMYDEVPOD_BIN_DIR=/usr/local/bin OHMYDEVPOD_CLAUDE_INSTALL_HOME=/root OHMYD
 
 COPY runtime/claudepod /opt/runtime/claudepod
 RUN mkdir -p /root/.claude \
-    && ln -sfn /opt/runtime/claudepod/skills /root/.claude/skills \
+    && cp -a /opt/runtime/claudepod/skills /root/.claude/skills \
     && cp /opt/runtime/claudepod/bin/claude /usr/local/bin/claude \
     && cp /opt/runtime/claudepod/bin/claudepod-shell /usr/local/bin/claudepod-shell \
     && cp /opt/runtime/claudepod/bin/claudepod-upgrade /usr/local/bin/claudepod-upgrade \

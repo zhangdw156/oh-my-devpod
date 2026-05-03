@@ -98,14 +98,15 @@ After running it:
 2. Review changes under `runtime/openpod/vendor/opencode/`
 3. Review synchronized flavor skills under `runtime/claudepod/skills/`, `runtime/codexpod/skills/`, `runtime/copilotpod/skills/`, and `runtime/geminipod/skills/`
 4. Update [`vendor/manifest.lock.json`](../vendor/manifest.lock.json) if versions or sources changed
-5. Rebuild the base and flavors:
+5. Rebuild the flavors:
 
 ```bash
-docker compose -f docker/openpod/docker-compose.yaml build devpod openpod
-docker compose -f docker/claudepod/docker-compose.yaml build devpod claudepod
-docker compose -f docker/codexpod/docker-compose.yaml build devpod codexpod
-docker compose -f docker/copilotpod/docker-compose.yaml build devpod copilotpod
-docker compose -f docker/geminipod/docker-compose.yaml build devpod geminipod
+docker build -f Dockerfile.devpod -t devpod:local .
+docker build -f docker/openpod/Dockerfile --build-arg DEVPOD_BASE_IMAGE=devpod:local -t openpod:local .
+docker build -f docker/claudepod/Dockerfile --build-arg DEVPOD_BASE_IMAGE=devpod:local -t claudepod:local .
+docker build -f docker/codexpod/Dockerfile --build-arg DEVPOD_BASE_IMAGE=devpod:local -t codexpod:local .
+docker build -f docker/copilotpod/Dockerfile --build-arg DEVPOD_BASE_IMAGE=devpod:local -t copilotpod:local .
+docker build -f docker/geminipod/Dockerfile --build-arg DEVPOD_BASE_IMAGE=devpod:local -t geminipod:local .
 ```
 
 ## Notes

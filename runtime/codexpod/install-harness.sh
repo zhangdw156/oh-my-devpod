@@ -10,7 +10,7 @@ codex_version="${OHMYDEVPOD_CODEX_VERSION:-}"
 skills_root="${repo_root}/runtime/codexpod/skills"
 
 if ! command -v node >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1; then
-  echo "codexpod bootstrap requires node and npm to be preinstalled" >&2
+  echo "codexpod harness installation requires node and npm to be preinstalled" >&2
   exit 1
 fi
 
@@ -19,7 +19,8 @@ codex_pkg="@openai/codex"
 [[ -n "${codex_version}" ]] && codex_pkg="${codex_pkg}@${codex_version}"
 npm install -g --prefix "${codex_prefix}" "${codex_pkg}"
 ln -sfn "${codex_prefix}/bin/codex" "${bin_dir}/codex-real"
-ln -sfn "${skills_root}" "${config_home}/skills"
+rm -rf "${config_home}/skills"
+cp -a "${skills_root}" "${config_home}/skills"
 
 install -m 0755 "${repo_root}/runtime/codexpod/bin/codex" "${bin_dir}/codex"
 install -m 0755 "${repo_root}/runtime/codexpod/bin/codexpod-shell" "${bin_dir}/codexpod-shell"

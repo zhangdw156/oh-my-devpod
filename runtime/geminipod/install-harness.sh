@@ -10,7 +10,7 @@ gemini_version="${OHMYDEVPOD_GEMINI_VERSION:-}"
 skills_root="${repo_root}/runtime/geminipod/skills"
 
 if ! command -v node >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1; then
-  echo "geminipod bootstrap requires Node.js >=20 and npm to be preinstalled" >&2
+  echo "geminipod harness installation requires Node.js >=20 and npm to be preinstalled" >&2
   exit 1
 fi
 
@@ -28,7 +28,8 @@ gemini_pkg="@google/gemini-cli"
 [[ -n "${gemini_version}" ]] && gemini_pkg="${gemini_pkg}@${gemini_version}"
 npm install -g --prefix "${gemini_prefix}" "${gemini_pkg}"
 ln -sfn "${gemini_prefix}/bin/gemini" "${bin_dir}/gemini-real"
-ln -sfn "${skills_root}" "${config_home}/skills"
+rm -rf "${config_home}/skills"
+cp -a "${skills_root}" "${config_home}/skills"
 
 install -m 0755 "${repo_root}/runtime/geminipod/bin/gemini" "${bin_dir}/gemini"
 install -m 0755 "${repo_root}/runtime/geminipod/bin/geminipod-shell" "${bin_dir}/geminipod-shell"

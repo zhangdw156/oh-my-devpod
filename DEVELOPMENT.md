@@ -52,7 +52,6 @@ oh-my-devpod/
 ├── tests/
 │   ├── run.sh
 │   ├── test-compose-flavors.sh
-│   ├── test-bootstrap-flavors.sh
 │   ├── test-install-lazyvim.sh
 │   ├── test-install-neovim.sh
 │   ├── test-neovim-lazyvim-wiring.sh
@@ -75,7 +74,7 @@ oh-my-devpod/
 
 仓库根目录 `VERSION` 文件是六个镜像唯一的版本真源，格式为 `x.y.z.devN`（开发）或 `x.y.z`（正式发布）。
 
-`docker/<flavor>/docker-compose.yaml` 通过 `${IMAGE_VERSION:-local}` 消费这个版本。compose 本身不会自动读取 `VERSION`，因此在需要让本地 compose 构建的标签与中心版本一致时，应使用 `IMAGE_VERSION="$(tr -d '\r' < VERSION)" docker compose ...` 这种前缀写法，或显式 `export IMAGE_VERSION="$(tr -d '\r' < VERSION)"` 后再运行 compose；未设置时 `IMAGE_VERSION` 默认为 `local`。
+`docker/<flavor>/docker-compose.yaml` 默认从 `ghcr.io/zhangdw156/{flavor}:${IMAGE_VERSION:-latest}` 拉取官方镜像。如需本地构建，可取消注释 compose 文件中的 `build:` 段。`VERSION` 文件是版本真源，compose 不会自动读取它。
 
 | 版本格式 | 含义 |
 |----------|------|
@@ -100,9 +99,8 @@ oh-my-devpod/
 ## 依赖安装约定
 
 - Docker 构建路径（`Dockerfile.devpod`）使用 apt 安装系统包，并从 `vendor/releases/` 解压 vendored 二进制；此路径完全离线（除 harness 安装端点外）
-- Bootstrap 路径（`install/bootstrap.sh`）使用 Homebrew (Linuxbrew) 管理所有依赖，无需 sudo，仅需宿主机有 `bash`、`curl` 和 `tar`
 - `build/` 目录存放镜像构建期使用的安装脚本，例如 `install-antidote.sh`、`install-btop.sh`、`install-claude-code.sh`、`install-neovim.sh`、`install-python-dev-tools.sh`、`install-lazyvim.sh`、`install-yazi.sh` 和 `install-zellij.sh`
-- 这些安装脚本仅在 Docker 构建路径中使用；bootstrap 路径通过 Homebrew 安装等效工具
+- 这些安装脚本仅在 Docker 构建路径中使用
 - `build/update-vendor-assets.sh` 用于刷新共享 release 包、LazyVim starter 快照、Zsh 插件快照，并同步 flavor 目录下复用的 skills
 - `config/` 目录只存放共享配置，例如 shell 配置和 `nvim` overlay
 - `runtime/` 目录按 flavor 拆分 harness 相关安装脚本、launcher、config、skills 和 flavor 自己拥有的 vendored 资产
@@ -111,7 +109,7 @@ oh-my-devpod/
 - `runtime/openpod/vendor/opencode/packages/` 存放需要保留原始包结构的 OpenCode 插件包快照
 - `runtime/openpod/vendor/opencode/skills/` 预留给仓库直接维护的 OpenCode 全局 skills
 - `runtime/claudepod/skills/`、`runtime/codexpod/skills/`、`runtime/copilotpod/skills/`、`runtime/geminipod/skills/` 可承载从 OpenCode vendored superpowers 同步出的 flavor-owned skills
-- `tests/` 目录存放仓库维护的 shell 级回归测试；优先覆盖 flavor 编排、bootstrap 参数、安装脚本行为和关键接线关系
+- `tests/` 目录存放仓库维护的 shell 级回归测试；优先覆盖 flavor 编排、安装脚本行为和关键接线关系
 - `vendor/manifest.lock.json` 和 `docs/vendor-assets.md` 一起维护本地资产的来源、版本、校验和与更新方式
 - 默认本地 `docker build` 不再依赖 GitHub release、Zsh 插件仓库或 OpenCode 插件仓库的运行时拉取，但仍需要访问基础镜像来源，例如 Docker Hub 和 GHCR，以及未 vendored 的 harness 安装端点
 
@@ -120,7 +118,7 @@ oh-my-devpod/
 - `neovim` 二进制通过官方 release tar 包维护在 `vendor/releases/neovim/`
 - `LazyVim/starter` 通过 pinned source snapshot 维护在 `vendor/nvim/lazyvim-starter/`
 - `pyright[nodejs]` 与 `ruff` 通过 `build/install-python-dev-tools.sh` 以 pinned PyPI 版本安装，不通过 Mason 或 npm 单独管理
-- 不要在 Dockerfile 或 bootstrap 脚本里直接在线 `git clone LazyVim/starter`
+- 不要在 Dockerfile 里直接在线 `git clone LazyVim/starter`
 - `build/install-lazyvim.sh` 负责把 vendored starter 安装到标准 `nvim` 配置目录，并在首次接管非 openpod 管理目录时自动备份 `config/data/state/cache`
 - `config/nvim/` 里的 overlay 会在 starter 安装完成后覆盖到目标配置目录，用于启用 openpod 默认的 Python extra
 - `vendor/nvim/lazyvim-starter/.openpod-source-commit` 用于记录 pinned starter commit，便于安装元数据与后续升级
@@ -130,10 +128,9 @@ oh-my-devpod/
 - `superpowers` 以完整包快照的形式维护在 `runtime/openpod/vendor/opencode/packages/superpowers/`
 - 不要只抽取 `.opencode/plugins/superpowers.js` 或只复制 `skills/`，因为上游插件会基于自身入口文件相对路径解析 `../../skills`
 - 镜像构建时会在 `/root/.config/opencode/plugins/superpowers.js` 创建指向 vendored 包入口的软链接
-- 镜像构建时还会在 `/root/.config/opencode/skills` 创建指向 `/opt/vendor/opencode/skills` 的软链接，避免项目级 `opencode.json` 覆盖掉仓库维护的全局 skills
+- 镜像构建时还会把 skills 以真实目录（`cp -a`）拷贝到对应的配置目录，以便用户在运行时添加自己的 skills
 - 镜像还会把 `runtime/openpod/config/opencode.json` 复制到 `/root/.config/opencode/config.json`，作为 OpenCode 的全局默认配置
 - `runtime/openpod/config/opencode.json` 只保留最小镜像级默认配置；不要在其中手动添加 `superpowers/skills`，因为插件会在运行时注册它自己的 bundled skills
-- bootstrap 模式会把 `runtime/openpod/vendor/opencode/` 复制到 flavor 自己的安装前缀下，再由 `runtime/openpod/install-harness.sh` 完成 OpenCode 接线
 - `build/update-vendor-assets.sh` 会刷新 `runtime/openpod/vendor/opencode/packages/superpowers/`，但不会破坏 `runtime/openpod/vendor/opencode/skills/`
 - pod-local compose 文件不从宿主机挂载全局 OpenCode 配置；项目级自定义应放在挂载到 `/workspace` 的项目根目录 `opencode.json`
 
@@ -149,7 +146,7 @@ oh-my-devpod/
 
 - 共享基础层只放在 `Dockerfile.devpod` 和 `build/` 中
 - flavor 差异只能出现在 `runtime/<flavor>/` 和对应的 `docker/<flavor>/Dockerfile` 中
-- `docker/<flavor>/docker-compose.yaml` 只为对应 pod 提供本地入口，但必须在同一文件中内嵌 `devpod` 构建 service
+- `docker/<flavor>/docker-compose.yaml` 只为对应 pod 提供本地入口，默认从 GHCR 拉取官方镜像
 - flavor Dockerfile 通过 `additional_contexts` 复用 `devpod` 基座
 - 新增 harness 时，先创建新的 `runtime/<flavor>/`，不要把逻辑直接写进共享基座
 
