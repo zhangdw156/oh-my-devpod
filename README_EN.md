@@ -114,7 +114,7 @@ docker compose -f docker/copilotpod/docker-compose.yaml run --rm -it copilotpod
 docker compose -f docker/geminipod/docker-compose.yaml run --rm -it geminipod
 ```
 
-Compose files pull from `ghcr.io/zhangdw156/{flavor}:latest` by default. To pin a version:
+Compose files pull from `ghcr.io/zhangdw156/{flavor}:latest` by default. Image versions are managed by the `VERSION` file at the repository root. To pin a version:
 
 ```bash
 IMAGE_VERSION=0.10.0 docker compose -f docker/claudepod/docker-compose.yaml run --rm -it claudepod

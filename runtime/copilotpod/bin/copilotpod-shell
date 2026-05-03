@@ -8,7 +8,7 @@ if [[ -f "${prefix}/env.sh" ]]; then
   source "${prefix}/env.sh"
 fi
 
-shell_dir="${OHMYDEVPOD_PREFIX:-${prefix}}/shell"
+shell_dir="${prefix}/shell"
 
 if [[ $# -eq 0 ]]; then
   exec env ZDOTDIR="${shell_dir}" zsh -i

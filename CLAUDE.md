@@ -51,7 +51,7 @@ bash runtime/openpod/vendor/opencode/packages/superpowers/tests/opencode/run-tes
 
 - The single source of truth for image and release versions is the root `VERSION` file.
 - The single source of truth for tool versions (atuin, btop, neovim, etc.) is `versions.env`. Build scripts source it; Dockerfiles declare matching ARG defaults; install scripts use env var fallbacks. Run `bash tests/test-versions-env.sh` to verify consistency.
-- Pod-local compose files stay the local runtime contract for each flavor and pull from `ghcr.io/zhangdw156/{flavor}:${IMAGE_VERSION:-latest}`; they do not read `VERSION` automatically.
+- Pod-local compose files stay the local runtime contract for each flavor and pull from `ghcr.io/zhangdw156/{flavor}:${IMAGE_VERSION:-latest}`; they do not read `VERSION` automatically. Use `export IMAGE_VERSION=$(cat VERSION)` to inject a pinned version.
 - `.github/workflows/publish-ghcr.yml` reads `VERSION` directly.
 - Releases go through PRs with `gh pr merge --squash --delete-branch` to keep a clean branch history. The release machine has `gh` available.
 - Do not create release or version-bump commits directly on main; always use a PR.
