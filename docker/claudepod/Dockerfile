@@ -2,7 +2,7 @@ ARG DEVPOD_BASE_IMAGE=devpod
 FROM ${DEVPOD_BASE_IMAGE}
 
 COPY build/install-claude-code.sh /opt/build/install-claude-code.sh
-RUN OHMYDEVPOD_BIN_DIR=/usr/local/bin OHMYDEVPOD_CLAUDE_INSTALL_HOME=/root bash /opt/build/install-claude-code.sh
+RUN OHMYDEVPOD_BIN_DIR=/usr/local/bin OHMYDEVPOD_CLAUDE_INSTALL_HOME=/root OHMYDEVPOD_CLAUDE_CODE_VERSION=2.1.92 bash /opt/build/install-claude-code.sh
 
 COPY runtime/claudepod /opt/runtime/claudepod
 RUN mkdir -p /root/.claude \
