@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+version="${1:-}"
+prefix="${OHMYDEVPOD_PREFIX:-${HOME}/.local/openpod}"
+bin_dir="${OHMYDEVPOD_BIN_DIR:-/usr/local/bin}"
+cli_prefix="${prefix}/opt/opencode-cli"
+
+old_version="$(opencode --version 2>/dev/null || echo 'unknown')"
+
+pkg="opencode-ai"
+[[ -n "${version}" ]] && pkg="${pkg}@${version}"
+
+npm install -g --prefix "${cli_prefix}" "${pkg}"
+ln -sfn "${cli_prefix}/bin/opencode" "${bin_dir}/opencode"
+
+new_version="$(opencode --version 2>/dev/null || echo 'unknown')"
+echo "Upgraded opencode: ${old_version} -> ${new_version}"

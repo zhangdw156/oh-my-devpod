@@ -11,6 +11,7 @@ RUN musl_arch="$(case "${TARGETARCH:-$(dpkg --print-architecture)}" in amd64|x86
 COPY runtime/openpod/vendor/opencode /opt/vendor/opencode
 COPY runtime/openpod/config/opencode.json /root/.config/opencode/config.json
 COPY runtime/openpod/bin/openpod-shell /usr/local/bin/openpod-shell
+COPY runtime/openpod/bin/openpod-upgrade /usr/local/bin/openpod-upgrade
 RUN mkdir -p /root/.config/opencode/plugins \
     && ln -sf /opt/vendor/opencode/packages/superpowers/.opencode/plugins/superpowers.js /root/.config/opencode/plugins/superpowers.js \
     && ln -sfn /opt/vendor/opencode/skills /root/.config/opencode/skills \

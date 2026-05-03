@@ -7,6 +7,7 @@ config_home="${OHMYDEVPOD_CONFIG_HOME:?missing OHMYDEVPOD_CONFIG_HOME}"
 runtime_vendor_home="${OHMYDEVPOD_RUNTIME_VENDOR_HOME:?missing OHMYDEVPOD_RUNTIME_VENDOR_HOME}"
 prefix="${OHMYDEVPOD_PREFIX:?missing OHMYDEVPOD_PREFIX}"
 shell_dir="${OHMYDEVPOD_SHELL_DIR:?missing OHMYDEVPOD_SHELL_DIR}"
+opencode_version="${OHMYDEVPOD_OPENCODE_VERSION:-}"
 openpod_vendor_home="${runtime_vendor_home}/opencode"
 
 if [[ ! -d "${openpod_vendor_home}" ]]; then
@@ -33,8 +34,11 @@ if [[ "${need_opencode_install}" == "1" ]]; then
   fi
   opencode_prefix="${prefix}/opt/opencode-cli"
   mkdir -p "${opencode_prefix}"
-  npm install -g --prefix "${opencode_prefix}" opencode-ai@1.3.13
+  opencode_pkg="opencode-ai"
+  [[ -n "${opencode_version}" ]] && opencode_pkg="${opencode_pkg}@${opencode_version}"
+  npm install -g --prefix "${opencode_prefix}" "${opencode_pkg}"
   ln -sfn "${opencode_prefix}/bin/opencode" "${bin_dir}/opencode"
 fi
 
 install -m 0755 "${repo_root}/runtime/openpod/bin/openpod-shell" "${bin_dir}/openpod-shell"
+install -m 0755 "${repo_root}/runtime/openpod/bin/openpod-upgrade" "${bin_dir}/openpod-upgrade"

@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+version="${1:-}"
+prefix="${OHMYDEVPOD_PREFIX:-${HOME}/.local/codexpod}"
+bin_dir="${OHMYDEVPOD_BIN_DIR:-/usr/local/bin}"
+cli_prefix="${prefix}/opt/codex-cli"
+
+old_version="$(codex-real --version 2>/dev/null || echo 'unknown')"
+
+pkg="@openai/codex"
+[[ -n "${version}" ]] && pkg="${pkg}@${version}"
+
+npm install -g --prefix "${cli_prefix}" "${pkg}"
+ln -sfn "${cli_prefix}/bin/codex" "${bin_dir}/codex-real"
+
+new_version="$(codex-real --version 2>/dev/null || echo 'unknown')"
+echo "Upgraded codex: ${old_version} -> ${new_version}"

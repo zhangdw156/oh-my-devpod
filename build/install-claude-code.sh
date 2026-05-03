@@ -3,8 +3,17 @@ set -euo pipefail
 
 claude_install_home="${OHMYDEVPOD_CLAUDE_INSTALL_HOME:?missing OHMYDEVPOD_CLAUDE_INSTALL_HOME}"
 bin_dir="${OHMYDEVPOD_BIN_DIR:?missing OHMYDEVPOD_BIN_DIR}"
-version="${OHMYDEVPOD_CLAUDE_CODE_VERSION:-2.1.92}"
+version="${OHMYDEVPOD_CLAUDE_CODE_VERSION:-}"
 bucket_url="${OHMYDEVPOD_CLAUDE_CODE_BUCKET_URL:-https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases}"
+
+if [[ -z "${version}" || "${version}" == "latest" ]]; then
+  version="$(curl -fsSL https://registry.npmjs.org/@anthropic-ai/claude-code/latest | sed -n 's/.*"version":"\([^"]*\)".*/\1/p')"
+  if [[ -z "${version}" ]]; then
+    echo "failed to resolve latest Claude Code version from npm registry" >&2
+    exit 1
+  fi
+  echo "Resolved latest Claude Code version: ${version}"
+fi
 manifest_url="${bucket_url}/${version}/manifest.json"
 native_versions_dir="${claude_install_home}/.local/share/claude/versions"
 real_bin="${native_versions_dir}/${version}"
