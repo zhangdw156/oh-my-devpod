@@ -10,7 +10,7 @@ gemini_version="${OHMYDEVPOD_GEMINI_VERSION:-}"
 skills_root="${repo_root}/runtime/geminipod/skills"
 
 if ! command -v node >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1; then
-  echo "geminipod bootstrap requires Node.js >=20 and npm to be preinstalled" >&2
+  echo "geminipod harness installation requires Node.js >=20 and npm to be preinstalled" >&2
   exit 1
 fi
 

@@ -46,7 +46,7 @@ fi
 
 mkdir -p "${bin_dir}"
 
-# Extract the upstream package payload into a staging directory so bootstrap mode
+# Extract the upstream package payload into a staging directory so the install script
 # can install Yazi without writing directly into /. Keep only the core binaries.
 dpkg-deb -x "${asset_path}" "${tmp_dir}/root"
 install -m 0755 "${tmp_dir}/root/usr/bin/yazi" "${bin_dir}/yazi"

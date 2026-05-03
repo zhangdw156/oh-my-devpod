@@ -10,7 +10,7 @@ copilot_version="${OHMYDEVPOD_COPILOT_VERSION:-}"
 skills_root="${repo_root}/runtime/copilotpod/skills"
 
 if ! command -v node >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1; then
-  echo "copilotpod bootstrap requires node and npm to be preinstalled" >&2
+  echo "copilotpod harness installation requires node and npm to be preinstalled" >&2
   exit 1
 fi
 

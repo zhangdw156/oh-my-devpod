@@ -29,7 +29,7 @@ fi
 
 if [[ "${need_opencode_install}" == "1" ]]; then
   if ! command -v node >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1; then
-    echo "openpod bootstrap requires node and npm to be preinstalled" >&2
+    echo "openpod harness installation requires node and npm to be preinstalled" >&2
     exit 1
   fi
   opencode_prefix="${prefix}/opt/opencode-cli"

@@ -26,7 +26,6 @@ run_test() {
 
 run_test "Image Build & Tool Verification" "${test_dir}/test-image-build.sh"
 run_test "Docker Compose Workflows"        "${test_dir}/test-compose.sh"
-run_test "Bootstrap (Homebrew, no sudo)"   "${test_dir}/test-bootstrap.sh"
 run_test "One-line Setup Script"           "${test_dir}/test-setup.sh"
 
 echo ""
