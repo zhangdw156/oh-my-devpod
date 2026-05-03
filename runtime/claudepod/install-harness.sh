@@ -13,7 +13,8 @@ export OHMYDEVPOD_CLAUDE_CODE_VERSION="${OHMYDEVPOD_CLAUDE_CODE_VERSION:-}"
 bash "${repo_root}/build/install-claude-code.sh"
 
 if [[ -d "${repo_root}/runtime/claudepod/skills" ]]; then
-  ln -sfn "${repo_root}/runtime/claudepod/skills" "${config_home}/skills"
+  rm -rf "${config_home}/skills"
+  cp -a "${repo_root}/runtime/claudepod/skills" "${config_home}/skills"
 fi
 
 install -m 0755 "${repo_root}/runtime/claudepod/bin/claude" "${bin_dir}/claude"

@@ -14,7 +14,7 @@ COPY runtime/openpod/bin/openpod-shell /usr/local/bin/openpod-shell
 COPY runtime/openpod/bin/openpod-upgrade /usr/local/bin/openpod-upgrade
 RUN mkdir -p /root/.config/opencode/plugins \
     && ln -sf /opt/vendor/opencode/packages/superpowers/.opencode/plugins/superpowers.js /root/.config/opencode/plugins/superpowers.js \
-    && ln -sfn /opt/vendor/opencode/skills /root/.config/opencode/skills \
+    && cp -a /opt/vendor/opencode/skills /root/.config/opencode/skills \
     && chmod 0755 /usr/local/bin/openpod-shell
 
 # Sync flavor config into devpod-skel for --user support

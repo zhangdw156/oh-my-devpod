@@ -18,7 +18,8 @@ fi
 mkdir -p "${config_home}/plugins"
 cp "${repo_root}/runtime/openpod/config/opencode.json" "${config_home}/config.json"
 ln -sfn "${openpod_vendor_home}/packages/superpowers/.opencode/plugins/superpowers.js" "${config_home}/plugins/superpowers.js"
-ln -sfn "${openpod_vendor_home}/skills" "${config_home}/skills"
+rm -rf "${config_home}/skills"
+cp -a "${openpod_vendor_home}/skills" "${config_home}/skills"
 
 need_opencode_install=0
 if [[ ! -x "${bin_dir}/opencode" ]]; then
