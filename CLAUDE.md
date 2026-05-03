@@ -16,25 +16,16 @@ The repository vendors shared shell/editor/build assets under `vendor/`, and the
 
 ## Core development commands
 
-### Build and run the flavors
+### Run the flavors
+
+Compose files default to pulling official images from GHCR:
 
 ```bash
-docker compose -f docker/openpod/docker-compose.yaml build devpod openpod
 docker compose -f docker/openpod/docker-compose.yaml run --rm --user "$(id -u):$(id -g)" openpod -lc 'opencode --version'
 docker compose -f docker/claudepod/docker-compose.yaml run --rm --user "$(id -u):$(id -g)" claudepod -lc 'claude --version && claude auth status'
 docker compose -f docker/codexpod/docker-compose.yaml run --rm --user "$(id -u):$(id -g)" codexpod -lc 'codex --help | sed -n "1,20p"'
 docker compose -f docker/copilotpod/docker-compose.yaml run --rm --user "$(id -u):$(id -g)" copilotpod -lc 'copilot --version'
 docker compose -f docker/geminipod/docker-compose.yaml run --rm --user "$(id -u):$(id -g)" geminipod -lc 'gemini --version'
-```
-
-### Bootstrap a local flavor without Docker
-
-```bash
-bash install/bootstrap.sh --flavor openpod --user
-bash install/bootstrap.sh --flavor claudepod --user
-bash install/bootstrap.sh --flavor codexpod --user
-bash install/bootstrap.sh --flavor copilotpod --user
-bash install/bootstrap.sh --flavor geminipod --user
 ```
 
 ### Refresh vendored assets
@@ -59,7 +50,7 @@ bash runtime/openpod/vendor/opencode/packages/superpowers/tests/opencode/run-tes
 ## Release and versioning
 
 - The single source of truth for image and release versions is the root `VERSION` file.
-- Pod-local compose files stay the local runtime contract for each flavor and only consume `${IMAGE_VERSION:-local}`; they do not read `VERSION` automatically.
+- Pod-local compose files stay the local runtime contract for each flavor and pull from `ghcr.io/zhangdw156/{flavor}:${IMAGE_VERSION:-latest}`; they do not read `VERSION` automatically.
 - `.github/workflows/publish-ghcr.yml` reads `VERSION` directly.
 - Releases go through PRs with `gh pr merge --squash --delete-branch` to keep a clean branch history. The release machine has `gh` available.
 - Do not create release or version-bump commits directly on main; always use a PR.
@@ -76,7 +67,7 @@ Release flow details live in `DEVELOPMENT.md`.
 
 ### 2. Pod-local compose files are the local runtime contract
 
-Each `docker/<flavor>/docker-compose.yaml` file defines the canonical local workflow for that flavor and embeds the `devpod` build service needed to resolve its shared base image locally. Compose renders image tags through `${IMAGE_VERSION:-local}` and does not read `VERSION` automatically, so release engineers should export `IMAGE_VERSION="$(tr -d '\r' < VERSION)"` (or otherwise inject that value) when they want the local tags to match the centralized version. The repository-root `VERSION` file remains the authoritative version source while the compose files simply consume whatever `IMAGE_VERSION` is supplied, so they should not be treated as an independent release authority.
+Each `docker/<flavor>/docker-compose.yaml` file defines the canonical local workflow for that flavor and defaults to pulling the official image from `ghcr.io/zhangdw156/{flavor}:latest`. A commented-out `build:` section is available for users who want to build locally. Compose renders image tags through `${IMAGE_VERSION:-latest}` and does not read `VERSION` automatically.
 
 ### 3. Vendoring is split by ownership
 

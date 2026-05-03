@@ -47,77 +47,82 @@ The flavors differ only in:
 ### `openpod`
 
 - Harness: OpenCode
-- Image: `openpod`
-- Default bootstrap prefix: `~/.local/openpod`
+- Image: `ghcr.io/zhangdw156/openpod`
 - Config model: user-managed project `opencode.json` or user-managed OpenCode config directories
 
 ### `claudepod`
 
 - Harness: Claude Code
-- Image: `claudepod`
-- Default bootstrap prefix: `~/.local/claudepod`
+- Image: `ghcr.io/zhangdw156/claudepod`
 - Config model: `claude auth login`, `~/.claude/`, project-local `.claude/`
 
 ### `codexpod`
 
 - Harness: Codex CLI
-- Image: `codexpod`
-- Default bootstrap prefix: `~/.local/codexpod`
+- Image: `ghcr.io/zhangdw156/codexpod`
 - Config model: `codex login`, `~/.codex/`, project-local Codex config
 
 ### `copilotpod`
 
 - Harness: GitHub Copilot CLI
-- Image: `copilotpod`
-- Default bootstrap prefix: `~/.local/copilotpod`
+- Image: `ghcr.io/zhangdw156/copilotpod`
 - Config model: first-run `/login`, or `GH_TOKEN` / `GITHUB_TOKEN`; user config lives under `~/.copilot/`
 
 ### `geminipod`
 
 - Harness: Gemini CLI
-- Image: `geminipod`
-- Default bootstrap prefix: `~/.local/geminipod`
-- Config model: Google login, `GEMINI_API_KEY`, or Vertex AI environment variables; user config lives under `~/.gemini/`
+- Image: `ghcr.io/zhangdw156/geminipod`
+- Config model: Google login, `GEMINI_API_KEY`, or Vertex AI environment variables; user config lives under `~/.gemini/`; headless setups should prefer API key / Vertex AI over browser OAuth
 
 ## Docker Usage
 
-### Build the five pod images separately
+### Pull and use official images
 
 ```bash
-docker compose -f docker/openpod/docker-compose.yaml build devpod openpod
-docker compose -f docker/claudepod/docker-compose.yaml build devpod claudepod
-docker compose -f docker/codexpod/docker-compose.yaml build devpod codexpod
-docker compose -f docker/copilotpod/docker-compose.yaml build devpod copilotpod
-docker compose -f docker/geminipod/docker-compose.yaml build devpod geminipod
+docker pull ghcr.io/zhangdw156/claudepod:latest
+docker run --rm -it --network host --user "$(id -u):$(id -g)" -v "$PWD:/workspace" -w /workspace ghcr.io/zhangdw156/claudepod:latest
 ```
 
-After building, the resulting images are tagged via `${IMAGE_VERSION:-local}`, e.g. `openpod:${IMAGE_VERSION:-local}`. To make the local compose-built tags match the value stored in the repository-root `VERSION` file, prefix the compose commands with `IMAGE_VERSION="$(tr -d '\r' < VERSION)"` or export `IMAGE_VERSION` beforehand using the same value; without that, the default tag is `local`.
-
-The repository-root `VERSION` file is the shared source of truth for all six image tags; pod-local compose files only consume it through `${IMAGE_VERSION:-local}` and do not persist release version numbers.
-
-### Run a flavor with compose
+Other flavors:
 
 ```bash
-docker compose -f docker/openpod/docker-compose.yaml run --rm openpod -lc 'opencode --version'
-docker compose -f docker/claudepod/docker-compose.yaml run --rm claudepod -lc 'claude --version && claude auth status'
-docker compose -f docker/codexpod/docker-compose.yaml run --rm codexpod -lc 'codex --help | sed -n "1,20p"'
-docker compose -f docker/copilotpod/docker-compose.yaml run --rm copilotpod -lc 'copilot --version'
-docker compose -f docker/geminipod/docker-compose.yaml run --rm geminipod -lc 'gemini --version'
+docker run --rm -it --network host --user "$(id -u):$(id -g)" -v "$PWD:/workspace" -w /workspace ghcr.io/zhangdw156/openpod:latest
+docker run --rm -it --network host --user "$(id -u):$(id -g)" -v "$PWD:/workspace" -w /workspace ghcr.io/zhangdw156/codexpod:latest
+docker run --rm -it --network host --user "$(id -u):$(id -g)" -v "$PWD:/workspace" -w /workspace ghcr.io/zhangdw156/copilotpod:latest
+docker run --rm -it --network host --user "$(id -u):$(id -g)" -v "$PWD:/workspace" -w /workspace ghcr.io/zhangdw156/geminipod:latest
 ```
 
-Interactive shell:
+> **Note:** Always include `--user "$(id -u):$(id -g)"` to run the container as your host user. Without it, the container runs as root and changes file ownership under the mounted workspace, making them inaccessible on the host.
+
+Direct command examples:
 
 ```bash
-docker compose -f docker/openpod/docker-compose.yaml run --rm -it openpod
+docker run --rm --network host --user "$(id -u):$(id -g)" -v "$PWD:/workspace" -w /workspace ghcr.io/zhangdw156/openpod:latest opencode --version
+docker run --rm --network host --user "$(id -u):$(id -g)" -v "$PWD:/workspace" -w /workspace ghcr.io/zhangdw156/claudepod:latest claude --version
+docker run --rm --network host --user "$(id -u):$(id -g)" -v "$PWD:/workspace" -w /workspace ghcr.io/zhangdw156/codexpod:latest codex --help
+docker run --rm --network host --user "$(id -u):$(id -g)" -v "$PWD:/workspace" -w /workspace ghcr.io/zhangdw156/copilotpod:latest copilot --version
+docker run --rm --network host --user "$(id -u):$(id -g)" -v "$PWD:/workspace" -w /workspace ghcr.io/zhangdw156/geminipod:latest gemini --version
+```
+
+### Run with compose
+
+```bash
 docker compose -f docker/claudepod/docker-compose.yaml run --rm -it claudepod
+docker compose -f docker/openpod/docker-compose.yaml run --rm -it openpod
 docker compose -f docker/codexpod/docker-compose.yaml run --rm -it codexpod
 docker compose -f docker/copilotpod/docker-compose.yaml run --rm -it copilotpod
 docker compose -f docker/geminipod/docker-compose.yaml run --rm -it geminipod
 ```
 
-### Build images directly
+Compose files pull from `ghcr.io/zhangdw156/{flavor}:latest` by default. To pin a version:
 
-If you do not want to use compose, you can build the pod images directly:
+```bash
+IMAGE_VERSION=0.10.0 docker compose -f docker/claudepod/docker-compose.yaml run --rm -it claudepod
+```
+
+### Build images locally
+
+If you need to customize the images, build directly from the Dockerfiles:
 
 ```bash
 docker build -f Dockerfile.devpod -t devpod:local .
@@ -128,29 +133,7 @@ docker build -f docker/copilotpod/Dockerfile --build-arg DEVPOD_BASE_IMAGE=devpo
 docker build -f docker/geminipod/Dockerfile --build-arg DEVPOD_BASE_IMAGE=devpod:local -t geminipod:local .
 ```
 
-### Use the images directly
-
-If the images already exist, you can run them without compose:
-
-```bash
-docker run --rm -it --network host --user "$(id -u):$(id -g)" -v "$PWD:/workspace" -w /workspace openpod:local
-docker run --rm -it --network host --user "$(id -u):$(id -g)" -v "$PWD:/workspace" -w /workspace claudepod:local
-docker run --rm -it --network host --user "$(id -u):$(id -g)" -v "$PWD:/workspace" -w /workspace codexpod:local
-docker run --rm -it --network host --user "$(id -u):$(id -g)" -v "$PWD:/workspace" -w /workspace copilotpod:local
-docker run --rm -it --network host --user "$(id -u):$(id -g)" -v "$PWD:/workspace" -w /workspace geminipod:local
-```
-
-> **Note:** Always include `--user "$(id -u):$(id -g)"` to run the container as your host user. Without it, the container runs as root and changes file ownership under the mounted workspace, making them inaccessible on the host.
-
-Direct command examples:
-
-```bash
-docker run --rm --network host --user "$(id -u):$(id -g)" -v "$PWD:/workspace" -w /workspace openpod:local opencode --version
-docker run --rm --network host --user "$(id -u):$(id -g)" -v "$PWD:/workspace" -w /workspace claudepod:local claude --version
-docker run --rm --network host --user "$(id -u):$(id -g)" -v "$PWD:/workspace" -w /workspace codexpod:local codex --help
-docker run --rm --network host --user "$(id -u):$(id -g)" -v "$PWD:/workspace" -w /workspace copilotpod:local copilot --version
-docker run --rm --network host --user "$(id -u):$(id -g)" -v "$PWD:/workspace" -w /workspace geminipod:local gemini --version
-```
+Alternatively, uncomment the `build:` section in the compose files to build via compose.
 
 ## One-line Toolchain Install
 
@@ -178,60 +161,6 @@ The host only needs `bash`, `curl`, and `git`. The script installs Homebrew and 
 - **Shell plugins**: oh-my-zsh, powerlevel10k, autosuggestions, history-substring-search, syntax-highlighting
 
 After installation, run `exec zsh` to enter the configured zsh environment.
-
-## Bootstrap Usage
-
-Bootstrap only requires `bash`, `curl`, and `tar` on the host. It automatically installs Homebrew and manages all dependencies via brew (no sudo required).
-
-Single entrypoint:
-
-```bash
-bash install/bootstrap.sh --user                          # base tools only
-bash install/bootstrap.sh --flavor openpod --user
-bash install/bootstrap.sh --flavor claudepod --user
-bash install/bootstrap.sh --flavor codexpod --user
-bash install/bootstrap.sh --flavor copilotpod --user
-bash install/bootstrap.sh --flavor geminipod --user
-```
-
-Common launchers:
-
-```bash
-openpod-shell
-claudepod-shell
-codexpod-shell
-copilotpod-shell
-geminipod-shell
-```
-
-### Authentication Differences
-
-`openpod`:
-
-- can use a project-level `opencode.json`
-- or maintain its own OpenCode config directories
-
-`claudepod`:
-
-- use `claude auth login`
-- or mount / manage `~/.claude`
-
-`codexpod`:
-
-- use `codex login`
-- or mount / manage `~/.codex`
-
-`copilotpod`:
-
-- use `/login` on first run of `copilot`
-- or provide `GH_TOKEN` / `GITHUB_TOKEN`
-- can mount / manage `~/.copilot`
-
-`geminipod`:
-
-- can use Google login, `GEMINI_API_KEY`, or Vertex AI environment variables
-- can mount / manage `~/.gemini`
-- headless setups should prefer API key / Vertex AI over browser OAuth
 
 ## Repository Layout
 
@@ -272,11 +201,11 @@ After development changes, start with:
 
 ```bash
 bash tests/run.sh
-docker compose -f docker/openpod/docker-compose.yaml run --rm openpod -lc 'opencode --version'
-docker compose -f docker/claudepod/docker-compose.yaml run --rm claudepod -lc 'claude --version && claude auth status'
-docker compose -f docker/codexpod/docker-compose.yaml run --rm codexpod -lc 'codex --help | sed -n "1,20p"'
-docker compose -f docker/copilotpod/docker-compose.yaml run --rm copilotpod -lc 'copilot --version'
-docker compose -f docker/geminipod/docker-compose.yaml run --rm geminipod -lc 'gemini --version'
+docker run --rm --network host --user "$(id -u):$(id -g)" -v "$PWD:/workspace" -w /workspace ghcr.io/zhangdw156/openpod:latest opencode --version
+docker run --rm --network host --user "$(id -u):$(id -g)" -v "$PWD:/workspace" -w /workspace ghcr.io/zhangdw156/claudepod:latest claude --version
+docker run --rm --network host --user "$(id -u):$(id -g)" -v "$PWD:/workspace" -w /workspace ghcr.io/zhangdw156/codexpod:latest codex --help | head -1
+docker run --rm --network host --user "$(id -u):$(id -g)" -v "$PWD:/workspace" -w /workspace ghcr.io/zhangdw156/copilotpod:latest copilot --version
+docker run --rm --network host --user "$(id -u):$(id -g)" -v "$PWD:/workspace" -w /workspace ghcr.io/zhangdw156/geminipod:latest gemini --version
 ```
 
 ## Notes
