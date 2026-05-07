@@ -25,6 +25,14 @@ for cmd in bash curl git; do
   command -v "$cmd" >/dev/null 2>&1 || error "Missing required command: $cmd"
 done
 
+# ── Ensure user dirs exist (fresh systems may lack these) ────────────
+mkdir -p \
+  "${HOME}/.config" \
+  "${HOME}/.cache" \
+  "${HOME}/.local/bin" \
+  "${HOME}/.local/share" \
+  "${DEVPOD_ZSH}"
+
 # ── Mirror infrastructure ────────────────────────────────────────────
 info "Probing git hosts..."
 MIRROR_HOSTS=()
@@ -184,7 +192,6 @@ uv tool install --force "harlequin==2.5.2" || warn "Harlequin installation faile
 
 # ── Vendored assets (zsh plugins + p10k) ─────────────────────────────
 info "Downloading vendored assets from mirrors..."
-mkdir -p "${DEVPOD_ZSH}"
 
 _asset_tmp="$(mktemp -d)"
 zsh_plugin_ok=true
