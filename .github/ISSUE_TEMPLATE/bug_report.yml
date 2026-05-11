@@ -7,7 +7,7 @@ body:
       value: |
         Thanks for reporting a bug.
 
-        Please include enough detail for us to reproduce the issue inside `oh-my-openpod`.
+        Please include enough detail for us to reproduce the issue inside `oh-my-devpod`.
   - type: textarea
     id: summary
     attributes:
@@ -21,7 +21,7 @@ body:
     attributes:
       label: Version / 版本
       description: Image tag, commit SHA, or branch name.
-      placeholder: "Example: ghcr.io/zhangdw156/oh-my-openpod:latest"
+      placeholder: "Example: ghcr.io/zhangdw156/oh-my-devpod:latest"
     validations:
       required: true
   - type: dropdown
