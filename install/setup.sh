@@ -81,6 +81,29 @@ _host_reachable() {
   return 1
 }
 
+# ── China mirror detection ───────────────────────────────────────────
+IN_CHINA=false
+if [[ "${OHMYDEVPOD_USE_CN_MIRROR:-}" == "1" ]]; then
+  IN_CHINA=true
+elif [[ "${OHMYDEVPOD_USE_CN_MIRROR:-}" != "0" ]]; then
+  _country="$(curl -fsSL --connect-timeout 3 --max-time 5 https://ipinfo.io/country 2>/dev/null | tr -d '[:space:]')" || true
+  if [[ "${_country}" == "CN" ]]; then
+    IN_CHINA=true
+  elif ! _host_reachable "github.com" && _host_reachable "gitee.com"; then
+    IN_CHINA=true
+  fi
+fi
+
+if [[ "${IN_CHINA}" == "true" ]]; then
+  info "China network detected; using domestic mirrors (TUNA/npmmirror)"
+  export HOMEBREW_BREW_GIT_REMOTE="https://mirrors.tuna.tsinghua.edu.cn/git/homebrew/brew.git"
+  export HOMEBREW_CORE_GIT_REMOTE="https://mirrors.tuna.tsinghua.edu.cn/git/homebrew/homebrew-core.git"
+  export HOMEBREW_BOTTLE_DOMAIN="https://mirrors.tuna.tsinghua.edu.cn/homebrew-bottles"
+  export HOMEBREW_API_DOMAIN="https://mirrors.tuna.tsinghua.edu.cn/homebrew-bottles/api"
+  export UV_INDEX_URL="https://pypi.tuna.tsinghua.edu.cn/simple"
+  export npm_config_registry="https://registry.npmmirror.com"
+fi
+
 download_file() {
   local repo_path="$1" dest="$2" host
   for host in "${MIRROR_HOSTS[@]:-}"; do
@@ -147,8 +170,12 @@ else
       error "Cannot create ${HOMEBREW_PREFIX}. Run: sudo mkdir -p ${HOMEBREW_PREFIX} && sudo chown \$(id -u):\$(id -g) ${HOMEBREW_PREFIX}"
     fi
   fi
-  curl -fsSL https://github.com/Homebrew/brew/tarball/master \
-    | tar xz --strip-components 1 -C "${HOMEBREW_PREFIX}"
+  if [[ "${IN_CHINA}" == "true" ]]; then
+    git clone --depth 1 "${HOMEBREW_BREW_GIT_REMOTE}" "${HOMEBREW_PREFIX}"
+  else
+    curl -fsSL https://github.com/Homebrew/brew/tarball/master \
+      | tar xz --strip-components 1 -C "${HOMEBREW_PREFIX}"
+  fi
 fi
 
 eval "$("${HOMEBREW_PREFIX}/bin/brew" shellenv)"
@@ -177,7 +204,7 @@ brew install "${packages[@]}"
 # ── Bun ───────────────────────────────────────────────────────────────
 if ! command -v bun >/dev/null 2>&1; then
   info "Installing bun..."
-  if _host_reachable "github.com"; then
+  if [[ "${IN_CHINA}" != "true" ]] && _host_reachable "github.com"; then
     BUN_INSTALL="${HOME}/.bun" curl -fsSL https://bun.sh/install | bash || true
   fi
   if ! command -v bun >/dev/null 2>&1 && command -v npm >/dev/null 2>&1; then
@@ -251,6 +278,22 @@ fi
 
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 export PATH="$HOME/.bun/bin:$HOME/.local/bin:$PATH"
+ZSHRC_EOF
+
+if [[ "${IN_CHINA}" == "true" ]]; then
+  cat >> "${HOME}/.zshrc" <<'CNMIRROR_EOF'
+
+# China domestic mirrors (auto-detected by oh-my-devpod)
+export HOMEBREW_BREW_GIT_REMOTE="https://mirrors.tuna.tsinghua.edu.cn/git/homebrew/brew.git"
+export HOMEBREW_CORE_GIT_REMOTE="https://mirrors.tuna.tsinghua.edu.cn/git/homebrew/homebrew-core.git"
+export HOMEBREW_BOTTLE_DOMAIN="https://mirrors.tuna.tsinghua.edu.cn/homebrew-bottles"
+export HOMEBREW_API_DOMAIN="https://mirrors.tuna.tsinghua.edu.cn/homebrew-bottles/api"
+export UV_INDEX_URL="https://pypi.tuna.tsinghua.edu.cn/simple"
+export npm_config_registry="https://registry.npmmirror.com"
+CNMIRROR_EOF
+fi
+
+cat >> "${HOME}/.zshrc" <<'ZSHRC_EOF2'
 
 export ZSH="$HOME/.local/share/devpod/zsh/ohmyzsh"
 export ZSH_DISABLE_COMPFIX=true
@@ -297,7 +340,7 @@ function y() {
   [ "$cwd" != "$PWD" ] && [ -d "$cwd" ] && builtin cd -- "$cwd"
   rm -f -- "$tmp"
 }
-ZSHRC_EOF
+ZSHRC_EOF2
 
 # ── Summary ───────────────────────────────────────────────────────────
 echo ""
