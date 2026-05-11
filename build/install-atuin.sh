@@ -47,6 +47,6 @@ fi
 tar -xzf "${archive_path}" -C "${tmp_dir}"
 
 mkdir -p "${bin_dir}"
-install -m 0755 "${tmp_dir}/atuin" "${bin_dir}/atuin"
+install -m 0755 "${tmp_dir}/atuin-${atuin_arch}-unknown-linux-musl/atuin" "${bin_dir}/atuin"
 
 test -x "${bin_dir}/atuin"
