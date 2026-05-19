@@ -51,6 +51,10 @@ check "install-antidote.sh fallback" \
   "${repo_root}/build/install-antidote.sh" \
   "ANTIDOTE_VERSION:-${ANTIDOTE_VERSION}"
 
+check "install-witr.sh fallback" \
+  "${repo_root}/build/install-witr.sh" \
+  "WITR_VERSION:-${WITR_VERSION}"
+
 # Verify Dockerfile ARG defaults match versions.env
 check "Dockerfile.devpod ARG ANTIDOTE_VERSION" \
   "${repo_root}/Dockerfile.devpod" \
@@ -75,6 +79,10 @@ check "Dockerfile.devpod ARG YAZI_VERSION" \
 check "Dockerfile.devpod ARG ZELLIJ_VERSION" \
   "${repo_root}/Dockerfile.devpod" \
   "ARG ZELLIJ_VERSION=${ZELLIJ_VERSION}"
+
+check "Dockerfile.devpod ARG WITR_VERSION" \
+  "${repo_root}/Dockerfile.devpod" \
+  "ARG WITR_VERSION=${WITR_VERSION}"
 
 check "Dockerfile.devpod ARG PYRIGHT_VERSION" \
   "${repo_root}/Dockerfile.devpod" \
