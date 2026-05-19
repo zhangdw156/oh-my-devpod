@@ -4,6 +4,7 @@ ARG ANTIDOTE_VERSION=v2.0.10
 ARG ATUIN_VERSION=v18.15.2
 ARG BTOP_VERSION=v1.4.6
 ARG NEOVIM_VERSION=v0.12.0
+ARG WITR_VERSION=v0.3.2
 ARG YAZI_VERSION=v26.1.22
 ARG ZELLIJ_VERSION=v0.44.0
 ARG PYRIGHT_VERSION=1.1.408
@@ -37,15 +38,18 @@ COPY vendor/releases /opt/vendor/releases
 
 ARG TARGETARCH
 COPY build/install-btop.sh build/install-antidote.sh build/install-zellij.sh \
-     build/install-yazi.sh build/install-neovim.sh build/install-atuin.sh /tmp/
+     build/install-yazi.sh build/install-neovim.sh build/install-atuin.sh \
+     build/install-witr.sh /tmp/
 RUN BTOP_VERSION=${BTOP_VERSION} bash /tmp/install-btop.sh \
     && ANTIDOTE_VERSION=${ANTIDOTE_VERSION} bash /tmp/install-antidote.sh \
     && ZELLIJ_VERSION=${ZELLIJ_VERSION} bash /tmp/install-zellij.sh \
     && YAZI_VERSION=${YAZI_VERSION} bash /tmp/install-yazi.sh \
     && NEOVIM_VERSION=${NEOVIM_VERSION} bash /tmp/install-neovim.sh \
     && ATUIN_VERSION=${ATUIN_VERSION} bash /tmp/install-atuin.sh \
+    && WITR_VERSION=${WITR_VERSION} bash /tmp/install-witr.sh \
     && rm -f /tmp/install-btop.sh /tmp/install-antidote.sh /tmp/install-zellij.sh \
-             /tmp/install-yazi.sh /tmp/install-neovim.sh /tmp/install-atuin.sh
+             /tmp/install-yazi.sh /tmp/install-neovim.sh /tmp/install-atuin.sh \
+             /tmp/install-witr.sh
 
 COPY --from=ghcr.io/astral-sh/uv:0.11.3 /uv /uvx /usr/local/bin/
 COPY --from=oven/bun:1.2 /usr/local/bin/bun /usr/local/bin/bun

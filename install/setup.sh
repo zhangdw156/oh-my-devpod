@@ -196,7 +196,7 @@ eval "$("${HOMEBREW_PREFIX}/bin/brew" shellenv)"
 # ── Core tools ────────────────────────────────────────────────────────
 packages=(
   antidote atuin bat btop fd fzf jq make neovim node pigz
-  ripgrep sqlite unzip uv vim yazi zellij zsh
+  ripgrep sqlite unzip uv vim witr yazi zellij zsh
 )
 info "Installing packages: ${packages[*]}"
 brew install "${packages[@]}"
@@ -347,7 +347,7 @@ echo ""
 info "Installation complete!"
 echo ""
 echo "Installed tools:"
-for tool in atuin bat btop bun fd fzf gcc git harlequin jq make nvim node npm rg sqlite3 uv vim yazi zellij zsh; do
+for tool in atuin bat btop bun fd fzf gcc git harlequin jq make nvim node npm rg sqlite3 uv vim witr yazi zellij zsh; do
   if command -v "$tool" >/dev/null 2>&1; then
     printf '  \033[32m✓\033[0m %s\n' "$tool"
   else

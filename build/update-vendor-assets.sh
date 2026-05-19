@@ -32,6 +32,7 @@ zellij_version="${ZELLIJ_VERSION}"
 yazi_version="${YAZI_VERSION}"
 neovim_version="${NEOVIM_VERSION}"
 atuin_version="${ATUIN_VERSION}"
+witr_version="${WITR_VERSION}"
 superpowers_version="${SUPERPOWERS_VERSION}"
 lazyvim_starter_commit="${LAZYVIM_STARTER_COMMIT}"
 
@@ -139,6 +140,14 @@ download_release_assets \
   "https://github.com/atuinsh/atuin/releases/download/${atuin_version}/atuin-aarch64-unknown-linux-musl.tar.gz" \
   "atuin-x86_64-unknown-linux-musl.tar.gz" \
   "https://github.com/atuinsh/atuin/releases/download/${atuin_version}/atuin-x86_64-unknown-linux-musl.tar.gz"
+
+download_release_assets \
+  "witr" \
+  "${witr_version}" \
+  "witr-linux-amd64" \
+  "https://github.com/pranshuparmar/witr/releases/download/${witr_version}/witr-linux-amd64" \
+  "witr-linux-arm64" \
+  "https://github.com/pranshuparmar/witr/releases/download/${witr_version}/witr-linux-arm64"
 
 download_plugin_snapshot "ohmyzsh/ohmyzsh" "${ohmyzsh_commit}" "${vendor_dir}/zsh/ohmyzsh"
 download_plugin_snapshot "romkatv/powerlevel10k" "${powerlevel10k_commit}" "${vendor_dir}/zsh/powerlevel10k"
