@@ -1,6 +1,6 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Ubuntu-24.04-E95420?style=for-the-badge&logo=ubuntu&logoColor=white" alt="Ubuntu 24.04"/>
-  <img src="https://img.shields.io/badge/Multi-Flavor_Devpod-2496ED?style=for-the-badge" alt="Multi Flavor Devpod"/>
+  <img src="https://img.shields.io/badge/Rust_TUI_Host_Installer-2496ED?style=for-the-badge" alt="Rust TUI Host Installer"/>
   <img src="https://img.shields.io/badge/Zsh-Powerlevel10k-4EAA25?style=for-the-badge&logo=gnubash&logoColor=white" alt="Zsh"/>
   <img src="https://img.shields.io/github/v/tag/zhangdw156/oh-my-devpod?style=for-the-badge&label=version&color=blue" alt="Version"/>
 </p>
@@ -8,8 +8,8 @@
 <h1 align="center">oh-my-devpod</h1>
 
 <p align="center">
-  <strong>一个 main，多个 AI harness 镜像</strong><br/>
-  共享同一套 devpod 基座，同时产出 openpod、claudepod、codexpod、copilotpod、geminipod 五种 flavor。
+  <strong>一个 curl 入口，一个 Rust TUI 安装器</strong><br/>
+  在 Ubuntu 24.04 宿主机上安装和管理 AI 开发工具链。
 </p>
 
 <p align="center">
@@ -18,87 +18,60 @@
 
 ---
 
-## 一键安装工具链
+## 一键启动 `omd` 安装器
 
-在任意 Linux 服务器上运行以下命令，即可安装 devpod 全部共享工具链（无需 sudo）：
+oh-my-devpod 的主产品形态正在迁移为 **Ubuntu 24.04 宿主机安装器**。首次运行只需要一条命令：
 
 ```bash
-# GitHub（默认）
-curl -fsSL https://raw.githubusercontent.com/zhangdw156/oh-my-devpod/main/install/setup.sh | bash
-
-# Gitee（国内镜像，GitHub 不可达时使用）
-curl -fsSL https://gitee.com/zhangdw156/oh-my-devpod/raw/main/install/setup.sh | bash
+curl -fsSL https://raw.githubusercontent.com/zhangdw156/oh-my-devpod/main/install/bootstrap.sh | bash
 ```
 
-脚本会自动探测 github.com / gitee.com 的可达性，从可用源下载所有依赖。
+这个 bootstrap 脚本只负责：
 
-宿主机仅需预装 `bash`、`curl` 和 `git`。脚本会自动安装 Homebrew 并通过 brew 管理所有依赖：
+1. 检测当前系统是否为 Ubuntu 24.04。
+2. 检测 `sudo`，必要时让用户交互输入 sudo 密码。
+3. 从 GitHub Releases 下载预编译 Rust TUI binary。
+4. 安装到 `~/.local/bin/omd`。
+5. 立即启动 `omd`。
 
-- **搜索/导航**: bat, fd, fzf, ripgrep
-- **编辑器**: neovim (LazyVim preset)
-- **终端**: zellij, yazi, btop, zsh, atuin
-- **开发**: gcc, make, node, npm, bun, uv, jq, sqlite, harlequin
-- **Shell 插件**: oh-my-zsh, powerlevel10k, autosuggestions, history-substring-search, syntax-highlighting
+后续再次运行：
 
-安装完成后运行 `exec zsh` 即可进入配置好的 zsh 环境。
+```bash
+omd
+```
 
-## 项目概览
+同一个 TUI 用于首次安装、更新、补装和卸载可选组件。
 
-当前仓库维护一套共享的 `devpod` 基座：
+## 安装模型
 
-- Ubuntu 24.04
-- Zsh + Powerlevel10k + vendored shell plugins
-- Neovim + LazyVim starter
-- uv + Python 开发工具
-- zellij、btop、yazi、git、rg、fd、atuin、harlequin 等通用开发工具
+`omd` 管理两类组件：
 
-在这套共同基座上，产出 5 个 flavor：
+- **必装组件**：Homebrew、zsh 环境、基础开发工具链。
+- **可选组件**：Claude Code、Codex CLI、OpenCode、GitHub Copilot CLI、Gemini CLI。
 
-- `openpod`
-- `claudepod`
-- `codexpod`
-- `copilotpod`
-- `geminipod`
+卸载可选组件时，`omd` 只删除软件本体、wrapper、symlink 或 oh-my-devpod 管理的 package prefix；不会删除用户配置、cache、auth 状态、token 或登录会话。
 
-这些 flavor 的差异只在：
+默认用户级路径：
 
-- 使用的 harness
-- 预装的 harness-specific skills
-- harness 对应的默认配置与启动入口
+```text
+~/.local/bin/omd
+~/.local/share/oh-my-devpod/
+~/.local/state/oh-my-devpod/logs/
+~/.cache/oh-my-devpod/
+```
 
-## Flavor 说明
+## 当前实现状态
 
-### `openpod`
+- `install/bootstrap.sh` 是新的 `curl | bash` 入口。
+- `crates/omd/` 是 Rust + Ratatui + Crossterm TUI。
+- `modules/` 提供 `status` / `install` / `update` / `uninstall` 生命周期接口。
+- 旧的 `install/setup.sh` 仍暂时保留，作为迁移期间的兼容脚本。
 
-- Harness: OpenCode
-- 镜像名：`ghcr.io/zhangdw156/openpod`
-- 认证/配置：沿用 OpenCode 模型；用户自行维护项目根 `opencode.json` 或自己的 OpenCode 配置目录
+## Legacy Docker 用法
 
-### `claudepod`
+Docker / 多 flavor 镜像仍在仓库中保留为 legacy 路径，但不再是新的主产品方向。镜像版本仍由仓库根目录 `VERSION` 管理；compose 路径仍支持 `IMAGE_VERSION` 覆盖。
 
-- Harness: Claude Code
-- 镜像名：`ghcr.io/zhangdw156/claudepod`
-- 认证/配置：使用 `claude auth login`、`~/.claude/`、项目内 `.claude/`
 
-### `codexpod`
-
-- Harness: Codex CLI
-- 镜像名：`ghcr.io/zhangdw156/codexpod`
-- 认证/配置：使用 `codex login`、`~/.codex/`、项目内 Codex 配置
-
-### `copilotpod`
-
-- Harness: GitHub Copilot CLI
-- 镜像名：`ghcr.io/zhangdw156/copilotpod`
-- 认证/配置：首次运行 `copilot` 后使用 `/login`，或提供 `GH_TOKEN` / `GITHUB_TOKEN`；用户级配置位于 `~/.copilot/`
-
-### `geminipod`
-
-- Harness: Gemini CLI
-- 镜像名：`ghcr.io/zhangdw156/geminipod`
-- 认证/配置：可使用 Google 登录、`GEMINI_API_KEY`，或 Vertex AI 相关环境变量；用户级配置位于 `~/.gemini/`；headless 场景更建议使用 API key / Vertex AI，而不是浏览器 OAuth
-
-## Docker 用法
 
 ### 拉取并使用官方镜像
 
@@ -163,6 +136,13 @@ docker build -f docker/geminipod/Dockerfile --build-arg DEVPOD_BASE_IMAGE=devpod
 
 ```text
 oh-my-devpod/
+├── install/
+│   └── bootstrap.sh
+├── crates/
+│   └── omd/
+├── modules/
+│   ├── core/
+│   └── optional/
 ├── Dockerfile.devpod
 ├── docker/
 │   ├── openpod/
@@ -188,7 +168,6 @@ oh-my-devpod/
 │   └── geminipod/
 ├── build/
 ├── config/
-├── install/
 └── vendor/
 ```
 
@@ -198,6 +177,12 @@ oh-my-devpod/
 
 ```bash
 bash tests/run.sh
+cargo test -p omd
+```
+
+Legacy Docker smoke test 示例：
+
+```bash
 docker run --rm --network host --user "$(id -u):$(id -g)" -v "$PWD:/workspace" -w /workspace ghcr.io/zhangdw156/openpod:latest opencode --version
 docker run --rm --network host --user "$(id -u):$(id -g)" -v "$PWD:/workspace" -w /workspace ghcr.io/zhangdw156/claudepod:latest claude --version
 docker run --rm --network host --user "$(id -u):$(id -g)" -v "$PWD:/workspace" -w /workspace ghcr.io/zhangdw156/codexpod:latest codex --help | head -1
@@ -207,6 +192,7 @@ docker run --rm --network host --user "$(id -u):$(id -g)" -v "$PWD:/workspace" -
 
 ## 说明
 
-- `devpod` 是共享基座，不是主打给用户直接使用的 flavor
-- `openpod`、`claudepod`、`codexpod`、`copilotpod`、`geminipod` 使用同一版本号发布
+- `omd` 是新的主入口，`curl | bash` 只负责安装并启动它
+- `devpod` / 多 flavor 镜像是 legacy 路径，保留到迁移完成
+- legacy `openpod`、`claudepod`、`codexpod`、`copilotpod`、`geminipod` 仍使用同一版本号发布
 - 首次执行 `nvim` 仍然需要联网，因为 `lazy.nvim` 会按需拉取插件
