@@ -1,0 +1,10 @@
+[package]
+name = "omd"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "oh-my-devpod host installer TUI"
+
+[dependencies]
+crossterm = "0.27"
+ratatui = "0.26"

@@ -10,7 +10,7 @@ cache_dir="${OHMYDEVPOD_NVM_CACHE_DIR:-${XDG_CACHE_HOME:-${HOME}/.cache}/nvim}"
 marker_name="${OHMYDEVPOD_MANAGED_MARKER:-.ohmydevpod-managed.json}"
 marker_path="${config_dir}/${marker_name}"
 starter_commit="${OHMYDEVPOD_LAZYVIM_STARTER_COMMIT:-}"
-openpod_version="${OHMYDEVPOD_VERSION:-unknown}"
+oh_my_devpod_version="${OHMYDEVPOD_VERSION:-unknown}"
 timestamp="$(date -u +%Y%m%d%H%M%SZ)"
 
 if [[ ! -d "${source_dir}" ]]; then
@@ -18,8 +18,8 @@ if [[ ! -d "${source_dir}" ]]; then
   exit 1
 fi
 
-if [[ -z "${starter_commit}" && -f "${source_dir}/.openpod-source-commit" ]]; then
-  starter_commit="$(<"${source_dir}/.openpod-source-commit")"
+if [[ -z "${starter_commit}" && -f "${source_dir}/.oh-my-devpod-source-commit" ]]; then
+  starter_commit="$(<"${source_dir}/.oh-my-devpod-source-commit")"
 fi
 
 if [[ -z "${starter_commit}" ]]; then
@@ -30,12 +30,12 @@ backup_path_if_exists() {
   local path="$1"
 
   if [[ -e "${path}" ]]; then
-    mv "${path}" "${path}.openpod.bak.${timestamp}"
+    mv "${path}" "${path}.oh-my-devpod.bak.${timestamp}"
   fi
 }
 
 is_managed_install() {
-  [[ -f "${marker_path}" ]] && grep -q '"managed_by":[[:space:]]*"openpod"' "${marker_path}"
+  [[ -f "${marker_path}" ]] && grep -q '"managed_by":[[:space:]]*"oh-my-devpod"' "${marker_path}"
 }
 
 if is_managed_install; then
@@ -53,13 +53,13 @@ if [[ -n "${overlay_dir}" && -d "${overlay_dir}" ]]; then
   cp -R "${overlay_dir}/." "${config_dir}"
 fi
 rm -rf "${config_dir}/.git"
-rm -f "${config_dir}/.openpod-source-commit"
+rm -f "${config_dir}/.oh-my-devpod-source-commit"
 
 cat > "${marker_path}" <<EOF
 {
-  "managed_by": "openpod",
+  "managed_by": "oh-my-devpod",
   "starter_commit": "${starter_commit}",
   "installed_at": "${timestamp}",
-  "openpod_version": "${openpod_version}"
+  "oh_my_devpod_version": "${oh_my_devpod_version}"
 }
 EOF

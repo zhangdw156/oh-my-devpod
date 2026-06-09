@@ -7,9 +7,6 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "${repo_root}/versions.env"
 
 vendor_dir="${repo_root}/vendor"
-runtime_dir="${repo_root}/runtime"
-openpod_vendor_dir="${runtime_dir}/openpod/vendor"
-openpod_opencode_dir="${openpod_vendor_dir}/opencode"
 tmp_dir="$(mktemp -d)"
 
 cleanup() {
@@ -33,7 +30,6 @@ yazi_version="${YAZI_VERSION}"
 neovim_version="${NEOVIM_VERSION}"
 atuin_version="${ATUIN_VERSION}"
 witr_version="${WITR_VERSION}"
-superpowers_version="${SUPERPOWERS_VERSION}"
 lazyvim_starter_commit="${LAZYVIM_STARTER_COMMIT}"
 
 ohmyzsh_commit="${OHMYZSH_COMMIT}"
@@ -89,7 +85,6 @@ download_plugin_snapshot() {
 
 rm -rf "${vendor_dir}/opencode"
 mkdir -p "${vendor_dir}/releases" "${vendor_dir}/nvim" "${vendor_dir}/zsh"
-mkdir -p "${openpod_opencode_dir}/packages" "${openpod_opencode_dir}/skills"
 
 download_release_assets \
   "antidote" \
@@ -154,16 +149,7 @@ download_plugin_snapshot "romkatv/powerlevel10k" "${powerlevel10k_commit}" "${ve
 download_plugin_snapshot "zsh-users/zsh-autosuggestions" "${autosuggestions_commit}" "${vendor_dir}/zsh/zsh-autosuggestions"
 download_plugin_snapshot "zsh-users/zsh-history-substring-search" "${history_substring_search_commit}" "${vendor_dir}/zsh/zsh-history-substring-search"
 download_plugin_snapshot "zsh-users/zsh-syntax-highlighting" "${syntax_highlighting_commit}" "${vendor_dir}/zsh/zsh-syntax-highlighting"
-download_plugin_snapshot "obra/superpowers" "refs/tags/${superpowers_version}" "${openpod_opencode_dir}/packages/superpowers"
 download_plugin_snapshot "LazyVim/starter" "${lazyvim_starter_commit}" "${vendor_dir}/nvim/lazyvim-starter"
-printf '%s\n' "${lazyvim_starter_commit}" > "${vendor_dir}/nvim/lazyvim-starter/.openpod-source-commit"
+printf '%s\n' "${lazyvim_starter_commit}" > "${vendor_dir}/nvim/lazyvim-starter/.oh-my-devpod-source-commit"
 
-for flavor in claudepod codexpod copilotpod geminipod; do
-  if [[ -d "${runtime_dir}/${flavor}/skills/superpowers" ]]; then
-    rm -rf "${runtime_dir}/${flavor}/skills/superpowers"
-  fi
-  mkdir -p "${runtime_dir}/${flavor}/skills"
-  cp -R "${openpod_opencode_dir}/packages/superpowers/skills" "${runtime_dir}/${flavor}/skills/superpowers"
-done
-
-echo "Vendored assets updated under ${vendor_dir} and ${openpod_vendor_dir}"
+echo "Vendored assets updated under ${vendor_dir}"

@@ -1,0 +1,39 @@
+name: release-omd
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build omd
+        run: cargo build --release -p omd
+
+      - name: Package omd
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp target/release/omd dist/omd
+          chmod 0755 dist/omd
+          tar -czf dist/omd-x86_64-unknown-linux-gnu.tar.gz -C dist omd
+          (cd dist && sha256sum omd-x86_64-unknown-linux-gnu.tar.gz > omd-x86_64-unknown-linux-gnu.tar.gz.sha256)
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/omd-x86_64-unknown-linux-gnu.tar.gz
+            dist/omd-x86_64-unknown-linux-gnu.tar.gz.sha256

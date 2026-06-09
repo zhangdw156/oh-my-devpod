@@ -1,28 +1,22 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-`Dockerfile.devpod` defines the shared base image, each `docker/<flavor>/` directory owns that flavor's `Dockerfile` plus `docker-compose.yaml`, and the repository-root `VERSION` file is the shared source of truth for all six image tags. `runtime/` contains harness-specific launchers, config, installers, skills, and any flavor-owned vendored assets; `runtime/openpod/vendor/opencode/` is the OpenCode-specific asset root. `build/` contains shared installer and asset-refresh scripts. Shared vendored assets live in `vendor/`, while user docs are in `README.md` and `README_EN.md`; maintainer rules live in `DEVELOPMENT.md` and `docs/vendor-assets.md`.
+`install/bootstrap.sh` is the public one-line installer entrypoint, `crates/omd/` owns the Rust + Ratatui TUI, and `modules/` owns component lifecycle scripts with `status`, `install`, `update`, and `uninstall` actions. `build/` contains reusable installer and asset-refresh scripts, `config/` contains shell/editor configuration, and `vendor/` contains shared zsh, Neovim, and release asset snapshots. The repository-root `VERSION` file is the source of truth for `omd` releases.
 
 ## Build, Test, and Development Commands
-Compose files default to pulling official images from `ghcr.io/zhangdw156/{flavor}:latest`.
-`docker compose -f docker/openpod/docker-compose.yaml run --rm --user "$(id -u):$(id -g)" openpod -lc 'opencode --version'` smoke-tests the OpenCode flavor.  
-`docker compose -f docker/claudepod/docker-compose.yaml run --rm --user "$(id -u):$(id -g)" claudepod -lc 'claude --version && claude auth status'` smoke-tests the Claude Code flavor.  
-`docker compose -f docker/codexpod/docker-compose.yaml run --rm --user "$(id -u):$(id -g)" codexpod -lc 'codex --help | sed -n "1,20p"'` smoke-tests the Codex flavor.  
-`docker compose -f docker/copilotpod/docker-compose.yaml run --rm --user "$(id -u):$(id -g)" copilotpod -lc 'copilot --version'` smoke-tests the Copilot flavor.  
-`docker compose -f docker/geminipod/docker-compose.yaml run --rm --user "$(id -u):$(id -g)" geminipod -lc 'gemini --version'` smoke-tests the Gemini flavor.  
-`bash build/update-vendor-assets.sh` refreshes shared vendored assets and synchronized flavor skills.
+`bash tests/run.sh` runs the shell regression suite plus `cargo test -p omd` when Cargo is available. Use `cargo test -p omd` for Rust unit tests, `cargo run -p omd -- --version` for a CLI smoke check, `cargo run -p omd -- --dry-run` for non-interactive component planning, and `cargo run -p omd -- --list-components` to inspect the TUI catalog. `bash build/update-vendor-assets.sh` refreshes shared vendored assets.
 
 ## Coding Style & Naming Conventions
-This repository is Bash- and YAML-heavy. Use `#!/usr/bin/env bash`, keep `set -euo pipefail`, prefer quoted expansions, `[[ ... ]]`, and lowercase `snake_case` names for variables and functions. Match the existing 2-space indentation in shell blocks and YAML. Keep comments brief and operational. Keep shared logic in `build/` or `Dockerfile.devpod`, and keep harness-specific logic isolated in `runtime/<flavor>/`.
+This repository is Bash-, Rust-, and YAML-heavy. Use `#!/usr/bin/env bash`, keep `set -euo pipefail`, prefer quoted expansions, `[[ ... ]]`, and lowercase `snake_case` names for shell variables and functions. Run `cargo fmt --all` for Rust changes. Match the existing 2-space indentation in shell blocks and YAML. Keep comments brief and operational. Keep shared install logic in `build/` or `modules/lib/`, TUI logic in `crates/omd/`, and component-specific lifecycle behavior in `modules/core/` or `modules/optional/`.
 
 ## Testing Guidelines
-There is no first-party unit test suite at the root; validation is mostly smoke-based. After behavior changes, run `bash tests/run.sh`, then rebuild and smoke-test affected flavors. When vendored versions change, review `vendor/manifest.lock.json`, `docs/vendor-assets.md`, `runtime/openpod/vendor/opencode/`, and any synchronized flavor skill trees under `runtime/`.
+After behavior changes, run `bash tests/run.sh`, `cargo test -p omd`, and `git diff --check`. For bootstrap changes, run `bash tests/test-bootstrap.sh`; for module changes, run `bash tests/test-module-contracts.sh`; for release workflow changes, run `bash tests/test-omd-release-workflow.sh`. When vendored versions change, review `vendor/manifest.lock.json`, `docs/vendor-assets.md`, and the relevant `build/install-*.sh` fallback defaults.
 
 ## Development Workflow
-Assume the local environment provides the GitHub CLI `gh`; prefer `gh` for repository operations such as inspecting PRs, issues, workflow runs, and preparing PR metadata when those tasks are requested. Use IDD (interface-driven development) by default for substantive changes: clarify or inspect the target interface/contract first, update tests or verification around that contract, then implement and re-verify the behavior.
+Assume the local environment provides the GitHub CLI `gh`; prefer `gh` for repository operations such as inspecting PRs, issues, workflow runs, and preparing PR metadata when those tasks are requested. Use issue-driven development for substantive changes: create or reference an issue, clarify the target interface/contract, update tests around that contract, then implement and re-verify behavior.
 
 ## Commit & Pull Request Guidelines
-Use Conventional Commit messages in `type(scope): summary` format, for example `feat(harness): add copilotpod support` or `chore(version): bump version to 0.9.0.dev1`. Keep subjects imperative and focused; issue refs such as `(#27)` are common. PRs should explain the user-visible effect, list verification commands, link the related issue, and call out any changes to the repository-root `VERSION` file that affect image versions or tags. Include screenshots only when terminal UX, docs examples, or visible config behavior changes.
+Use Conventional Commit messages in `type(scope): summary` format, for example `feat(installer): add component action` or `chore(version): bump version to 0.9.0.dev1`. Keep subjects imperative and focused; issue refs such as `Refs #103` are expected for implementation commits. PRs should explain the user-visible effect, list verification commands, link the related issue, and call out any changes to `VERSION` that affect `omd` release artifacts.
 
 ## Security & Configuration Tips
-Never commit API keys or populated harness config. Keep flavor-specific secrets and auth state outside the repository, for example in your OpenCode config, `~/.claude`, or `~/.codex`, depending on the selected harness.
+Never commit API keys, populated harness config, auth state, or token files. Normal uninstall paths must remove only software bodies, wrappers, symlinks, or managed package prefixes, and must preserve user config, caches, auth state, tokens, and login sessions.
