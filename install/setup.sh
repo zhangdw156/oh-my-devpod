@@ -95,11 +95,10 @@ elif [[ "${OHMYDEVPOD_USE_CN_MIRROR:-}" != "0" ]]; then
 fi
 
 if [[ "${IN_CHINA}" == "true" ]]; then
-  info "China network detected; using domestic mirrors (TUNA/npmmirror)"
-  export HOMEBREW_BREW_GIT_REMOTE="https://mirrors.tuna.tsinghua.edu.cn/git/homebrew/brew.git"
-  export HOMEBREW_CORE_GIT_REMOTE="https://mirrors.tuna.tsinghua.edu.cn/git/homebrew/homebrew-core.git"
-  export HOMEBREW_BOTTLE_DOMAIN="https://mirrors.tuna.tsinghua.edu.cn/homebrew-bottles"
-  export HOMEBREW_API_DOMAIN="https://mirrors.tuna.tsinghua.edu.cn/homebrew-bottles/api"
+  info "China network detected; using domestic mirrors (USTC Homebrew, TUNA PyPI, npmmirror npm)"
+  export HOMEBREW_BREW_GIT_REMOTE="https://mirrors.ustc.edu.cn/brew.git"
+  export HOMEBREW_BOTTLE_DOMAIN="https://mirrors.ustc.edu.cn/homebrew-bottles"
+  export HOMEBREW_API_DOMAIN="https://mirrors.ustc.edu.cn/homebrew-bottles/api"
   export UV_INDEX_URL="https://pypi.tuna.tsinghua.edu.cn/simple"
   export npm_config_registry="https://registry.npmmirror.com"
 fi
@@ -284,10 +283,9 @@ if [[ "${IN_CHINA}" == "true" ]]; then
   cat >> "${HOME}/.zshrc" <<'CNMIRROR_EOF'
 
 # China domestic mirrors (auto-detected by oh-my-devpod)
-export HOMEBREW_BREW_GIT_REMOTE="https://mirrors.tuna.tsinghua.edu.cn/git/homebrew/brew.git"
-export HOMEBREW_CORE_GIT_REMOTE="https://mirrors.tuna.tsinghua.edu.cn/git/homebrew/homebrew-core.git"
-export HOMEBREW_BOTTLE_DOMAIN="https://mirrors.tuna.tsinghua.edu.cn/homebrew-bottles"
-export HOMEBREW_API_DOMAIN="https://mirrors.tuna.tsinghua.edu.cn/homebrew-bottles/api"
+export HOMEBREW_BREW_GIT_REMOTE="https://mirrors.ustc.edu.cn/brew.git"
+export HOMEBREW_BOTTLE_DOMAIN="https://mirrors.ustc.edu.cn/homebrew-bottles"
+export HOMEBREW_API_DOMAIN="https://mirrors.ustc.edu.cn/homebrew-bottles/api"
 export UV_INDEX_URL="https://pypi.tuna.tsinghua.edu.cn/simple"
 export npm_config_registry="https://registry.npmmirror.com"
 CNMIRROR_EOF
