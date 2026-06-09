@@ -104,23 +104,6 @@
       ]
     }
   },
-  "opencode": {
-    "plugin_packages": {
-      "superpowers": {
-        "repo": "obra/superpowers",
-        "version": "v5.0.7",
-        "local_path": "runtime/openpod/vendor/opencode/packages/superpowers",
-        "entrypoint": ".opencode/plugins/superpowers.js",
-        "bundled_skills_path": "skills",
-        "source_url": "https://codeload.github.com/obra/superpowers/tar.gz/refs/tags/v5.0.7",
-        "notes": "Package root layout is preserved inside the openpod runtime tree so the vendored plugin can resolve ../../skills relative to its entrypoint."
-      }
-    },
-    "global_skills": {
-      "local_path": "runtime/openpod/vendor/opencode/skills",
-      "notes": "Repository-maintained OpenCode global skills live in the openpod runtime tree and stay outside the destructive package refresh logic in build/update-vendor-assets.sh."
-    }
-  },
   "nvim_configs": {
     "lazyvim_starter": {
       "repo": "LazyVim/starter",
@@ -136,7 +119,7 @@
       "commit": "9e2c1548c3dfeefd055e1c6606f66657093ae928",
       "local_path": "vendor/zsh/ohmyzsh",
       "source_url": "https://codeload.github.com/ohmyzsh/ohmyzsh/tar.gz/9e2c1548c3dfeefd055e1c6606f66657093ae928",
-      "notes": "The image uses the vendored oh-my-zsh core plus the git and extract plugins."
+      "notes": "The host installer uses the vendored oh-my-zsh core plus the git and extract plugins."
     },
     "powerlevel10k": {
       "repo": "romkatv/powerlevel10k",
@@ -161,37 +144,6 @@
       "commit": "1d85c692615a25fe2293bdd44b34c217d5d2bf04",
       "local_path": "vendor/zsh/zsh-syntax-highlighting",
       "source_url": "https://codeload.github.com/zsh-users/zsh-syntax-highlighting/tar.gz/1d85c692615a25fe2293bdd44b34c217d5d2bf04"
-    }
-  },
-  "runtime_flavors": {
-    "devpod": {
-      "dockerfile": "Dockerfile.devpod",
-      "notes": "Shared base image for all runtime flavors. Contains common shell, editor, Python, and terminal tooling."
-    },
-    "openpod": {
-      "dockerfile": "Dockerfile.openpod",
-      "skills_source": "runtime/openpod/vendor/opencode/skills",
-      "notes": "OpenCode flavor owns the vendored OpenCode plugin package and global skills layout under runtime/openpod/."
-    },
-    "claudepod": {
-      "dockerfile": "Dockerfile.claudepod",
-      "skills_source": "runtime/claudepod/skills",
-      "notes": "Claude Code flavor uses a pinned Claude native installer plus vendored superpowers skills copied into the flavor runtime tree."
-    },
-    "codexpod": {
-      "dockerfile": "Dockerfile.codexpod",
-      "skills_source": "runtime/codexpod/skills",
-      "notes": "Codex flavor installs @openai/codex and uses vendored superpowers skills copied into the flavor runtime tree."
-    },
-    "copilotpod": {
-      "dockerfile": "Dockerfile.copilotpod",
-      "skills_source": "runtime/copilotpod/skills",
-      "notes": "GitHub Copilot CLI flavor installs @github/copilot and uses vendored superpowers skills copied into the flavor runtime tree."
-    },
-    "geminipod": {
-      "dockerfile": "Dockerfile.geminipod",
-      "skills_source": "runtime/geminipod/skills",
-      "notes": "Gemini CLI flavor installs @google/gemini-cli and uses vendored superpowers skills copied into the flavor runtime tree."
     }
   }
 }

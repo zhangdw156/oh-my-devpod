@@ -249,7 +249,7 @@ if download_vendor_tree "${_asset_tmp}"; then
     if [[ -d "${_asset_tmp}/config_nvim" ]]; then
       cp -R "${_asset_tmp}/config_nvim/." "${_nvim_config}"
     fi
-    rm -rf "${_nvim_config}/.git" "${_nvim_config}/.openpod-source-commit"
+    rm -rf "${_nvim_config}/.git" "${_nvim_config}/.oh-my-devpod-source-commit"
   fi
 else
   warn "Failed to download vendored assets from any mirror"

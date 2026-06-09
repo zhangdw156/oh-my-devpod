@@ -55,67 +55,7 @@ check "install-witr.sh fallback" \
   "${repo_root}/build/install-witr.sh" \
   "WITR_VERSION:-${WITR_VERSION}"
 
-# Verify Dockerfile ARG defaults match versions.env
-check "Dockerfile.devpod ARG ANTIDOTE_VERSION" \
-  "${repo_root}/Dockerfile.devpod" \
-  "ARG ANTIDOTE_VERSION=${ANTIDOTE_VERSION}"
-
-check "Dockerfile.devpod ARG ATUIN_VERSION" \
-  "${repo_root}/Dockerfile.devpod" \
-  "ARG ATUIN_VERSION=${ATUIN_VERSION}"
-
-check "Dockerfile.devpod ARG BTOP_VERSION" \
-  "${repo_root}/Dockerfile.devpod" \
-  "ARG BTOP_VERSION=${BTOP_VERSION}"
-
-check "Dockerfile.devpod ARG NEOVIM_VERSION" \
-  "${repo_root}/Dockerfile.devpod" \
-  "ARG NEOVIM_VERSION=${NEOVIM_VERSION}"
-
-check "Dockerfile.devpod ARG YAZI_VERSION" \
-  "${repo_root}/Dockerfile.devpod" \
-  "ARG YAZI_VERSION=${YAZI_VERSION}"
-
-check "Dockerfile.devpod ARG ZELLIJ_VERSION" \
-  "${repo_root}/Dockerfile.devpod" \
-  "ARG ZELLIJ_VERSION=${ZELLIJ_VERSION}"
-
-check "Dockerfile.devpod ARG WITR_VERSION" \
-  "${repo_root}/Dockerfile.devpod" \
-  "ARG WITR_VERSION=${WITR_VERSION}"
-
-check "Dockerfile.devpod ARG PYRIGHT_VERSION" \
-  "${repo_root}/Dockerfile.devpod" \
-  "ARG PYRIGHT_VERSION=${PYRIGHT_VERSION}"
-
-check "Dockerfile.devpod ARG RUFF_VERSION" \
-  "${repo_root}/Dockerfile.devpod" \
-  "ARG RUFF_VERSION=${RUFF_VERSION}"
-
-check "Dockerfile.devpod ARG HARLEQUIN_VERSION" \
-  "${repo_root}/Dockerfile.devpod" \
-  "ARG HARLEQUIN_VERSION=${HARLEQUIN_VERSION}"
-
-check "Dockerfile.devpod ARG LAZYVIM_STARTER_COMMIT" \
-  "${repo_root}/Dockerfile.devpod" \
-  "ARG LAZYVIM_STARTER_COMMIT=${LAZYVIM_STARTER_COMMIT}"
-
-# Verify flavor Dockerfile ARG defaults match versions.env
-check "claudepod Dockerfile ARG CLAUDE_CODE_VERSION" \
-  "${repo_root}/docker/claudepod/Dockerfile" \
-  "ARG CLAUDE_CODE_VERSION=${CLAUDE_CODE_VERSION}"
-
-check "codexpod Dockerfile ARG CODEX_VERSION" \
-  "${repo_root}/docker/codexpod/Dockerfile" \
-  "ARG CODEX_VERSION=${CODEX_VERSION}"
-
-check "copilotpod Dockerfile ARG COPILOT_VERSION" \
-  "${repo_root}/docker/copilotpod/Dockerfile" \
-  "ARG COPILOT_VERSION=${COPILOT_VERSION}"
-
-check "geminipod Dockerfile ARG GEMINI_VERSION" \
-  "${repo_root}/docker/geminipod/Dockerfile" \
-  "ARG GEMINI_VERSION=${GEMINI_VERSION}"
+# Dockerfile ARG checks were removed with the Docker/flavor product surface.
 
 # Verify update-vendor-assets.sh sources versions.env
 check "update-vendor-assets.sh sources versions.env" \
