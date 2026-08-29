@@ -78,19 +78,29 @@ jobs:
 
           api="https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}"
           release_json="$(
-            curl -fsS \
-              "${api}/releases/tags/${RELEASE_TAG}?access_token=${GITEE_TOKEN}" \
-              || curl -fsS -X POST "${api}/releases" \
+            curl -fsS "${api}/releases/tags/${RELEASE_TAG}?access_token=${GITEE_TOKEN}"
+          )"
+          release_id="$(
+            python3 -c '
+          import json, sys
+          value = json.load(sys.stdin)
+          print(value.get("id", "") if isinstance(value, dict) else "")
+          ' <<<"${release_json}"
+          )"
+          if [[ -z "${release_id}" ]]; then
+            release_json="$(
+              curl -fsS -X POST "${api}/releases" \
                 -d "access_token=${GITEE_TOKEN}" \
                 -d "tag_name=${RELEASE_TAG}" \
                 -d "name=${RELEASE_TAG}" \
                 -d "target_commitish=${GITHUB_SHA}" \
                 --data-urlencode "body=Release synchronized from GitHub."
-          )"
-          release_id="$(
-            python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])' \
-              <<<"${release_json}"
-          )"
+            )"
+            release_id="$(
+              python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])' \
+                <<<"${release_json}"
+            )"
+          fi
 
           for asset in "dist/${ARCHIVE}" "dist/${ARCHIVE}.sha256"; do
             curl -fsS -X POST \

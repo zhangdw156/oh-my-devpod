@@ -54,7 +54,7 @@ cp -R \
   "${repo_root}/VERSION" \
   "${repo_root}/versions.env" \
   "${worktree}/"
-mkdir -p "${worktree}/vendor"
+mkdir -p "${worktree}/vendor/releases"
 printf 'vendor fixture\n' > "${worktree}/vendor/marker"
 printf '#!/usr/bin/env bash\nexit 0\n' > "${worktree}/target/release/omd"
 chmod +x "${worktree}/target/release/omd"
