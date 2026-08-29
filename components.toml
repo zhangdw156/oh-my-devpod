@@ -11,6 +11,16 @@ install_requires = []
 uninstall = false
 
 [[component]]
+id = "micromamba"
+name = "Micromamba"
+description = "Lightweight Conda-compatible package manager"
+category = "foundation"
+module = "modules/core/micromamba.sh"
+requires = []
+install_requires = ["linuxbrew"]
+uninstall = true
+
+[[component]]
 id = "zsh"
 name = "Zsh"
 description = "Interactive shell"

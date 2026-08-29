@@ -1,0 +1,157 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="720" viewBox="0 0 1440 720" role="img" aria-labelledby="title desc">
+  <title id="title">oh-my-devpod terminal control plane</title>
+  <desc id="desc">A midnight terminal dashboard showing a verified bootstrap, dependency graph, component selection, and an ordered installation plan.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#08111f"/>
+      <stop offset="0.52" stop-color="#0d1728"/>
+      <stop offset="1" stop-color="#111c2c"/>
+    </linearGradient>
+    <radialGradient id="mintGlow" cx="0" cy="0" r="1" gradientTransform="translate(1180 132) rotate(138) scale(520 360)">
+      <stop offset="0" stop-color="#58d6b0" stop-opacity=".19"/>
+      <stop offset="1" stop-color="#58d6b0" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="emberGlow" cx="0" cy="0" r="1" gradientTransform="translate(140 650) rotate(-28) scale(520 330)">
+      <stop offset="0" stop-color="#ea6847" stop-opacity=".16"/>
+      <stop offset="1" stop-color="#ea6847" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="brand" x1="68" y1="70" x2="310" y2="130" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f3c969"/>
+      <stop offset="1" stop-color="#ea6847"/>
+    </linearGradient>
+    <linearGradient id="wire" x1="300" y1="440" x2="660" y2="440" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ea6847"/>
+      <stop offset=".52" stop-color="#f3c969"/>
+      <stop offset="1" stop-color="#58d6b0"/>
+    </linearGradient>
+    <pattern id="grid" width="36" height="36" patternUnits="userSpaceOnUse">
+      <path d="M36 0H0V36" fill="none" stroke="#7f8fa8" stroke-opacity=".07"/>
+    </pattern>
+    <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="7" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <clipPath id="terminalClip">
+      <rect x="770" y="91" width="590" height="510" rx="23"/>
+    </clipPath>
+  </defs>
+
+  <rect width="1440" height="720" rx="28" fill="url(#bg)"/>
+  <rect width="1440" height="720" rx="28" fill="url(#grid)"/>
+  <rect width="1440" height="720" rx="28" fill="url(#mintGlow)"/>
+  <rect width="1440" height="720" rx="28" fill="url(#emberGlow)"/>
+
+  <path d="M0 126H1440" stroke="#dce7f4" stroke-opacity=".09"/>
+  <path d="M730 126V720" stroke="#dce7f4" stroke-opacity=".07"/>
+
+  <g transform="translate(70 55)">
+    <path d="M0 24 14 0h29l14 24-14 24H14Z" fill="none" stroke="url(#brand)" stroke-width="3"/>
+    <circle cx="16" cy="24" r="4.5" fill="#f3c969"/>
+    <circle cx="41" cy="13" r="4.5" fill="#ea6847"/>
+    <circle cx="41" cy="35" r="4.5" fill="#58d6b0"/>
+    <path d="m20 22 16-7M20 27l16 6" stroke="#dce7f4" stroke-opacity=".68" stroke-width="2"/>
+  </g>
+  <text x="144" y="88" fill="#f6f1e8" font-size="22" font-weight="700" letter-spacing="4" font-family="'IBM Plex Mono','Cascadia Code',monospace">OH—MY—DEVPOD</text>
+  <text x="1360" y="86" fill="#91a0b7" font-size="14" text-anchor="end" letter-spacing="2" font-family="'IBM Plex Mono','Cascadia Code',monospace">UBUNTU 24.04  /  x86_64</text>
+
+  <g>
+    <text x="72" y="194" fill="#91a0b7" font-size="15" font-weight="600" letter-spacing="3" font-family="'IBM Plex Mono','Cascadia Code',monospace">WORKSTATION CONTROL PLANE</text>
+    <text x="68" y="258" fill="#f6f1e8" font-size="55" font-weight="700" letter-spacing="-1.5" font-family="'Iowan Old Style','Palatino Linotype',serif">Build the terminal</text>
+    <text x="68" y="316" fill="#f6f1e8" font-size="55" font-weight="700" letter-spacing="-1.5" font-family="'Iowan Old Style','Palatino Linotype',serif">you want to live in.</text>
+    <text x="72" y="365" fill="#aebbd0" font-size="18" font-family="'IBM Plex Mono','Cascadia Code',monospace">one curl · one reviewed plan · one clean ownership boundary</text>
+  </g>
+
+  <g>
+    <path d="M123 472H217M283 472H377M443 472H537M603 472H674" stroke="url(#wire)" stroke-width="3" stroke-linecap="round" stroke-dasharray="3 8"/>
+    <circle cx="91" cy="472" r="31" fill="#121f31" stroke="#ea6847" stroke-width="2"/>
+    <circle cx="251" cy="472" r="31" fill="#121f31" stroke="#f3c969" stroke-width="2"/>
+    <circle cx="411" cy="472" r="31" fill="#121f31" stroke="#f3c969" stroke-width="2"/>
+    <circle cx="571" cy="472" r="31" fill="#121f31" stroke="#58d6b0" stroke-width="2"/>
+    <circle cx="700" cy="472" r="11" fill="#58d6b0" filter="url(#softGlow)"/>
+    <text x="91" y="477" fill="#f6f1e8" font-size="13" text-anchor="middle" font-family="'IBM Plex Mono','Cascadia Code',monospace">curl</text>
+    <text x="251" y="477" fill="#f6f1e8" font-size="12" text-anchor="middle" font-family="'IBM Plex Mono','Cascadia Code',monospace">verify</text>
+    <text x="411" y="477" fill="#f6f1e8" font-size="12" text-anchor="middle" font-family="'IBM Plex Mono','Cascadia Code',monospace">resolve</text>
+    <text x="571" y="477" fill="#f6f1e8" font-size="12" text-anchor="middle" font-family="'IBM Plex Mono','Cascadia Code',monospace">review</text>
+    <text x="91" y="525" fill="#7f8fa8" font-size="11" text-anchor="middle" letter-spacing="1.5" font-family="'IBM Plex Mono','Cascadia Code',monospace">BOOTSTRAP</text>
+    <text x="251" y="525" fill="#7f8fa8" font-size="11" text-anchor="middle" letter-spacing="1.5" font-family="'IBM Plex Mono','Cascadia Code',monospace">SHA256</text>
+    <text x="411" y="525" fill="#7f8fa8" font-size="11" text-anchor="middle" letter-spacing="1.5" font-family="'IBM Plex Mono','Cascadia Code',monospace">DEPENDENCIES</text>
+    <text x="571" y="525" fill="#7f8fa8" font-size="11" text-anchor="middle" letter-spacing="1.5" font-family="'IBM Plex Mono','Cascadia Code',monospace">PLAN</text>
+  </g>
+
+  <g>
+    <rect x="68" y="593" width="196" height="42" rx="21" fill="#101d2e" stroke="#ea6847" stroke-opacity=".62"/>
+    <circle cx="91" cy="614" r="5" fill="#ea6847"/>
+    <text x="108" y="619" fill="#dce7f4" font-size="13" letter-spacing="1" font-family="'IBM Plex Mono','Cascadia Code',monospace">DEPENDENCY-AWARE</text>
+
+    <rect x="278" y="593" width="184" height="42" rx="21" fill="#101d2e" stroke="#f3c969" stroke-opacity=".62"/>
+    <circle cx="301" cy="614" r="5" fill="#f3c969"/>
+    <text x="318" y="619" fill="#dce7f4" font-size="13" letter-spacing="1" font-family="'IBM Plex Mono','Cascadia Code',monospace">OWNERSHIP-SAFE</text>
+
+    <rect x="476" y="593" width="163" height="42" rx="21" fill="#101d2e" stroke="#58d6b0" stroke-opacity=".62"/>
+    <circle cx="499" cy="614" r="5" fill="#58d6b0"/>
+    <text x="516" y="619" fill="#dce7f4" font-size="13" letter-spacing="1" font-family="'IBM Plex Mono','Cascadia Code',monospace">DUAL-SOURCE</text>
+  </g>
+
+  <g clip-path="url(#terminalClip)">
+    <rect x="770" y="91" width="590" height="510" rx="23" fill="#0a1220" stroke="#31425b" stroke-width="2"/>
+    <rect x="770" y="91" width="590" height="56" fill="#111e30"/>
+    <circle cx="804" cy="119" r="6" fill="#ea6847"/>
+    <circle cx="826" cy="119" r="6" fill="#f3c969"/>
+    <circle cx="848" cy="119" r="6" fill="#58d6b0"/>
+    <text x="885" y="125" fill="#8797ae" font-size="13" letter-spacing="1.5" font-family="'IBM Plex Mono','Cascadia Code',monospace">omd / interactive planner</text>
+
+    <rect x="790" y="166" width="550" height="58" rx="12" fill="#101d2e" stroke="#263750"/>
+    <text x="812" y="190" fill="#7f8fa8" font-size="11" letter-spacing="1.8" font-family="'IBM Plex Mono','Cascadia Code',monospace">ACTION</text>
+    <rect x="811" y="198" width="87" height="18" rx="9" fill="#58d6b0"/>
+    <text x="854.5" y="211" fill="#07131a" font-size="11" font-weight="700" text-anchor="middle" font-family="'IBM Plex Mono','Cascadia Code',monospace">INSTALL</text>
+    <text x="920" y="211" fill="#65758c" font-size="11" font-family="'IBM Plex Mono','Cascadia Code',monospace">UPDATE</text>
+    <text x="995" y="211" fill="#65758c" font-size="11" font-family="'IBM Plex Mono','Cascadia Code',monospace">UNINSTALL</text>
+    <text x="1317" y="197" fill="#f3c969" font-size="12" text-anchor="end" font-family="'IBM Plex Mono','Cascadia Code',monospace">3 selected</text>
+
+    <text x="793" y="259" fill="#7f8fa8" font-size="11" letter-spacing="1.8" font-family="'IBM Plex Mono','Cascadia Code',monospace">COMPONENTS</text>
+
+    <g font-family="'IBM Plex Mono','Cascadia Code',monospace">
+      <rect x="790" y="274" width="550" height="48" rx="10" fill="#0d1828"/>
+      <path d="m811 297 5 5 10-12" fill="none" stroke="#58d6b0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="843" y="303" fill="#dce7f4" font-size="14">Linuxbrew</text>
+      <text x="1317" y="303" fill="#58d6b0" font-size="12" text-anchor="end">managed</text>
+
+      <rect x="790" y="329" width="550" height="48" rx="10" fill="#142238" stroke="#ea6847" stroke-opacity=".7"/>
+      <rect x="808" y="344" width="17" height="17" rx="4" fill="#ea6847"/>
+      <path d="m812 352 4 4 7-9" fill="none" stroke="#08111f" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="843" y="358" fill="#f6f1e8" font-size="14" font-weight="700">Micromamba</text>
+      <text x="1317" y="358" fill="#ea6847" font-size="12" text-anchor="end">missing</text>
+
+      <rect x="790" y="384" width="550" height="48" rx="10" fill="#142238"/>
+      <rect x="808" y="399" width="17" height="17" rx="4" fill="#f3c969"/>
+      <path d="m812 407 4 4 7-9" fill="none" stroke="#08111f" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="843" y="413" fill="#f6f1e8" font-size="14">Neovim</text>
+      <text x="1317" y="413" fill="#8797ae" font-size="12" text-anchor="end">missing</text>
+
+      <rect x="790" y="439" width="550" height="48" rx="10" fill="#142238"/>
+      <rect x="808" y="454" width="17" height="17" rx="4" fill="#f3c969"/>
+      <path d="m812 462 4 4 7-9" fill="none" stroke="#08111f" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="843" y="468" fill="#f6f1e8" font-size="14">LazyVim</text>
+      <text x="1317" y="468" fill="#8797ae" font-size="12" text-anchor="end">missing</text>
+
+      <rect x="790" y="504" width="550" height="75" rx="12" fill="#101d2e" stroke="#263750"/>
+      <text x="811" y="528" fill="#7f8fa8" font-size="11" letter-spacing="1.6">RESOLVED PLAN</text>
+      <text x="811" y="554" fill="#58d6b0" font-size="13">01</text>
+      <text x="844" y="554" fill="#dce7f4" font-size="13">install micromamba</text>
+      <text x="1050" y="554" fill="#f3c969" font-size="13">02</text>
+      <text x="1083" y="554" fill="#dce7f4" font-size="13">install neovim → lazyvim</text>
+    </g>
+  </g>
+
+  <rect x="770" y="91" width="590" height="510" rx="23" fill="none" stroke="#435773" stroke-opacity=".75" stroke-width="2"/>
+  <text x="1065" y="637" fill="#7f8fa8" font-size="12" text-anchor="middle" letter-spacing="1.3" font-family="'IBM Plex Mono','Cascadia Code',monospace">TAB action · SPACE select · ENTER review</text>
+
+  <path d="M70 677H1370" stroke="#dce7f4" stroke-opacity=".09"/>
+  <text x="70" y="702" fill="#66768d" font-size="11" letter-spacing="1.6" font-family="'IBM Plex Mono','Cascadia Code',monospace">VERIFIED RELEASES</text>
+  <text x="260" y="702" fill="#66768d" font-size="11" letter-spacing="1.6" font-family="'IBM Plex Mono','Cascadia Code',monospace">EXPLICIT PLANS</text>
+  <text x="430" y="702" fill="#66768d" font-size="11" letter-spacing="1.6" font-family="'IBM Plex Mono','Cascadia Code',monospace">REVERSIBLE STATE</text>
+  <text x="1370" y="702" fill="#58d6b0" font-size="11" text-anchor="end" letter-spacing="1.6" font-family="'IBM Plex Mono','Cascadia Code',monospace">READY WHEN YOU ARE ↗</text>
+</svg>

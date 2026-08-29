@@ -20,7 +20,7 @@ check_absent() {
   fi
 }
 
-for file in README.md README_EN.md DEVELOPMENT.md AGENTS.md CLAUDE.md; do
+for file in README.md Readme.osc.md DEVELOPMENT.md AGENTS.md CLAUDE.md; do
   path="${repo_root}/${file}"
   check_contains "${path}" '`VERSION`' "${file} should describe VERSION as the release source"
   check_contains "${path}" 'omd' "${file} should describe omd"
