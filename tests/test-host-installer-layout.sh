@@ -20,6 +20,7 @@ assert_doc_absent() {
 }
 
 assert_executable install/bootstrap.sh
+assert_executable install/update.sh
 assert_file components.toml
 assert_file crates/omd/Cargo.toml
 assert_dir modules/core

@@ -13,6 +13,7 @@ bash "${repo_root}/tests/test-shell-activation.sh"
 if command -v cargo >/dev/null 2>&1; then
   (cd "${repo_root}" && cargo test -p omd)
   bash "${repo_root}/tests/test-component-plans.sh"
+  bash "${repo_root}/tests/test-self-update.sh"
 fi
 
 bash "${repo_root}/tests/test-install-neovim.sh"

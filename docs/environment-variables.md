@@ -5,7 +5,7 @@
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `OHMYDEVPOD_SOURCE` | `auto` | `auto`, `github`, or `gitee` release source |
-| `OHMYDEVPOD_VERSION` | `latest` | Release version |
+| `OHMYDEVPOD_VERSION` | `latest` | Bootstrap or self-update release version |
 | `OHMYDEVPOD_BIN_DIR` | `~/.local/bin` | Active `omd` symlink directory |
 | `OHMYDEVPOD_PREFIX` | `~/.local/share/oh-my-devpod` | Versioned releases and managed tools |
 | `OHMYDEVPOD_CACHE_DIR` | `~/.cache/oh-my-devpod` | Download cache |
@@ -13,6 +13,8 @@
 | `OHMYDEVPOD_OS_RELEASE` | `/etc/os-release` | Platform-detection test override |
 | `OHMYDEVPOD_OMD_ARCHIVE` | empty | Local release archive override |
 | `OHMYDEVPOD_OMD_CHECKSUM` | empty | Local checksum override |
+| `OHMYDEVPOD_OMD_URL` | generated | Release archive URL override |
+| `OHMYDEVPOD_OMD_CHECKSUM_URL` | generated | Release checksum URL override |
 | `OHMYDEVPOD_BOOTSTRAP_NO_RUN` | `0` | Install without launching the TUI |
 | `OHMYDEVPOD_BOOTSTRAP_LIB_ONLY` | `0` | Source helper functions only |
 
@@ -23,6 +25,9 @@
 | `OHMYDEVPOD_BUNDLE_ROOT` | executable-relative | Bundle root override for development/tests |
 | `OHMYDEVPOD_STATE_DIR` | `~/.local/state/oh-my-devpod` | Logs, locks, and ownership markers |
 | `OHMYDEVPOD_MIRROR_PROFILE` | persisted profile | `upstream` or `cn` |
+
+Bootstrap also records the managed install prefix, binary directory, and cache
+directory so later `omd --update` runs reuse the existing installation paths.
 
 The `cn` profile exports:
 

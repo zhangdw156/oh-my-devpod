@@ -65,12 +65,16 @@ grep -Eiq 'unknown|not found' <<<"${unknown_output}" \
 assert_contains "${unknown_output}" no-such-component
 
 fixture="${tmp_dir}/bundle"
-mkdir -p "${fixture}/modules/lib"
+mkdir -p "${fixture}/install" "${fixture}/modules/lib"
 cp "${repo_root}/components.toml" "${fixture}/components.toml"
 cp "${repo_root}/VERSION" "${fixture}/VERSION"
 printf '#!/usr/bin/env bash\n' > "${fixture}/modules/lib/common.sh"
 printf '#!/usr/bin/env bash\nexit 0\n' > "${fixture}/modules/lib/postflight.sh"
-chmod +x "${fixture}/modules/lib/common.sh" "${fixture}/modules/lib/postflight.sh"
+printf '#!/usr/bin/env bash\nexit 0\n' > "${fixture}/install/update.sh"
+chmod +x \
+  "${fixture}/install/update.sh" \
+  "${fixture}/modules/lib/common.sh" \
+  "${fixture}/modules/lib/postflight.sh"
 
 python3 - "${fixture}" <<'PY'
 import pathlib

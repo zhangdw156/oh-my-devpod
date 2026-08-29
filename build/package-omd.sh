@@ -23,7 +23,7 @@ trap cleanup EXIT
   exit 1
 }
 
-for required in components.toml modules build config vendor VERSION versions.env; do
+for required in components.toml install modules build config vendor VERSION versions.env; do
   [[ -e "${repo_root}/${required}" ]] || {
     printf 'Missing runtime bundle input: %s\n' "${required}" >&2
     exit 1
@@ -58,6 +58,7 @@ install -m 0755 "${binary}" "${bundle_root}/bin/omd"
 cp "${repo_root}/components.toml" "${bundle_root}/components.toml"
 cp "${repo_root}/VERSION" "${bundle_root}/VERSION"
 cp "${repo_root}/versions.env" "${bundle_root}/versions.env"
+cp -R "${repo_root}/install" "${bundle_root}/install"
 cp -R "${repo_root}/modules" "${bundle_root}/modules"
 mkdir -p "${bundle_root}/build"
 cp "${repo_root}/build/install-antidote.sh" "${bundle_root}/build/install-antidote.sh"

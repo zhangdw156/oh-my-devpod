@@ -32,6 +32,7 @@ assert_contains '/releases/' "${bootstrap}"
 payload_root="${tmp_dir}/payload/oh-my-devpod"
 mkdir -p \
   "${payload_root}/bin" \
+  "${payload_root}/install" \
   "${payload_root}/modules" \
   "${payload_root}/build" \
   "${payload_root}/config" \
@@ -41,6 +42,8 @@ cat > "${payload_root}/bin/omd" <<'OMD'
 printf 'omd-test\n'
 OMD
 chmod +x "${payload_root}/bin/omd"
+printf '#!/usr/bin/env bash\nexit 0\n' > "${payload_root}/install/update.sh"
+chmod +x "${payload_root}/install/update.sh"
 printf 'schema_version = 1\n' > "${payload_root}/components.toml"
 printf '1.2.3\n' > "${payload_root}/VERSION"
 printf 'TEST_VERSION=1\n' > "${payload_root}/versions.env"
@@ -146,6 +149,16 @@ run_bootstrap github "${github_home}" "${github_log}"
 assert_contains 'github.com' "${github_log}"
 assert_contains 'github' "${github_home}/.config/oh-my-devpod/source"
 assert_contains 'upstream' "${github_home}/.config/oh-my-devpod/mirror-profile"
+if grep -Eq 'HOMEBREW_(BREW_GIT_REMOTE|BOTTLE_DOMAIN|API_DOMAIN)|UV_CONFIG_FILE' \
+  "${github_home}/.config/oh-my-devpod/env"; then
+  fail "GitHub source should not retain managed mirror variables"
+fi
+assert_contains "${github_home}/.local/share/oh-my-devpod" \
+  "${github_home}/.config/oh-my-devpod/install-prefix"
+assert_contains "${github_home}/.local/bin" \
+  "${github_home}/.config/oh-my-devpod/bin-dir"
+assert_contains "${github_home}/.cache/oh-my-devpod" \
+  "${github_home}/.config/oh-my-devpod/cache-dir"
 [[ ! -e "${github_home}/.config/oh-my-devpod/uv.toml" ]] \
   || fail "GitHub source should not create the managed China uv mirror"
 assert_executable "${github_home}/.local/bin/omd"

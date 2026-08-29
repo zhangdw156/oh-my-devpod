@@ -77,6 +77,9 @@ refuse to break installed components.
 ## CLI
 
 ```bash
+omd --update
+omd --update --github
+omd --update --gitee
 omd --list-components
 omd --status
 omd --plan install lazyvim
@@ -85,12 +88,23 @@ omd --execute install ripgrep fzf
 omd --version
 ```
 
+### Self-update and global source switching
+
+- `omd --update` uses the source saved in `~/.config/oh-my-devpod/source`, defaulting to GitHub when it is missing or invalid.
+- `omd --update --github` updates from GitHub and permanently switches future component operations to upstream sources.
+- `omd --update --gitee` updates from Gitee and permanently switches future component operations to the USTC Homebrew and TUNA Python mirrors.
+- `--github` and `--gitee` are mutually exclusive. An explicit source switch is applied even when `omd` is already current.
+
+Self-update activates only a SHA256-verified `omd` release bundle. It does not
+open the TUI or update installed components. Download, verification, or
+installation failures preserve the active version and previous source profile.
+
 ## Repository layout
 
 ```text
 oh-my-devpod/
 ├── components.toml
-├── install/bootstrap.sh
+├── install/{bootstrap,update}.sh
 ├── crates/omd/
 ├── modules/{core,tools,lib}/
 ├── build/

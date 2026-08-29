@@ -21,6 +21,10 @@ pub struct RuntimePaths {
     pub version: String,
     pub mirror_profile: MirrorProfile,
     pub config_dir: PathBuf,
+    pub prefix: PathBuf,
+    pub bin_dir: PathBuf,
+    pub cache_dir: PathBuf,
+    pub state_dir: PathBuf,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -31,34 +35,40 @@ pub enum MirrorProfile {
 
 impl MirrorProfile {
     fn discover(config_dir: &Path) -> Result<Self, Box<dyn Error>> {
-        if let Ok(value) = env::var("OHMYDEVPOD_MIRROR_PROFILE") {
-            return Self::parse(&value);
-        }
-
-        let mirror_file = config_dir.join("mirror-profile");
-        match fs::read_to_string(&mirror_file) {
-            Ok(profile) => return Self::parse(&profile),
+        let source_file = config_dir.join("source");
+        match fs::read_to_string(source_file) {
+            Ok(source) => {
+                for line in source.lines() {
+                    let value = line.trim();
+                    if let Some(profile) = value.strip_prefix("mirror_profile=") {
+                        return Self::parse(profile);
+                    }
+                    if value == "gitee" || value == "source=gitee" {
+                        return Ok(Self::China);
+                    }
+                    if value == "github" || value == "source=github" {
+                        return Ok(Self::Upstream);
+                    }
+                }
+                eprintln!("Warning: invalid saved source; using the upstream mirror profile");
+                return Ok(Self::Upstream);
+            }
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
             Err(error) => return Err(error.into()),
         }
 
-        let source_file = config_dir.join("source");
-        let source = match fs::read_to_string(source_file) {
-            Ok(source) => source,
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-                return Ok(Self::Upstream)
-            }
+        let mirror_file = config_dir.join("mirror-profile");
+        match fs::read_to_string(&mirror_file) {
+            Ok(profile) => match Self::parse(&profile) {
+                Ok(profile) => return Ok(profile),
+                Err(error) => eprintln!("Warning: {error}; using the upstream mirror profile"),
+            },
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
             Err(error) => return Err(error.into()),
-        };
+        }
 
-        for line in source.lines() {
-            let value = line.trim();
-            if let Some(profile) = value.strip_prefix("mirror_profile=") {
-                return Self::parse(profile);
-            }
-            if value == "gitee" || value == "source=gitee" {
-                return Ok(Self::China);
-            }
+        if let Ok(value) = env::var("OHMYDEVPOD_MIRROR_PROFILE") {
+            return Self::parse(&value);
         }
         Ok(Self::Upstream)
     }
@@ -98,6 +108,9 @@ impl RuntimePaths {
         if !root.join("modules/lib/postflight.sh").is_file() {
             return Err(RuntimeError::new("bundle is missing modules/lib/postflight.sh").into());
         }
+        if !root.join("install/update.sh").is_file() {
+            return Err(RuntimeError::new("bundle is missing install/update.sh").into());
+        }
         let home = env::var_os("HOME")
             .map(PathBuf::from)
             .ok_or_else(|| RuntimeError::new("HOME is not set"))?;
@@ -109,12 +122,46 @@ impl RuntimePaths {
                     .unwrap_or_else(|| home.join(".config"))
                     .join("oh-my-devpod")
             });
+        let data_home = env::var_os("XDG_DATA_HOME")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| home.join(".local/share"));
+        let prefix = env::var_os("OHMYDEVPOD_PREFIX")
+            .map(PathBuf::from)
+            .or_else(|| installed_prefix(&root))
+            .or_else(|| configured_path(&config_dir.join("install-prefix")))
+            .unwrap_or_else(|| data_home.join("oh-my-devpod"));
+        let bin_dir = env::var_os("OHMYDEVPOD_BIN_DIR")
+            .map(PathBuf::from)
+            .or_else(|| configured_path(&config_dir.join("bin-dir")))
+            .or_else(active_bin_dir)
+            .unwrap_or_else(|| home.join(".local/bin"));
+        let cache_dir = env::var_os("OHMYDEVPOD_CACHE_DIR")
+            .map(PathBuf::from)
+            .or_else(|| configured_path(&config_dir.join("cache-dir")))
+            .unwrap_or_else(|| {
+                env::var_os("XDG_CACHE_HOME")
+                    .map(PathBuf::from)
+                    .unwrap_or_else(|| home.join(".cache"))
+                    .join("oh-my-devpod")
+            });
+        let state_dir = env::var_os("OHMYDEVPOD_STATE_DIR")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| {
+                env::var_os("XDG_STATE_HOME")
+                    .map(PathBuf::from)
+                    .unwrap_or_else(|| home.join(".local/state"))
+                    .join("oh-my-devpod")
+            });
         Ok(Self {
             root,
             manifest,
             version,
             mirror_profile: MirrorProfile::discover(&config_dir)?,
             config_dir,
+            prefix,
+            bin_dir,
+            cache_dir,
+            state_dir,
         })
     }
 }
@@ -125,6 +172,10 @@ pub struct Runner {
     version: String,
     mirror_profile: MirrorProfile,
     config_dir: PathBuf,
+    prefix: PathBuf,
+    bin_dir: PathBuf,
+    cache_dir: PathBuf,
+    state_dir: PathBuf,
 }
 
 impl Runner {
@@ -134,6 +185,30 @@ impl Runner {
             version: paths.version.clone(),
             mirror_profile: paths.mirror_profile,
             config_dir: paths.config_dir.clone(),
+            prefix: paths.prefix.clone(),
+            bin_dir: paths.bin_dir.clone(),
+            cache_dir: paths.cache_dir.clone(),
+            state_dir: paths.state_dir.clone(),
+        }
+    }
+
+    pub fn self_update(&self, source_flag: Option<&str>) -> Result<(), Box<dyn Error>> {
+        let _lock = ExecutionLock::acquire_at(&self.state_dir)?;
+        let script = self.root.join("install/update.sh");
+        let mut command = self.base_script_command(&script);
+        command.env("OHMYDEVPOD_CURRENT_VERSION", &self.version);
+        if let Some(flag) = source_flag {
+            command.arg(flag);
+        }
+        let status = command
+            .stdin(Stdio::inherit())
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .status()?;
+        if status.success() {
+            Ok(())
+        } else {
+            Err(RuntimeError::new(format!("self-update failed with {status}")).into())
         }
     }
 
@@ -167,7 +242,7 @@ impl Runner {
         catalog: &Catalog,
         reviewed: &Plan,
     ) -> Result<(), Box<dyn Error>> {
-        let _lock = ExecutionLock::acquire()?;
+        let _lock = ExecutionLock::acquire_at(&self.state_dir)?;
         let states = self.inventory(catalog)?;
         let current = crate::planner::plan(catalog, reviewed.action, &reviewed.requested, &states)?;
         if &current != reviewed {
@@ -279,26 +354,25 @@ impl Runner {
 
     fn command(&self, component: &Component, action: &str) -> Command {
         let module = self.root.join(&component.module);
-        self.script_command(&module, action)
+        let mut command = self.base_script_command(&module);
+        command.arg(action).env("OHMYDEVPOD_VERSION", &self.version);
+        command
     }
 
     fn script_command(&self, script: &Path, action: &str) -> Command {
-        let home = env::var_os("HOME").map(PathBuf::from).unwrap_or_default();
-        let data_home = env::var_os("XDG_DATA_HOME")
-            .map(PathBuf::from)
-            .unwrap_or_else(|| home.join(".local/share"));
-        let state_home = env::var_os("XDG_STATE_HOME")
-            .map(PathBuf::from)
-            .unwrap_or_else(|| home.join(".local/state"));
-        let bin_dir = home.join(".local/bin");
-        let prefix = data_home.join("oh-my-devpod");
-        let state_dir = state_home.join("oh-my-devpod");
+        let mut command = self.base_script_command(script);
+        command.arg(action).env("OHMYDEVPOD_VERSION", &self.version);
+        command
+    }
+
+    fn base_script_command(&self, script: &Path) -> Command {
         let mut command = Command::new("bash");
         command
             .arg(script)
-            .arg(action)
             .env_remove("OHMYDEVPOD_BIN_DIR")
             .env_remove("OHMYDEVPOD_PREFIX")
+            .env_remove("OHMYDEVPOD_CACHE_DIR")
+            .env_remove("OHMYDEVPOD_CONFIG_DIR")
             .env_remove("OHMYDEVPOD_STATE_DIR")
             .env_remove("OHMYDEVPOD_MANAGED_DIR")
             .env_remove("OHMYDEVPOD_ASSET_ROOT")
@@ -311,11 +385,16 @@ impl Runner {
             .env_remove("OHMYDEVPOD_ZSH_DIR")
             .env_remove("OHMYDEVPOD_ZSHRC")
             .env_remove("OHMYDEVPOD_P10K_CONFIG")
+            .env_remove("HOMEBREW_BREW_GIT_REMOTE")
+            .env_remove("HOMEBREW_BOTTLE_DOMAIN")
+            .env_remove("HOMEBREW_API_DOMAIN")
+            .env_remove("UV_CONFIG_FILE")
             .env("OHMYDEVPOD_BUNDLE_ROOT", &self.root)
-            .env("OHMYDEVPOD_VERSION", &self.version)
-            .env("OHMYDEVPOD_BIN_DIR", bin_dir)
-            .env("OHMYDEVPOD_PREFIX", prefix)
-            .env("OHMYDEVPOD_STATE_DIR", state_dir)
+            .env("OHMYDEVPOD_BIN_DIR", &self.bin_dir)
+            .env("OHMYDEVPOD_PREFIX", &self.prefix)
+            .env("OHMYDEVPOD_CACHE_DIR", &self.cache_dir)
+            .env("OHMYDEVPOD_CONFIG_DIR", &self.config_dir)
+            .env("OHMYDEVPOD_STATE_DIR", &self.state_dir)
             .env(
                 "OHMYDEVPOD_ASSET_ROOT",
                 self.root.join("vendor").join("releases"),
@@ -351,15 +430,8 @@ struct ExecutionLock {
 }
 
 impl ExecutionLock {
-    fn acquire() -> Result<Self, Box<dyn Error>> {
-        let home = env::var_os("HOME")
-            .map(PathBuf::from)
-            .ok_or_else(|| RuntimeError::new("HOME is not set"))?;
-        let state_home = env::var_os("XDG_STATE_HOME")
-            .map(PathBuf::from)
-            .unwrap_or_else(|| home.join(".local/state"));
-        let state_dir = state_home.join("oh-my-devpod");
-        fs::create_dir_all(&state_dir)?;
+    fn acquire_at(state_dir: &Path) -> Result<Self, Box<dyn Error>> {
+        fs::create_dir_all(state_dir)?;
         let path = state_dir.join("execution.lock");
         let mut file = OpenOptions::new()
             .write(true)
@@ -439,6 +511,42 @@ fn validate_root(root: PathBuf) -> Result<PathBuf, Box<dyn Error>> {
     Ok(root)
 }
 
+fn installed_prefix(root: &Path) -> Option<PathBuf> {
+    let releases_dir = root.parent()?;
+    if releases_dir.file_name()? != "releases" {
+        return None;
+    }
+    releases_dir.parent().map(Path::to_path_buf)
+}
+
+fn configured_path(path: &Path) -> Option<PathBuf> {
+    let value = fs::read_to_string(path).ok()?;
+    let path = PathBuf::from(value.trim());
+    path.is_absolute().then_some(path)
+}
+
+fn active_bin_dir() -> Option<PathBuf> {
+    let current = env::current_exe().ok()?.canonicalize().ok()?;
+    let argument = env::args_os().next().map(PathBuf::from);
+    if let Some(path) = argument.filter(|path| path.components().count() > 1) {
+        let candidate = if path.is_absolute() {
+            path
+        } else {
+            env::current_dir().ok()?.join(path)
+        };
+        if candidate.canonicalize().ok().as_ref() == Some(&current) {
+            return candidate.parent().map(Path::to_path_buf);
+        }
+    }
+
+    env::var_os("PATH")
+        .into_iter()
+        .flat_map(|paths| env::split_paths(&paths).collect::<Vec<_>>())
+        .map(|directory| directory.join("omd"))
+        .find(|candidate| candidate.canonicalize().ok().as_ref() == Some(&current))
+        .and_then(|candidate| candidate.parent().map(Path::to_path_buf))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -447,6 +555,29 @@ mod tests {
     fn development_root_contains_manifest() {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
         assert!(root.join("components.toml").is_file());
+    }
+
+    #[test]
+    fn saved_source_is_authoritative_for_mirror_profile() {
+        let config_dir =
+            env::temp_dir().join(format!("omd-source-profile-test-{}", std::process::id()));
+        fs::create_dir_all(&config_dir).unwrap();
+
+        fs::write(config_dir.join("source"), "github\n").unwrap();
+        fs::write(config_dir.join("mirror-profile"), "cn\n").unwrap();
+        assert_eq!(
+            MirrorProfile::discover(&config_dir).unwrap(),
+            MirrorProfile::Upstream
+        );
+
+        fs::write(config_dir.join("source"), "source=gitee\n").unwrap();
+        fs::write(config_dir.join("mirror-profile"), "upstream\n").unwrap();
+        assert_eq!(
+            MirrorProfile::discover(&config_dir).unwrap(),
+            MirrorProfile::China
+        );
+
+        fs::remove_dir_all(config_dir).unwrap();
     }
 
     #[test]
@@ -471,6 +602,10 @@ mod tests {
             version: "test".to_string(),
             mirror_profile: MirrorProfile::Upstream,
             config_dir: root.join("config"),
+            prefix: root.join("prefix"),
+            bin_dir: root.join("bin"),
+            cache_dir: root.join("cache"),
+            state_dir: root.join("state"),
         };
         let catalog = Catalog::parse(
             r#"

@@ -9,6 +9,23 @@ use components::Catalog;
 use planner::{assumed_states, plan, Action};
 use runtime::{Runner, RuntimePaths};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum UpdateRequest {
+    SavedSource,
+    GitHub,
+    Gitee,
+}
+
+impl UpdateRequest {
+    fn source_flag(self) -> Option<&'static str> {
+        match self {
+            Self::SavedSource => None,
+            Self::GitHub => Some("--github"),
+            Self::Gitee => Some("--gitee"),
+        }
+    }
+}
+
 fn main() -> ExitCode {
     match run(env::args().skip(1)) {
         Ok(()) => ExitCode::SUCCESS,
@@ -25,9 +42,13 @@ where
 {
     let args: Vec<String> = args.into_iter().collect();
     let paths = RuntimePaths::discover()?;
-    let catalog = Catalog::load(&paths.manifest)?;
     let runner = Runner::new(&paths);
 
+    if let Some(request) = parse_update_request(&args)? {
+        return runner.self_update(request.source_flag());
+    }
+
+    let catalog = Catalog::load(&paths.manifest)?;
     match args.as_slice() {
         [] => {
             if let Some(preview) = tui::run(&catalog, &runner)? {
@@ -100,7 +121,32 @@ fn print_help() {
     println!("  omd --plan-current <install|update|uninstall> <component>...");
     println!("  omd --execute <install|update|uninstall> <component>...");
     println!("  omd --dry-run");
+    println!("  omd --update [--github|--gitee]");
     println!("  omd --version");
+    println!();
+    println!("Self-update:");
+    println!("  --update           update from the saved source (default: GitHub)");
+    println!("  --update --github  update from GitHub and switch managed sources upstream");
+    println!("  --update --gitee   update from Gitee and switch managed sources to China mirrors");
+}
+
+fn parse_update_request(args: &[String]) -> Result<Option<UpdateRequest>, Box<dyn Error>> {
+    if args.first().map(String::as_str) != Some("--update") {
+        return Ok(None);
+    }
+
+    let mut source_flag = None;
+    for argument in &args[1..] {
+        match argument.as_str() {
+            "--github" if source_flag.is_none() => source_flag = Some(UpdateRequest::GitHub),
+            "--gitee" if source_flag.is_none() => source_flag = Some(UpdateRequest::Gitee),
+            "--github" | "--gitee" => {
+                return Err("--github and --gitee are mutually exclusive".into());
+            }
+            unknown => return Err(format!("unknown self-update option: {unknown}").into()),
+        }
+    }
+    Ok(Some(source_flag.unwrap_or(UpdateRequest::SavedSource)))
 }
 
 fn print_components(catalog: &Catalog) {
@@ -156,4 +202,36 @@ fn print_plan(catalog: &Catalog, plan: &planner::Plan) -> Result<(), Box<dyn Err
         println!("skip\t{id}");
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn args(values: &[&str]) -> Vec<String> {
+        values.iter().map(|value| value.to_string()).collect()
+    }
+
+    #[test]
+    fn parses_self_update_source_flags() {
+        assert_eq!(
+            parse_update_request(&args(&["--update"])).unwrap(),
+            Some(UpdateRequest::SavedSource)
+        );
+        assert_eq!(
+            parse_update_request(&args(&["--update", "--github"])).unwrap(),
+            Some(UpdateRequest::GitHub)
+        );
+        assert_eq!(
+            parse_update_request(&args(&["--update", "--gitee"])).unwrap(),
+            Some(UpdateRequest::Gitee)
+        );
+        assert_eq!(parse_update_request(&args(&["--version"])).unwrap(), None);
+    }
+
+    #[test]
+    fn rejects_multiple_self_update_source_flags() {
+        let error = parse_update_request(&args(&["--update", "--github", "--gitee"])).unwrap_err();
+        assert!(error.to_string().contains("mutually exclusive"));
+    }
 }
