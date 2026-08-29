@@ -31,8 +31,9 @@ Gitee mode persists the `cn` mirror profile. Component installations then use
 the USTC Homebrew mirrors and the TUNA Python index. GitHub mode keeps upstream
 sources.
 
-Homebrew operations run non-interactively. Installing Zsh or its managed
-configuration sets Zsh as the current user's login shell for the next login.
+Homebrew operations run non-interactively. After an install or update, an
+existing managed Zsh installation or configuration causes Zsh to be repaired
+as the current user's login shell for the next login.
 
 ## Components
 

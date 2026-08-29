@@ -41,7 +41,7 @@ omd
 
 Gitee 模式会持久化 `cn` 镜像配置。后续组件安装会自动使用 USTC Homebrew 镜像和 TUNA Python 索引；GitHub 模式保持上游源。
 
-Homebrew 操作以非交互模式运行，不会重复询问是否继续。安装 Zsh 或 Zsh 配置时会将当前用户的登录 shell 设置为 Zsh，并在下次登录时生效。
+Homebrew 操作以非交互模式运行，不会重复询问是否继续。安装或更新完成后，如果 Zsh 或 Zsh 配置由 oh-my-devpod 管理，会将当前用户的登录 shell 修正为 Zsh，并在下次登录时生效。
 
 ## 可选工具
 

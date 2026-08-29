@@ -11,7 +11,7 @@ use std::{
 
 use crate::{
     components::{Catalog, Component},
-    planner::{ComponentState, Plan, PlanStep},
+    planner::{Action, ComponentState, Plan, PlanStep},
 };
 
 #[derive(Debug, Clone)]
@@ -94,6 +94,9 @@ impl RuntimePaths {
         }
         if !root.join("modules/lib/common.sh").is_file() {
             return Err(RuntimeError::new("bundle is missing modules/lib/common.sh").into());
+        }
+        if !root.join("modules/lib/postflight.sh").is_file() {
+            return Err(RuntimeError::new("bundle is missing modules/lib/postflight.sh").into());
         }
         let home = env::var_os("HOME")
             .map(PathBuf::from)
@@ -178,6 +181,7 @@ impl Runner {
 
     fn execute_plan_locked(&self, catalog: &Catalog, plan: &Plan) -> Result<(), Box<dyn Error>> {
         if plan.steps.is_empty() {
+            self.execute_postflight(plan.action)?;
             println!("Nothing to do.");
             return Ok(());
         }
@@ -193,6 +197,7 @@ impl Runner {
             );
             self.execute_step(component, step, false)?;
         }
+        self.execute_postflight(plan.action)?;
         println!("==> Completed {} step(s).", plan.steps.len());
         Ok(())
     }
@@ -253,8 +258,31 @@ impl Runner {
         }
     }
 
+    fn execute_postflight(&self, action: Action) -> Result<(), Box<dyn Error>> {
+        if action == Action::Uninstall {
+            return Ok(());
+        }
+
+        let script = self.root.join("modules/lib/postflight.sh");
+        let status = self
+            .script_command(&script, &action.to_string())
+            .stdin(Stdio::inherit())
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .status()?;
+        if status.success() {
+            Ok(())
+        } else {
+            Err(RuntimeError::new(format!("{} postflight failed with {status}", action)).into())
+        }
+    }
+
     fn command(&self, component: &Component, action: &str) -> Command {
         let module = self.root.join(&component.module);
+        self.script_command(&module, action)
+    }
+
+    fn script_command(&self, script: &Path, action: &str) -> Command {
         let home = env::var_os("HOME").map(PathBuf::from).unwrap_or_default();
         let data_home = env::var_os("XDG_DATA_HOME")
             .map(PathBuf::from)
@@ -267,7 +295,7 @@ impl Runner {
         let state_dir = state_home.join("oh-my-devpod");
         let mut command = Command::new("bash");
         command
-            .arg(module)
+            .arg(script)
             .arg(action)
             .env_remove("OHMYDEVPOD_BIN_DIR")
             .env_remove("OHMYDEVPOD_PREFIX")
@@ -419,5 +447,60 @@ mod tests {
     fn development_root_contains_manifest() {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
         assert!(root.join("components.toml").is_file());
+    }
+
+    #[test]
+    fn install_postflight_runs_after_an_unrelated_component_step() {
+        let root = env::temp_dir().join(format!("omd-postflight-test-{}", std::process::id()));
+        let postflight = root.join("modules/lib/postflight.sh");
+        let component_script = root.join("modules/example.sh");
+        let marker = root.join("postflight-action");
+        fs::create_dir_all(postflight.parent().unwrap()).unwrap();
+        fs::write(&component_script, "#!/usr/bin/env bash\nexit 0\n").unwrap();
+        fs::write(
+            &postflight,
+            format!(
+                "#!/usr/bin/env bash\nprintf '%s\\n' \"$1\" > '{}'\n",
+                marker.display()
+            ),
+        )
+        .unwrap();
+
+        let runner = Runner {
+            root: root.clone(),
+            version: "test".to_string(),
+            mirror_profile: MirrorProfile::Upstream,
+            config_dir: root.join("config"),
+        };
+        let catalog = Catalog::parse(
+            r#"
+schema_version = 1
+
+[[component]]
+id = "example"
+name = "Example"
+description = "Example component"
+category = "terminal"
+module = "modules/example.sh"
+requires = []
+install_requires = []
+uninstall = true
+"#,
+        )
+        .unwrap();
+        let plan = Plan {
+            action: Action::Install,
+            requested: vec!["example".to_string()],
+            steps: vec![PlanStep {
+                component_id: "example".to_string(),
+                action: Action::Install,
+            }],
+            skipped: vec![],
+        };
+
+        runner.execute_plan_locked(&catalog, &plan).unwrap();
+
+        assert_eq!(fs::read_to_string(&marker).unwrap(), "install\n");
+        fs::remove_dir_all(root).unwrap();
     }
 }
