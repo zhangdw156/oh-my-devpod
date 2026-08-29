@@ -189,9 +189,33 @@ omd_module_brew_cmd() {
 }
 
 omd_module_brew_formula_installed() {
-  local formula="$1" brew
+  local formula="$1" formula_name prefix cellar version
+  prefix="$(omd_module_brew_prefix)" || return 1
+  formula_name="${formula##*/}"
+  cellar="${prefix}/Cellar/${formula_name}"
+  [[ -d "${cellar}" ]] || return 1
+  for version in "${cellar}"/*; do
+    [[ -e "${version}" ]] && return 0
+  done
+  return 1
+}
+
+omd_module_brew_prefix() {
+  local brew resolved
   brew="$(omd_module_brew_cmd)" || return 1
-  omd_module_brew_exec "${brew}" list --formula "${formula}" >/dev/null 2>&1
+  if command -v readlink >/dev/null 2>&1; then
+    resolved="$(readlink -f "${brew}" 2>/dev/null || true)"
+    [[ -z "${resolved}" ]] || brew="${resolved}"
+  fi
+  if [[ "${brew}" == */bin/brew ]]; then
+    cd "$(dirname "${brew}")/.." 2>/dev/null && pwd -P
+    return
+  fi
+  if [[ -n "${HOMEBREW_PREFIX:-}" && -d "${HOMEBREW_PREFIX}" ]]; then
+    printf '%s\n' "${HOMEBREW_PREFIX}"
+    return 0
+  fi
+  return 1
 }
 
 omd_module_brew_exec() {

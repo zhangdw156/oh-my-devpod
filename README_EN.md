@@ -35,6 +35,9 @@ Homebrew operations run non-interactively. After an install or update, an
 existing managed Zsh installation or configuration causes Zsh to be repaired
 as the current user's login shell for the next login.
 
+TUI startup inspects the local Homebrew Cellar directly instead of repeatedly
+starting `brew` for every component.
+
 ## Components
 
 | Category | Components |
