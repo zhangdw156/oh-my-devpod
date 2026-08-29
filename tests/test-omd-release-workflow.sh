@@ -48,6 +48,7 @@ worktree="${tmp_dir}/worktree"
 mkdir -p "${worktree}/target/release"
 cp -R \
   "${repo_root}/components.toml" \
+  "${repo_root}/install" \
   "${repo_root}/modules" \
   "${repo_root}/build" \
   "${repo_root}/config" \
@@ -72,6 +73,7 @@ tar -tzf "${archive}" > "${archive_listing}"
 for expected in \
   oh-my-devpod/bin/omd \
   oh-my-devpod/components.toml \
+  oh-my-devpod/install/update.sh \
   oh-my-devpod/modules/ \
   oh-my-devpod/build/ \
   oh-my-devpod/config/ \

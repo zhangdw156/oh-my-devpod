@@ -8,6 +8,7 @@ oh-my-devpod 是 Ubuntu 24.04 开发生产力工具管理器。`omd` 负责交�
 ```text
 components.toml            组件目录与依赖真源
 install/bootstrap.sh       GitHub/Gitee release bootstrap
+install/update.sh          transactional self-update and source switching
 crates/omd/                Rust TUI、planner、runner
 modules/core/              Linuxbrew、Zsh、uv
 modules/tools/             独立生产力工具与配置
@@ -81,6 +82,11 @@ bootstrap 保存安装来源：
 `cn` profile 在执行模块前配置 USTC Homebrew 源和 TUNA Python index。
 vendored 二进制不需要访问其原始 GitHub release。
 
+`omd --update` 复用 bundle 内的 installer helper。更新事务必须先完成
+release 下载、SHA256 校验和 bundle 校验，再修改来源配置或激活新版本。
+来源配置使用临时文件和原子重命名；后续失败时恢复原配置和受管
+Homebrew remote。显式来源切换在版本相同时仍需执行。
+
 ## Release bundle
 
 release archive 必须包含：
@@ -89,6 +95,7 @@ release archive 必须包含：
 oh-my-devpod/
 ├── bin/omd
 ├── components.toml
+├── install/
 ├── modules/
 ├── build/
 ├── config/

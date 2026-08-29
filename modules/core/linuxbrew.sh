@@ -30,10 +30,10 @@ install_or_update() {
   if omd_module_dry_run "$@"; then
     if [[ "${OHMYDEVPOD_MIRROR_PROFILE:-upstream}" == "cn" ]]; then
       brew_remote="${HOMEBREW_BREW_GIT_REMOTE:-https://mirrors.ustc.edu.cn/brew.git}"
-      omd_module_info plan "${action} Linuxbrew from ${brew_remote} under ${brew_prefix}"
     else
-      omd_module_info plan "${action} Linuxbrew under ${brew_prefix}"
+      brew_remote="${HOMEBREW_BREW_GIT_REMOTE:-https://github.com/Homebrew/brew.git}"
     fi
+    omd_module_info plan "${action} Linuxbrew from ${brew_remote} under ${brew_prefix}"
     return 0
   fi
 
@@ -73,14 +73,11 @@ install_or_update() {
 
   if [[ "${OHMYDEVPOD_MIRROR_PROFILE:-upstream}" == "cn" ]]; then
     brew_remote="${HOMEBREW_BREW_GIT_REMOTE:-https://mirrors.ustc.edu.cn/brew.git}"
-    omd_module_require_command git
-    git clone --depth 1 "${brew_remote}" "${brew_prefix}"
   else
-    omd_module_require_command curl
-    omd_module_require_command tar
-    curl -fsSL https://github.com/Homebrew/brew/tarball/master |
-      tar xz --strip-components 1 -C "${brew_prefix}"
+    brew_remote="${HOMEBREW_BREW_GIT_REMOTE:-https://github.com/Homebrew/brew.git}"
   fi
+  omd_module_require_command git
+  git clone --depth 1 "${brew_remote}" "${brew_prefix}"
   [[ -x "${brew_prefix}/bin/brew" ]] || {
     omd_module_info error "Linuxbrew installation did not create ${brew_prefix}/bin/brew"
     return 1

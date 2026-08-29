@@ -105,6 +105,9 @@ q                   退出
 ## 命令行接口
 
 ```bash
+omd --update
+omd --update --github
+omd --update --gitee
 omd --list-components
 omd --status
 omd --plan install lazyvim
@@ -113,12 +116,21 @@ omd --execute install ripgrep fzf
 omd --version
 ```
 
+### 自更新与全局源切换
+
+- `omd --update`：使用 `~/.config/oh-my-devpod/source` 保存的来源；未配置或配置无效时使用 GitHub。
+- `omd --update --github`：从 GitHub 更新，并将后续组件操作永久切换到官方上游源。
+- `omd --update --gitee`：从 Gitee 更新，并将后续组件操作永久切换到 USTC Homebrew 与 TUNA Python 镜像。
+- `--github` 与 `--gitee` 互斥。显式切换来源即使在当前版本已经最新时也会生效。
+
+自更新只替换经过 SHA256 校验的 `omd` release bundle，不会进入 TUI，也不会更新已安装组件。下载、校验或安装失败时，当前版本和原来源配置保持不变。
+
 ## 项目结构
 
 ```text
 oh-my-devpod/
 ├── components.toml
-├── install/bootstrap.sh
+├── install/{bootstrap,update}.sh
 ├── crates/omd/
 ├── modules/
 │   ├── core/
