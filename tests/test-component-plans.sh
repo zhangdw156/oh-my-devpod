@@ -69,7 +69,8 @@ mkdir -p "${fixture}/modules/lib"
 cp "${repo_root}/components.toml" "${fixture}/components.toml"
 cp "${repo_root}/VERSION" "${fixture}/VERSION"
 printf '#!/usr/bin/env bash\n' > "${fixture}/modules/lib/common.sh"
-chmod +x "${fixture}/modules/lib/common.sh"
+printf '#!/usr/bin/env bash\nexit 0\n' > "${fixture}/modules/lib/postflight.sh"
+chmod +x "${fixture}/modules/lib/common.sh" "${fixture}/modules/lib/postflight.sh"
 
 python3 - "${fixture}" <<'PY'
 import pathlib

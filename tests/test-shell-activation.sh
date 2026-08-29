@@ -16,9 +16,10 @@ fake_bin="${tmp_dir}/bin"
 brew_log="${tmp_dir}/brew.log"
 sudo_log="${tmp_dir}/sudo.log"
 shells_file="${tmp_dir}/shells"
+state_dir="${tmp_dir}/state"
 zsh_prefix="${tmp_dir}/zsh-prefix"
 zsh_path="${zsh_prefix}/bin/zsh"
-mkdir -p "${fake_bin}" "$(dirname "${zsh_path}")"
+mkdir -p "${fake_bin}" "${state_dir}/managed" "$(dirname "${zsh_path}")"
 : > "${shells_file}"
 
 cat > "${fake_bin}/brew" <<'EOF'
@@ -108,5 +109,28 @@ PATH="${fake_bin}:${PATH}" \
 
 [[ ! -s "${sudo_log}" ]] ||
   fail "already active login shell should not trigger privileged changes"
+
+cat > "${state_dir}/managed/zsh-config" <<'EOF'
+managed_by=oh-my-devpod
+component=zsh-config
+kind=configuration
+artifact=/tmp/test-zshrc
+EOF
+: > "${shells_file}"
+: > "${sudo_log}"
+PATH="${fake_bin}:${PATH}" \
+  OHMYDEVPOD_BREW_BIN="${fake_bin}/brew" \
+  OHMYDEVPOD_TARGET_USER="test-user" \
+  OHMYDEVPOD_CURRENT_SHELL="/bin/bash" \
+  OHMYDEVPOD_SHELLS_FILE="${shells_file}" \
+  OHMYDEVPOD_SUDO_BIN="${fake_bin}/sudo" \
+  OHMYDEVPOD_STATE_DIR="${state_dir}" \
+  OMD_TEST_BREW_LOG="${brew_log}" \
+  OMD_TEST_ZSH_PREFIX="${zsh_prefix}" \
+  OMD_TEST_SUDO_LOG="${sudo_log}" \
+  bash "${repo_root}/modules/lib/postflight.sh" install >/dev/null
+
+grep -Fqx "chsh -s ${zsh_path} test-user" "${sudo_log}" ||
+  fail "install postflight should migrate an existing managed Zsh installation"
 
 echo "shell activation tests passed"
