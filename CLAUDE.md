@@ -1,12 +1,12 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code when working with code in this repository.
+This file provides repository guidance for automated coding sessions.
 
 ## Repository purpose
 
 `oh-my-devpod` provides a host installer for Ubuntu 24.04. The public entrypoint is `install/bootstrap.sh`, which installs and launches the Rust TUI command `omd`.
 
-`omd` manages required developer tooling and optional AI CLI components through shell lifecycle modules.
+`omd` manages selectable Linux development and terminal productivity tools through dependency-aware shell lifecycle modules.
 
 ## Core development commands
 
@@ -29,14 +29,14 @@ bash build/update-vendor-assets.sh
 - The repository-root `VERSION` file is the source of truth for `omd` releases.
 - The single source of truth for tool versions such as atuin, btop, neovim, and zellij is `versions.env`.
 - Build scripts source `versions.env`; install scripts use matching environment-variable fallbacks. Run `bash tests/test-versions-env.sh` to verify consistency.
-- `.github/workflows/release-omd.yml` builds `omd` and uploads `omd-x86_64-unknown-linux-gnu.tar.gz` plus its checksum to GitHub Releases.
+- `.github/workflows/release-omd.yml` builds the complete runtime bundle and uploads it plus its checksum to GitHub Releases, with optional Gitee synchronization.
 - Release flow details live in `DEVELOPMENT.md`.
 
 ## High-level architecture
 
 ### 1. Bootstrap entrypoint
 
-`install/bootstrap.sh` is the curl entrypoint. It checks Ubuntu 24.04, checks interactive `sudo`, downloads a prebuilt `omd` release archive, installs it into `~/.local/bin/omd`, and starts it.
+`install/bootstrap.sh` is the curl entrypoint. It checks Ubuntu 24.04, selects GitHub or Gitee, verifies the release checksum, installs a versioned runtime bundle, activates `~/.local/bin/omd`, persists the mirror profile, and starts the TUI through `/dev/tty`.
 
 ### 2. Rust TUI
 
@@ -54,12 +54,13 @@ cargo run -p omd -- --list-components
 
 ```bash
 module.sh status
+module.sh managed
 module.sh install
 module.sh update
 module.sh uninstall
 ```
 
-Required components live under `modules/core/`; optional AI CLI components live under `modules/optional/`. Normal uninstall must not delete user config, caches, auth state, tokens, or login sessions.
+Foundation components live under `modules/core/`; selectable tools and managed configuration live under `modules/tools/`. Normal uninstall must not remove external installations or unowned user files.
 
 ### 4. Vendored assets
 
@@ -86,6 +87,6 @@ If a project `.env` token is available, prefer `source .env && GH_TOKEN=$GH_TOKE
 
 - Keep `install/bootstrap.sh` small and testable; the TUI and lifecycle orchestration belong in `crates/omd/` and `modules/`.
 - Keep component-specific package logic in its module file; shared helpers belong in `modules/lib/common.sh`.
-- Preserve user config and auth state during normal uninstall flows.
+- Preserve external installations, user configuration changes, caches, and backups during normal uninstall flows.
 - Prefer `uv run ...` over bare `python` for one-off scripted shell work in this repo.
 - Use issue-driven development for substantive changes and reference the issue in commits.

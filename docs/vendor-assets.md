@@ -70,4 +70,4 @@ After running it:
 - Shared assets stay in `vendor/`.
 - Component install behavior belongs in `modules/` and reusable install helpers belong in `build/`.
 - This project intentionally avoids Git submodules.
-- Host installation still needs network access for package manager operations and optional AI CLI installer endpoints that are not vendored.
+- Host installation still needs access to the selected package-manager mirrors for non-vendored formula operations.

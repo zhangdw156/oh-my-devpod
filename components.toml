@@ -1,0 +1,171 @@
+schema_version = 1
+
+[[component]]
+id = "linuxbrew"
+name = "Linuxbrew"
+description = "User-space package manager used by several productivity tools"
+category = "foundation"
+module = "modules/core/linuxbrew.sh"
+requires = []
+install_requires = []
+uninstall = false
+
+[[component]]
+id = "zsh"
+name = "Zsh"
+description = "Interactive shell"
+category = "foundation"
+module = "modules/core/zsh.sh"
+requires = []
+install_requires = ["linuxbrew"]
+uninstall = true
+
+[[component]]
+id = "uv"
+name = "uv"
+description = "Fast Python package and project manager"
+category = "foundation"
+module = "modules/core/uv.sh"
+requires = []
+install_requires = ["linuxbrew"]
+uninstall = true
+
+[[component]]
+id = "git"
+name = "Git"
+description = "Version control client"
+category = "development"
+module = "modules/tools/git.sh"
+requires = []
+install_requires = ["linuxbrew"]
+uninstall = true
+
+[[component]]
+id = "ripgrep"
+name = "ripgrep"
+description = "Fast recursive text search"
+category = "terminal"
+module = "modules/tools/ripgrep.sh"
+requires = []
+install_requires = ["linuxbrew"]
+uninstall = true
+
+[[component]]
+id = "fzf"
+name = "fzf"
+description = "Interactive fuzzy finder"
+category = "terminal"
+module = "modules/tools/fzf.sh"
+requires = []
+install_requires = ["linuxbrew"]
+uninstall = true
+
+[[component]]
+id = "bat"
+name = "bat"
+description = "Syntax-aware cat replacement"
+category = "terminal"
+module = "modules/tools/bat.sh"
+requires = []
+install_requires = ["linuxbrew"]
+uninstall = true
+
+[[component]]
+id = "fd"
+name = "fd"
+description = "Friendly and fast find replacement"
+category = "terminal"
+module = "modules/tools/fd.sh"
+requires = []
+install_requires = ["linuxbrew"]
+uninstall = true
+
+[[component]]
+id = "jq"
+name = "jq"
+description = "JSON processor"
+category = "terminal"
+module = "modules/tools/jq.sh"
+requires = []
+install_requires = ["linuxbrew"]
+uninstall = true
+
+[[component]]
+id = "atuin"
+name = "Atuin"
+description = "Shell history search and synchronization"
+category = "terminal"
+module = "modules/tools/atuin.sh"
+requires = []
+install_requires = []
+uninstall = true
+
+[[component]]
+id = "zellij"
+name = "Zellij"
+description = "Terminal workspace and multiplexer"
+category = "terminal"
+module = "modules/tools/zellij.sh"
+requires = []
+install_requires = []
+uninstall = true
+
+[[component]]
+id = "yazi"
+name = "Yazi"
+description = "Terminal file manager"
+category = "terminal"
+module = "modules/tools/yazi.sh"
+requires = []
+install_requires = []
+uninstall = true
+
+[[component]]
+id = "btop"
+name = "btop"
+description = "Interactive resource monitor"
+category = "terminal"
+module = "modules/tools/btop.sh"
+requires = []
+install_requires = []
+uninstall = true
+
+[[component]]
+id = "witr"
+name = "witr"
+description = "Command-line utility for inspecting ports and processes"
+category = "terminal"
+module = "modules/tools/witr.sh"
+requires = []
+install_requires = []
+uninstall = true
+
+[[component]]
+id = "neovim"
+name = "Neovim"
+description = "Modern terminal editor"
+category = "editor"
+module = "modules/tools/neovim.sh"
+requires = []
+install_requires = []
+uninstall = true
+
+[[component]]
+id = "lazyvim"
+name = "LazyVim"
+description = "Managed Neovim configuration"
+category = "editor"
+module = "modules/tools/lazyvim.sh"
+requires = ["git", "neovim"]
+install_requires = []
+uninstall = true
+
+[[component]]
+id = "zsh-config"
+name = "Zsh productivity configuration"
+description = "Oh My Zsh, Powerlevel10k, completion, history, and fuzzy-search integration"
+category = "configuration"
+module = "modules/tools/zsh-config.sh"
+requires = ["zsh", "fzf", "atuin"]
+install_requires = []
+uninstall = true

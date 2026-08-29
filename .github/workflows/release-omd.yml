@@ -5,13 +5,21 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      publish_gitee:
+        description: Publish the same assets to Gitee when GITEE_TOKEN is configured
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
 
 jobs:
-  build-linux:
+  build-linux-x86_64:
     runs-on: ubuntu-24.04
+    env:
+      ARCHIVE: omd-x86_64-unknown-linux-gnu.tar.gz
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,15 +33,68 @@ jobs:
       - name: Package omd
         run: |
           set -euo pipefail
-          mkdir -p dist
-          cp target/release/omd dist/omd
-          chmod 0755 dist/omd
-          tar -czf dist/omd-x86_64-unknown-linux-gnu.tar.gz -C dist omd
-          (cd dist && sha256sum omd-x86_64-unknown-linux-gnu.tar.gz > omd-x86_64-unknown-linux-gnu.tar.gz.sha256)
+          # build/package-omd.sh performs: tar -czf ... and sha256sum ...
+          bash build/package-omd.sh \
+            target/release/omd \
+            dist \
+            x86_64-unknown-linux-gnu
 
-      - name: Upload release assets
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: omd-x86_64-unknown-linux-gnu
+          path: |
+            dist/${{ env.ARCHIVE }}
+            dist/${{ env.ARCHIVE }}.sha256
+
+      - name: Upload GitHub release assets
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/omd-x86_64-unknown-linux-gnu.tar.gz
-            dist/omd-x86_64-unknown-linux-gnu.tar.gz.sha256
+            dist/${{ env.ARCHIVE }}
+            dist/${{ env.ARCHIVE }}.sha256
+
+      # Optional Gitee surface:
+      # - configure repository secret GITEE_TOKEN with release permissions;
+      # - run workflow_dispatch with publish_gitee=true, or publish a tag;
+      # - GITEE_OWNER/GITEE_REPO may be changed below for a differently named mirror.
+      # GitHub release publishing does not depend on any Gitee secret.
+      - name: Publish matching Gitee release assets
+        if: >-
+          startsWith(github.ref, 'refs/tags/') &&
+          (github.event_name != 'workflow_dispatch' || inputs.publish_gitee)
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+          GITEE_OWNER: zhangdw156
+          GITEE_REPO: oh-my-devpod
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${GITEE_TOKEN}" ]]; then
+            echo "GITEE_TOKEN is not configured; skipping optional Gitee publish."
+            exit 0
+          fi
+
+          api="https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}"
+          release_json="$(
+            curl -fsS \
+              "${api}/releases/tags/${RELEASE_TAG}?access_token=${GITEE_TOKEN}" \
+              || curl -fsS -X POST "${api}/releases" \
+                -d "access_token=${GITEE_TOKEN}" \
+                -d "tag_name=${RELEASE_TAG}" \
+                -d "name=${RELEASE_TAG}" \
+                -d "target_commitish=${GITHUB_SHA}" \
+                --data-urlencode "body=Release synchronized from GitHub."
+          )"
+          release_id="$(
+            python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])' \
+              <<<"${release_json}"
+          )"
+
+          for asset in "dist/${ARCHIVE}" "dist/${ARCHIVE}.sha256"; do
+            curl -fsS -X POST \
+              "${api}/releases/${release_id}/attach_files" \
+              -F "access_token=${GITEE_TOKEN}" \
+              -F "file=@${asset}"
+          done

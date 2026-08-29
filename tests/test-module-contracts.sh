@@ -2,6 +2,7 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+manifest="${repo_root}/components.toml"
 
 fail() {
   echo "FAIL: $*" >&2
@@ -27,48 +28,62 @@ run_expect_nonzero() {
   fi
 }
 
-check_status_contract() {
-  local module="$1" status_code
+run_expect_exit() {
+  local expected="$1" description="$2"
+  shift 2
+  local status
   set +e
-  "${module}" status >/dev/null 2>&1
-  status_code=$?
+  "$@" >/dev/null 2>&1
+  status=$?
   set -e
-  case "${status_code}" in
+  [[ "${status}" -eq "${expected}" ]] \
+    || fail "expected exit ${expected} for ${description}, got ${status}"
+}
+
+check_query_contract() {
+  local module="$1" query="$2" status
+  set +e
+  "${module}" "${query}" >/dev/null 2>&1
+  status=$?
+  set -e
+  case "${status}" in
     0|1) ;;
-    *) fail "${module} status should exit 0 or 1, got ${status_code}" ;;
+    *) fail "${module} ${query} should exit 0 or 1, got ${status}" ;;
   esac
 }
 
-required_modules=(
-  modules/core/brew.sh
-  modules/core/zsh.sh
-  modules/core/base-tools.sh
-)
+[[ -f "${manifest}" ]] || fail "missing component catalog: components.toml"
 
-optional_modules=(
-  modules/optional/claude-code.sh
-  modules/optional/codex.sh
-  modules/optional/opencode.sh
-  modules/optional/copilot.sh
-  modules/optional/gemini.sh
-)
-
-for rel in "${required_modules[@]}" "${optional_modules[@]}"; do
+while IFS=$'\t' read -r rel uninstall_supported; do
   module="${repo_root}/${rel}"
   assert_executable "${module}"
-  check_status_contract "${module}"
+  check_query_contract "${module}" status
+  check_query_contract "${module}" managed
   run_expect_zero "${rel} install dry-run" "${module}" install --dry-run
   run_expect_zero "${rel} update dry-run" "${module}" update --dry-run
-  run_expect_nonzero "${rel} unknown action" "${module}" unsupported-action
+  if [[ "${uninstall_supported}" == "true" ]]; then
+    run_expect_zero "${rel} uninstall dry-run" "${module}" uninstall --dry-run
+  else
+    run_expect_exit 2 "${rel} unsupported uninstall dry-run" "${module}" uninstall --dry-run
+  fi
+  run_expect_exit 2 "${rel} unknown action" "${module}" unsupported-action
+done < <(
+  python3 - "${manifest}" <<'PY'
+import sys
+import tomllib
 
-done
+with open(sys.argv[1], "rb") as handle:
+    components = tomllib.load(handle)["component"]
 
-for rel in "${required_modules[@]}"; do
-  module="${repo_root}/${rel}"
-  run_expect_nonzero "${rel} required uninstall dry-run" "${module}" uninstall --dry-run
-done
-
-for rel in "${optional_modules[@]}"; do
-  module="${repo_root}/${rel}"
-  run_expect_zero "${rel} optional uninstall dry-run" "${module}" uninstall --dry-run
-done
+for component in components:
+    supported = component.get(
+        "uninstall",
+        component.get("uninstall_supported"),
+    )
+    if not isinstance(supported, bool):
+        raise SystemExit(
+            f"FAIL: {component['id']} must declare boolean uninstall support"
+        )
+    print(f"{component['module']}\t{str(supported).lower()}")
+PY
+)

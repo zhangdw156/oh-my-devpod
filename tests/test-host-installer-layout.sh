@@ -20,21 +20,11 @@ assert_doc_absent() {
 }
 
 assert_executable install/bootstrap.sh
+assert_file components.toml
 assert_file crates/omd/Cargo.toml
 assert_dir modules/core
-assert_dir modules/optional
-
-for module in \
-  modules/core/brew.sh \
-  modules/core/zsh.sh \
-  modules/core/base-tools.sh \
-  modules/optional/claude-code.sh \
-  modules/optional/codex.sh \
-  modules/optional/opencode.sh \
-  modules/optional/copilot.sh \
-  modules/optional/gemini.sh; do
-  assert_executable "${module}"
-done
+assert_dir modules/tools
+assert_absent modules/optional
 
 assert_absent Dockerfile.devpod
 assert_absent docker

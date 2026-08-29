@@ -83,7 +83,6 @@ download_plugin_snapshot() {
   find "${target_dir}" -name '.git' -prune -exec rm -rf {} +
 }
 
-rm -rf "${vendor_dir}/opencode"
 mkdir -p "${vendor_dir}/releases" "${vendor_dir}/nvim" "${vendor_dir}/zsh"
 
 download_release_assets \

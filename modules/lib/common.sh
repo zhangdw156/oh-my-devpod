@@ -15,6 +15,69 @@ omd_module_prefix() {
   printf '%s\n' "${OHMYDEVPOD_PREFIX:-${HOME}/.local/share/oh-my-devpod}"
 }
 
+omd_module_state_dir() {
+  printf '%s\n' "${OHMYDEVPOD_STATE_DIR:-${XDG_STATE_HOME:-${HOME}/.local/state}/oh-my-devpod}"
+}
+
+omd_module_managed_dir() {
+  printf '%s\n' "${OHMYDEVPOD_MANAGED_DIR:-$(omd_module_state_dir)/managed}"
+}
+
+omd_module_marker_path() {
+  local component="$1"
+  [[ "${component}" =~ ^[a-z0-9][a-z0-9-]*$ ]] || {
+    omd_module_info error "invalid component identifier: ${component}"
+    return 2
+  }
+  printf '%s/%s\n' "$(omd_module_managed_dir)" "${component}"
+}
+
+omd_module_is_managed() {
+  local component="$1" marker
+  marker="$(omd_module_marker_path "${component}")" || return
+  [[ -f "${marker}" ]] && grep -qx 'managed_by=oh-my-devpod' "${marker}"
+}
+
+omd_module_mark_managed() {
+  local component="$1" kind="${2:-component}" artifact="${3:-}" marker marker_dir tmp
+  shift 3 || true
+  marker="$(omd_module_marker_path "${component}")" || return
+  marker_dir="$(dirname "${marker}")"
+  mkdir -p "${marker_dir}"
+  tmp="${marker}.tmp.$$"
+  {
+    printf 'managed_by=oh-my-devpod\n'
+    printf 'component=%s\n' "${component}"
+    printf 'kind=%s\n' "${kind}"
+    printf 'artifact=%s\n' "${artifact}"
+    printf 'installed_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    if (($#)); then
+      printf '%s\n' "$@"
+    fi
+  } > "${tmp}"
+  mv "${tmp}" "${marker}"
+}
+
+omd_module_marker_value() {
+  local component="$1" key="$2" marker
+  marker="$(omd_module_marker_path "${component}")" || return
+  [[ -f "${marker}" ]] || return 1
+  sed -n "s/^${key}=//p" "${marker}" | head -n 1
+}
+
+omd_module_marker_matches() {
+  local component="$1" artifact="$2" recorded
+  omd_module_is_managed "${component}" || return 1
+  recorded="$(omd_module_marker_value "${component}" artifact)" || return 1
+  [[ "${recorded}" == "${artifact}" ]]
+}
+
+omd_module_unmark_managed() {
+  local component="$1" marker
+  marker="$(omd_module_marker_path "${component}")" || return
+  rm -f "${marker}"
+}
+
 omd_module_info() {
   local level="$1" message="$2"
   printf '%s: %s\n' "${level}" "${message}"
@@ -34,10 +97,26 @@ omd_module_dry_run() {
   omd_module_has_flag --dry-run "$@"
 }
 
+omd_module_reject_unknown_flags() {
+  local arg
+  for arg in "$@"; do
+    [[ "${arg}" == "--dry-run" ]] || {
+      omd_module_info error "unknown option: ${arg}"
+      return 2
+    }
+  done
+}
+
 omd_module_required_uninstall() {
   local name="$1"
-  omd_module_info error "${name} is required and cannot be uninstalled by the normal flow"
+  omd_module_info error "${name} cannot be removed by the normal uninstall flow"
   return 2
+}
+
+omd_module_refuse_unmanaged() {
+  local name="$1"
+  omd_module_info error "${name} is not managed by oh-my-devpod; refusing to remove it"
+  return 1
 }
 
 omd_module_unknown_action() {
@@ -54,36 +133,153 @@ omd_module_require_command() {
   fi
 }
 
-omd_module_require_npm() {
-  omd_module_require_command node
-  omd_module_require_command npm
-  local node_major
-  node_major="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || true)"
-  if [[ -z "${node_major}" || "${node_major}" -lt 20 ]]; then
-    omd_module_info error "Node.js >=20 is required; found $(node --version 2>/dev/null || echo missing)"
+omd_module_sha256_file() {
+  local path="$1"
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "${path}" | awk '{print $1}'
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "${path}" | awk '{print $1}'
+  else
+    omd_module_info error "sha256sum or shasum is required"
     return 1
   fi
 }
 
-omd_module_install_npm_tool() {
-  local package_name="$1" command_name="$2" prefix_name="$3"
-  local bin_dir prefix install_prefix
-  bin_dir="$(omd_module_bin_dir)"
-  prefix="$(omd_module_prefix)"
-  install_prefix="${prefix}/opt/${prefix_name}"
-
-  mkdir -p "${bin_dir}" "${install_prefix}"
-  npm install -g --prefix "${install_prefix}" "${package_name}"
-  ln -sfn "${install_prefix}/bin/${command_name}" "${bin_dir}/${command_name}"
+omd_module_path_exists() {
+  local path="$1"
+  [[ -e "${path}" || -L "${path}" ]]
 }
 
-omd_module_uninstall_npm_tool() {
-  local command_name="$1" prefix_name="$2"
-  local bin_dir prefix install_prefix
-  bin_dir="$(omd_module_bin_dir)"
-  prefix="$(omd_module_prefix)"
-  install_prefix="${prefix}/opt/${prefix_name}"
+omd_module_remove_tree() {
+  local path="$1"
+  case "${path}" in
+    ""|/|"${HOME}")
+      omd_module_info error "refusing unsafe recursive removal path: ${path:-<empty>}"
+      return 2
+      ;;
+  esac
+  [[ "${path}" == /* ]] || {
+    omd_module_info error "refusing non-absolute recursive removal path: ${path}"
+    return 2
+  }
+  rm -rf -- "${path}"
+}
 
-  rm -f "${bin_dir}/${command_name}"
-  rm -rf "${install_prefix}"
+omd_module_brew_cmd() {
+  local candidate
+  if [[ -n "${OHMYDEVPOD_BREW_BIN:-}" && -x "${OHMYDEVPOD_BREW_BIN}" ]]; then
+    printf '%s\n' "${OHMYDEVPOD_BREW_BIN}"
+    return 0
+  fi
+  if command -v brew >/dev/null 2>&1; then
+    command -v brew
+    return 0
+  fi
+  for candidate in \
+    "${HOMEBREW_PREFIX:-}/bin/brew" \
+    /home/linuxbrew/.linuxbrew/bin/brew \
+    "${HOME}/.linuxbrew/bin/brew"; do
+    [[ "${candidate}" == "/bin/brew" ]] && continue
+    if [[ -x "${candidate}" ]]; then
+      printf '%s\n' "${candidate}"
+      return 0
+    fi
+  done
+  return 1
+}
+
+omd_module_brew_formula_installed() {
+  local formula="$1" brew
+  brew="$(omd_module_brew_cmd)" || return 1
+  "${brew}" list --formula "${formula}" >/dev/null 2>&1
+}
+
+omd_module_formula_status() {
+  local formula="$1" command_name="$2"
+  if [[ -n "${component:-}" ]] && omd_module_formula_managed "${component}" "${formula}"; then
+    omd_module_brew_formula_installed "${formula}"
+    return
+  fi
+  command -v "${command_name}" >/dev/null 2>&1 ||
+    omd_module_brew_formula_installed "${formula}"
+}
+
+omd_module_formula_managed() {
+  local component="$1" formula="$2"
+  omd_module_marker_matches "${component}" "${formula}"
+}
+
+omd_module_formula_install_or_update() {
+  local component="$1" formula="$2" command_name="$3" action="$4"
+  shift 4
+  omd_module_reject_unknown_flags "$@" || return
+
+  if omd_module_formula_status "${formula}" "${command_name}" &&
+    ! omd_module_formula_managed "${component}" "${formula}"; then
+    omd_module_info notice "preserving external ${component} installation"
+    return 0
+  fi
+
+  if omd_module_dry_run "$@"; then
+    omd_module_info plan "${action} Homebrew formula ${formula}"
+    return 0
+  fi
+
+  local brew
+  brew="$(omd_module_brew_cmd)" || {
+    omd_module_info error "Linuxbrew is required before ${component}"
+    return 1
+  }
+
+  if [[ "${action}" == "update" ]] &&
+    "${brew}" list --formula "${formula}" >/dev/null 2>&1; then
+    "${brew}" upgrade "${formula}"
+  else
+    "${brew}" install "${formula}"
+  fi
+  omd_module_mark_managed "${component}" brew-formula "${formula}"
+}
+
+omd_module_formula_uninstall() {
+  local component="$1" formula="$2"
+  shift 2
+  omd_module_reject_unknown_flags "$@" || return
+
+  if omd_module_dry_run "$@"; then
+    omd_module_info plan "uninstall managed Homebrew formula ${formula}"
+    return 0
+  fi
+
+  omd_module_formula_managed "${component}" "${formula}" ||
+    omd_module_refuse_unmanaged "${component}" || return
+
+  local brew dependants
+  brew="$(omd_module_brew_cmd)" || {
+    omd_module_info error "Linuxbrew is required to uninstall ${component}"
+    return 1
+  }
+  if ! dependants="$("${brew}" uses --installed "${formula}" 2>&1)"; then
+    omd_module_info error "failed to inspect Homebrew dependants for ${component}: ${dependants}"
+    return 1
+  fi
+  if [[ -n "${dependants}" ]]; then
+    omd_module_info error "cannot uninstall ${component}; Homebrew dependants remain: ${dependants//$'\n'/, }"
+    return 1
+  fi
+  "${brew}" uninstall "${formula}"
+  omd_module_unmark_managed "${component}"
+}
+
+omd_module_external_installation() {
+  local component="$1"
+  omd_module_info notice "preserving external ${component} installation"
+}
+
+omd_module_require_managed_uninstall() {
+  local component="$1" managed_function="$2"
+  shift 2
+  omd_module_reject_unknown_flags "$@" || return
+  omd_module_dry_run "$@" && return 0
+  "${managed_function}" ||
+    omd_module_refuse_unmanaged "${component}" || return
 }
