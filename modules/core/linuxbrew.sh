@@ -38,7 +38,7 @@ install_or_update() {
   fi
 
   if managed && [[ -x "${brew_prefix}/bin/brew" ]]; then
-    "${brew_prefix}/bin/brew" update
+    omd_module_brew_exec "${brew_prefix}/bin/brew" update
     return 0
   fi
 

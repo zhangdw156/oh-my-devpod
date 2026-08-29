@@ -63,7 +63,7 @@ EOF
 }
 
 install_or_update() {
-  local action="$1" backup_dir="" backup_parent
+  local action="$1" backup_dir="" backup_parent zsh_path
   shift
   omd_module_reject_unknown_flags "$@" || return
   if status && ! managed; then
@@ -75,7 +75,7 @@ install_or_update() {
     return 1
   fi
   if omd_module_dry_run "$@"; then
-    omd_module_info plan "${action} managed Zsh assets, ~/.zshrc, and Powerlevel10k config"
+    omd_module_info plan "${action} managed Zsh assets, ~/.zshrc, Powerlevel10k, and the login shell"
     return 0
   fi
 
@@ -105,6 +105,8 @@ install_or_update() {
     "backup_dir=${backup_dir}" \
     "zshrc_sha256=$(omd_module_sha256_file "${zshrc}")" \
     "p10k_sha256=$(omd_module_sha256_file "${p10k}")"
+  zsh_path="$(omd_module_zsh_path)"
+  omd_module_set_login_shell "${zsh_path}"
 }
 
 uninstall() {

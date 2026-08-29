@@ -191,7 +191,18 @@ omd_module_brew_cmd() {
 omd_module_brew_formula_installed() {
   local formula="$1" brew
   brew="$(omd_module_brew_cmd)" || return 1
-  "${brew}" list --formula "${formula}" >/dev/null 2>&1
+  omd_module_brew_exec "${brew}" list --formula "${formula}" >/dev/null 2>&1
+}
+
+omd_module_brew_exec() {
+  local brew="$1"
+  shift
+  env \
+    NONINTERACTIVE=1 \
+    HOMEBREW_NO_AUTO_UPDATE=1 \
+    HOMEBREW_NO_ENV_HINTS=1 \
+    HOMEBREW_NO_INSTALL_CLEANUP=1 \
+    "${brew}" "$@"
 }
 
 omd_module_formula_status() {
@@ -232,10 +243,10 @@ omd_module_formula_install_or_update() {
   }
 
   if [[ "${action}" == "update" ]] &&
-    "${brew}" list --formula "${formula}" >/dev/null 2>&1; then
-    "${brew}" upgrade "${formula}"
+    omd_module_brew_exec "${brew}" list --formula "${formula}" >/dev/null 2>&1; then
+    omd_module_brew_exec "${brew}" upgrade "${formula}"
   else
-    "${brew}" install "${formula}"
+    omd_module_brew_exec "${brew}" install "${formula}"
   fi
   omd_module_mark_managed "${component}" brew-formula "${formula}"
 }
@@ -258,7 +269,7 @@ omd_module_formula_uninstall() {
     omd_module_info error "Linuxbrew is required to uninstall ${component}"
     return 1
   }
-  if ! dependants="$("${brew}" uses --installed "${formula}" 2>&1)"; then
+  if ! dependants="$(omd_module_brew_exec "${brew}" uses --installed "${formula}" 2>&1)"; then
     omd_module_info error "failed to inspect Homebrew dependants for ${component}: ${dependants}"
     return 1
   fi
@@ -266,8 +277,59 @@ omd_module_formula_uninstall() {
     omd_module_info error "cannot uninstall ${component}; Homebrew dependants remain: ${dependants//$'\n'/, }"
     return 1
   fi
-  "${brew}" uninstall "${formula}"
+  omd_module_brew_exec "${brew}" uninstall "${formula}"
   omd_module_unmark_managed "${component}"
+}
+
+omd_module_zsh_path() {
+  local brew prefix candidate
+  if brew="$(omd_module_brew_cmd)"; then
+    prefix="$(omd_module_brew_exec "${brew}" --prefix zsh 2>/dev/null || true)"
+    candidate="${prefix}/bin/zsh"
+    if [[ -n "${prefix}" && -x "${candidate}" ]]; then
+      printf '%s\n' "${candidate}"
+      return 0
+    fi
+  fi
+  command -v zsh
+}
+
+omd_module_set_login_shell() {
+  local zsh_path="$1" target_user current_shell shells_file sudo_bin
+  [[ -x "${zsh_path}" ]] || {
+    omd_module_info error "cannot set login shell; Zsh is not executable: ${zsh_path}"
+    return 1
+  }
+
+  target_user="${OHMYDEVPOD_TARGET_USER:-${SUDO_USER:-$(id -un)}}"
+  shells_file="${OHMYDEVPOD_SHELLS_FILE:-/etc/shells}"
+  sudo_bin="${OHMYDEVPOD_SUDO_BIN:-sudo}"
+  if [[ -n "${OHMYDEVPOD_CURRENT_SHELL:-}" ]]; then
+    current_shell="${OHMYDEVPOD_CURRENT_SHELL}"
+  elif command -v getent >/dev/null 2>&1; then
+    current_shell="$(getent passwd "${target_user}" 2>/dev/null | awk -F: '{print $7}')"
+  else
+    current_shell="${SHELL:-}"
+  fi
+
+  if ! grep -Fqx "${zsh_path}" "${shells_file}" 2>/dev/null; then
+    if [[ "$(id -u)" -eq 0 ]]; then
+      printf '%s\n' "${zsh_path}" >> "${shells_file}"
+    else
+      omd_module_require_command "${sudo_bin}"
+      printf '%s\n' "${zsh_path}" | "${sudo_bin}" tee -a "${shells_file}" >/dev/null
+    fi
+  fi
+
+  if [[ "${current_shell}" != "${zsh_path}" ]]; then
+    if [[ "$(id -u)" -eq 0 ]]; then
+      chsh -s "${zsh_path}" "${target_user}"
+    else
+      omd_module_require_command "${sudo_bin}"
+      "${sudo_bin}" chsh -s "${zsh_path}" "${target_user}"
+    fi
+    omd_module_info notice "login shell for ${target_user} set to ${zsh_path}; it takes effect on next login"
+  fi
 }
 
 omd_module_external_installation() {
