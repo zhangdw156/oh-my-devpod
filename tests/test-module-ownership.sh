@@ -11,7 +11,9 @@ fail() {
   exit 1
 }
 
-fake_brew="${tmp_dir}/brew"
+brew_prefix="${tmp_dir}/homebrew"
+fake_brew="${brew_prefix}/bin/brew"
+mkdir -p "$(dirname "${fake_brew}")"
 cat > "${fake_brew}" <<'BREW'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -19,13 +21,13 @@ set -euo pipefail
 state="${OHMYDEVPOD_TEST_BREW_STATE}"
 case "${1:-}" in
   list)
-    [[ -f "${state}" ]]
+    [[ -d "${state}" ]]
     ;;
   install)
-    touch "${state}"
+    mkdir -p "${state}"
     ;;
   upgrade)
-    [[ -f "${state}" ]]
+    [[ -d "${state}" ]]
     ;;
   uses)
     [[ "${OHMYDEVPOD_TEST_BREW_USES_FAIL:-0}" != "1" ]] || exit 2
@@ -33,7 +35,7 @@ case "${1:-}" in
       || printf '%s\n' "${OHMYDEVPOD_TEST_BREW_DEPENDANTS}"
     ;;
   uninstall)
-    rm -f "${state}"
+    rm -rf "$(dirname "${state}")"
     ;;
   *)
     exit 2
@@ -43,7 +45,7 @@ BREW
 chmod +x "${fake_brew}"
 
 managed_home="${tmp_dir}/managed-home"
-managed_state="${tmp_dir}/managed-formula"
+managed_state="${brew_prefix}/Cellar/ripgrep/1.0.0"
 mkdir -p "${managed_home}"
 env \
   HOME="${managed_home}" \
@@ -52,7 +54,7 @@ env \
   OHMYDEVPOD_TEST_BREW_STATE="${managed_state}" \
   "${module}" install
 
-[[ -f "${managed_state}" ]] || fail "install should create the fake formula"
+[[ -d "${managed_state}" ]] || fail "install should create the fake formula"
 env \
   HOME="${managed_home}" \
   PATH="/usr/bin:/bin" \
@@ -60,14 +62,14 @@ env \
   OHMYDEVPOD_TEST_BREW_STATE="${managed_state}" \
   "${module}" managed
 
-rm -f "${managed_state}"
+rm -rf "${managed_state}"
 env \
   HOME="${managed_home}" \
   PATH="/usr/bin:/bin" \
   OHMYDEVPOD_BREW_BIN="${fake_brew}" \
   OHMYDEVPOD_TEST_BREW_STATE="${managed_state}" \
   "${module}" update
-[[ -f "${managed_state}" ]] || fail "update should repair a damaged managed formula"
+[[ -d "${managed_state}" ]] || fail "update should repair a damaged managed formula"
 
 if env \
   HOME="${managed_home}" \
@@ -88,7 +90,7 @@ if env \
   "${module}" uninstall >/dev/null 2>&1; then
   fail "uninstall should fail closed when Homebrew dependency inspection fails"
 fi
-[[ -f "${managed_state}" ]] || fail "dependency inspection failure must preserve the formula"
+[[ -d "${managed_state}" ]] || fail "dependency inspection failure must preserve the formula"
 
 external_home="${tmp_dir}/external-home"
 external_state="${tmp_dir}/external-formula"

@@ -74,6 +74,19 @@ OMD_TEST_BREW_LOG="${brew_log}" \
 grep -Fqx '1|1|1|1|install jq' "${brew_log}" ||
   fail "Homebrew commands must run non-interactively without auto-update prompts"
 
+mkdir -p "${tmp_dir}/Cellar/yazi/26.8.15"
+brew_log_lines="$(wc -l < "${brew_log}")"
+HOMEBREW_PREFIX="" \
+  OHMYDEVPOD_BREW_BIN="${fake_bin}/brew" \
+  omd_module_brew_formula_installed yazi ||
+  fail "filesystem inventory should detect an installed Homebrew formula"
+HOMEBREW_PREFIX="" \
+  OHMYDEVPOD_BREW_BIN="${fake_bin}/brew" \
+  omd_module_brew_formula_installed missing-formula &&
+  fail "filesystem inventory should reject a missing Homebrew formula"
+[[ "$(wc -l < "${brew_log}")" -eq "${brew_log_lines}" ]] ||
+  fail "formula status checks must not launch Homebrew"
+
 resolved="$(
   OHMYDEVPOD_BREW_BIN="${fake_bin}/brew" \
     OMD_TEST_BREW_LOG="${brew_log}" \
