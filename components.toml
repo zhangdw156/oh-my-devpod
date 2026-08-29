@@ -97,7 +97,7 @@ description = "Shell history search and synchronization"
 category = "terminal"
 module = "modules/tools/atuin.sh"
 requires = []
-install_requires = []
+install_requires = ["linuxbrew"]
 uninstall = true
 
 [[component]]
@@ -107,7 +107,7 @@ description = "Terminal workspace and multiplexer"
 category = "terminal"
 module = "modules/tools/zellij.sh"
 requires = []
-install_requires = []
+install_requires = ["linuxbrew"]
 uninstall = true
 
 [[component]]
@@ -117,7 +117,7 @@ description = "Terminal file manager"
 category = "terminal"
 module = "modules/tools/yazi.sh"
 requires = []
-install_requires = []
+install_requires = ["linuxbrew"]
 uninstall = true
 
 [[component]]
@@ -127,17 +127,7 @@ description = "Interactive resource monitor"
 category = "terminal"
 module = "modules/tools/btop.sh"
 requires = []
-install_requires = []
-uninstall = true
-
-[[component]]
-id = "witr"
-name = "witr"
-description = "Command-line utility for inspecting ports and processes"
-category = "terminal"
-module = "modules/tools/witr.sh"
-requires = []
-install_requires = []
+install_requires = ["linuxbrew"]
 uninstall = true
 
 [[component]]
@@ -147,7 +137,7 @@ description = "Modern terminal editor"
 category = "editor"
 module = "modules/tools/neovim.sh"
 requires = []
-install_requires = []
+install_requires = ["linuxbrew"]
 uninstall = true
 
 [[component]]

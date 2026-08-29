@@ -81,7 +81,7 @@ The initial catalog contains:
 
 - foundation: Linuxbrew, Zsh, uv
 - development: Git
-- terminal: ripgrep, fzf, bat, fd, jq, Atuin, Zellij, Yazi, btop, witr
+- terminal: ripgrep, fzf, bat, fd, jq, Atuin, Zellij, Yazi, btop
 - editor: Neovim, LazyVim
 - configuration: managed Zsh configuration
 
