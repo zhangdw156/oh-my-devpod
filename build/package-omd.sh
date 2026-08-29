@@ -63,6 +63,11 @@ cp -R "${repo_root}/build" "${bundle_root}/build"
 cp -R "${repo_root}/config" "${bundle_root}/config"
 cp -R "${repo_root}/vendor" "${bundle_root}/vendor"
 
+# Release bundles are target-specific. Exclude other architecture payloads so
+# the archive remains small enough for both GitHub and Gitee release hosting.
+find "${bundle_root}/vendor/releases" -type f \
+  \( -name '*aarch64*' -o -name '*arm64*' \) -delete
+
 tar -czf "${dist_dir}/${archive_name}" -C "${staging_dir}" oh-my-devpod
 (
   cd "${dist_dir}"
