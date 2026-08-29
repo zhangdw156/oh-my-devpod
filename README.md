@@ -1,98 +1,210 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/Ubuntu-24.04-E95420?style=for-the-badge&logo=ubuntu&logoColor=white" alt="Ubuntu 24.04"/>
-  <img src="https://img.shields.io/badge/Rust_TUI-Productivity_Tools-2496ED?style=for-the-badge" alt="Rust TUI"/>
-  <img src="https://img.shields.io/badge/Zsh-Neovim-4EAA25?style=for-the-badge" alt="Zsh and Neovim"/>
-  <img src="https://img.shields.io/github/v/tag/zhangdw156/oh-my-devpod?style=for-the-badge&label=version&color=blue" alt="Version"/>
-</p>
-
-<h1 align="center">oh-my-devpod</h1>
-
-<p align="center">
-  <strong>一个 curl 入口，一个依赖感知的 Linux 开发工具管理器</strong><br/>
-  在 Ubuntu 24.04 上选择、安装、更新和安全卸载常用生产力工具。
+  <img src="./docs/assets/omd-hero.svg" alt="oh-my-devpod — a dependency-aware control plane for an Ubuntu developer workstation" width="100%" />
 </p>
 
 <p align="center">
-  <a href="./README_EN.md">English</a> | 中文
+  <a href="https://github.com/zhangdw156/oh-my-devpod/releases"><img src="https://img.shields.io/github/v/release/zhangdw156/oh-my-devpod?style=flat-square&label=release&color=ea6847" alt="Latest release" /></a>
+  <img src="https://img.shields.io/badge/Ubuntu-24.04-e95420?style=flat-square&logo=ubuntu&logoColor=white" alt="Ubuntu 24.04" />
+  <img src="https://img.shields.io/badge/architecture-x86__64-172033?style=flat-square" alt="x86_64" />
+  <img src="https://img.shields.io/badge/interface-Ratatui-58d6b0?style=flat-square" alt="Ratatui TUI" />
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-f2c14e?style=flat-square" alt="MIT License" /></a>
+</p>
+
+<p align="center">
+  <strong>English</strong> · <a href="./Readme.osc.md">简体中文</a>
+</p>
+
+<p align="center">
+  <strong>Turn a fresh Ubuntu machine into a deliberate development environment.</strong><br />
+  One verified bootstrap, one dependency-aware plan, and a clean boundary between your tools and ours.
+</p>
+
+<p align="center">
+  <a href="#quick-start"><strong>Install</strong></a>
+  ·
+  <a href="#component-catalog"><strong>Explore components</strong></a>
+  ·
+  <a href="#how-the-tui-works"><strong>See the workflow</strong></a>
+  ·
+  <a href="#safety-by-construction"><strong>Review safety</strong></a>
 </p>
 
 ---
 
-## 快速开始
+## Why oh-my-devpod?
 
-可以访问 GitHub：
+| Plan before changing | Respect what already exists | Choose the closest source |
+| --- | --- | --- |
+| Select tools, inspect the resolved dependency plan, then execute it. | Existing installations remain external: `omd` does not claim or remove them. | GitHub uses upstream sources; Gitee activates USTC Homebrew and TUNA Python mirrors. |
+
+oh-my-devpod is a focused productivity-tool manager for **Ubuntu 24.04 x86_64**.
+It combines a Rust + Ratatui interface with small shell lifecycle modules, so the
+interactive experience stays fast while every install, update, and uninstall
+remains explicit and inspectable.
+
+## Quick start
+
+### GitHub · upstream sources
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/zhangdw156/oh-my-devpod/main/install/bootstrap.sh | bash
 ```
 
-无法访问 GitHub、使用国内源：
+### Gitee · China mirrors
 
 ```bash
 curl -fsSL https://gitee.com/zhangdw156/oh-my-devpod/raw/main/install/bootstrap.sh \
   | OHMYDEVPOD_SOURCE=gitee bash
 ```
 
-bootstrap 会下载完整、经过 SHA256 校验的 `omd` release bundle，安装到用户目录并进入 TUI。后续直接运行：
+The bootstrap downloads the complete release bundle, verifies its SHA256
+checksum, installs it under your user account, and opens the TUI. After the
+first run:
 
 ```bash
 omd
 ```
 
-Gitee 模式会持久化 `cn` 镜像配置。后续组件安装会自动使用 USTC Homebrew 镜像和 TUNA Python 索引；GitHub 模式保持上游源。
+> [!NOTE]
+> The default binary is `~/.local/bin/omd`. Restart your shell if that directory
+> was not already on `PATH`.
 
-Homebrew 操作以非交互模式运行，不会重复询问是否继续。安装或更新完成后，如果 Zsh 或 Zsh 配置由 oh-my-devpod 管理，会将当前用户的登录 shell 修正为 Zsh，并在下次登录时生效。
+## Component catalog
 
-TUI 启动时直接检查本地 Homebrew Cellar，不会为每个组件重复启动 `brew`。
+Every component is selectable on its own. Runtime dependencies and
+install-time providers are resolved automatically.
 
-## 可选工具
+| Category | Components | What they cover |
+| --- | --- | --- |
+| Foundation | **Linuxbrew**, **Zsh**, **uv**, **Micromamba** | User-space packages, shell, and Python/environment tooling |
+| Development | **Git** | Version control |
+| Terminal | **ripgrep**, **fzf**, **bat**, **fd**, **jq**, **Atuin**, **Zellij**, **Yazi**, **btop** | Search, navigation, history, sessions, files, and system visibility |
+| Editor | **Neovim**, **LazyVim** | Terminal editing and a managed editor configuration |
+| Configuration | **Zsh productivity configuration** | Oh My Zsh, Powerlevel10k, completions, history, and fuzzy search |
 
-所有工具均可单独选择，依赖会自动补全：
+For example, this plan adds Micromamba and LazyVim while automatically placing
+their providers first:
 
-| 分类 | 组件 |
+```bash
+omd --plan install micromamba lazyvim
+```
+
+```text
+requested tools
+      │
+      ▼
+components.toml ── resolve dependencies ── review ordered plan ── execute modules
+```
+
+If Git, Neovim, or another dependency is already installed outside
+oh-my-devpod, it satisfies the dependency without being adopted.
+
+## How the TUI works
+
+The interface keeps discovery and mutation separate:
+
+1. **Choose an action** — install, update, or uninstall.
+2. **Select components** — states are shown as missing, managed, broken, or external.
+3. **Review the plan** — dependencies are ordered before installation; dependants are ordered before removal.
+4. **Execute explicitly** — the reviewed plan is revalidated before any module runs.
+
+| Key | Action |
 | --- | --- |
-| 基础 | Linuxbrew、Zsh、uv |
-| 开发 | Git |
-| 终端 | ripgrep、fzf、bat、fd、jq、Atuin、Zellij、Yazi、btop |
-| 编辑器 | Neovim、LazyVim |
-| 配置 | Zsh productivity configuration |
+| `Tab` | Cycle install / update / uninstall |
+| `↑` / `↓` or `j` / `k` | Move through components |
+| `Space` | Toggle selection |
+| `Enter` | Review, then execute |
+| `Esc` | Go back or exit |
+| `q` | Quit |
 
-依赖示例：
+## CLI control
 
-```text
-LazyVim ──> Neovim
-        └─> Git ──(安装时需要)──> Linuxbrew
+Use the TUI for guided operation or the CLI for inspection and automation.
 
-Zsh configuration ──> Zsh
-                  ├─> fzf
-                  └─> Atuin
+```bash
+# Inventory and metadata
+omd --list-components
+omd --status
+omd --version
+
+# Plan without changing the machine
+omd --plan install micromamba lazyvim
+omd --plan-current uninstall lazyvim neovim
+omd --dry-run
+
+# Execute against the current machine state
+omd --execute install ripgrep fzf
 ```
 
-如果依赖已经由系统或用户安装，`omd` 会把它识别为外部组件，不重复安装，也不会在卸载时删除它。
+### Self-update and source switching
 
-## TUI 操作
-
-```text
-Tab                 切换 install / update / uninstall
-↑ / ↓ 或 j / k      移动
-Space               选择组件
-Enter               查看计划并执行
-Esc                 返回或退出
-q                   退出
+```bash
+omd --update           # update from the saved source
+omd --update --github  # update and switch managed sources upstream
+omd --update --gitee   # update and switch to China mirrors
 ```
 
-执行前会展示解析后的完整计划。安装按“依赖在前”执行；卸载按“依赖者在前”执行。如果仍有已安装组件依赖某个工具，卸载会被阻止。
+| Command | Persistent effect |
+| --- | --- |
+| `omd --update` | Uses `~/.config/oh-my-devpod/source`; invalid or missing configuration falls back to GitHub. |
+| `omd --update --github` | Uses GitHub releases and switches managed Homebrew/Python sources to upstream. |
+| `omd --update --gitee` | Uses Gitee releases and switches managed sources to USTC Homebrew and TUNA Python mirrors. |
 
-## 安全边界
+`--github` and `--gitee` are mutually exclusive. A source switch is applied
+even when the installed version is already current. Self-update replaces only a
+SHA256-verified release bundle—it does not open the TUI or update installed
+components. Failed downloads, validation, or activation preserve the active
+version and previous source profile.
 
-- 只卸载带有 oh-my-devpod 所有权标记的组件。
-- 不接管或删除外部安装。
-- Linuxbrew 不允许通过普通卸载流程删除。
-- 接管 Zsh 或 Neovim 配置前会保留原配置。
-- 卸载配置时保留用户数据、缓存和备份。
-- release archive 在启用前必须通过 SHA256 校验。
+## Architecture
 
-默认路径：
+```text
+GitHub / Gitee
+      │  versioned archive + SHA256
+      ▼
+install/bootstrap.sh
+      │  activates ~/.local/bin/omd
+      ▼
+┌──────────────────────── Rust ────────────────────────┐
+│  Ratatui interface → catalog → dependency planner   │
+│                              → lifecycle runner      │
+└──────────────────────────┬───────────────────────────┘
+                           │ status / managed / install
+                           │ update / uninstall
+                           ▼
+┌──────────────────────── Shell ───────────────────────┐
+│  component modules → tools, config, ownership marks │
+└──────────────────────────────────────────────────────┘
+```
+
+| Path | Responsibility |
+| --- | --- |
+| `components.toml` | Single source of truth for components and dependencies |
+| `install/bootstrap.sh` | Dual-source, checksum-verified installation |
+| `install/update.sh` | Transactional self-update and source switching |
+| `crates/omd/` | Rust TUI, catalog validation, planning, and execution |
+| `modules/core/`, `modules/tools/` | Component lifecycle implementations |
+| `modules/lib/` | Shared ownership and safety primitives |
+| `build/`, `vendor/`, `config/` | Release assembly and pinned assets |
+| `VERSION` | Release version source of truth |
+
+## Safety by construction
+
+- **Ownership-gated removal** — only artifacts carrying an oh-my-devpod marker
+  can be removed.
+- **External means external** — pre-existing tools are detected but never
+  adopted or deleted.
+- **Dependency-safe plans** — uninstall is blocked while an installed dependant
+  would be broken.
+- **Protected foundation** — Linuxbrew is excluded from the normal uninstall flow.
+- **Configuration preservation** — existing Zsh and Neovim configuration is
+  backed up before takeover; user data, caches, and backups survive removal.
+- **Verified releases** — archives must pass SHA256 and bundle validation before
+  activation.
+- **Transactional updates** — source configuration and managed Homebrew remotes
+  roll back if self-update cannot complete.
+
+Managed state lives under:
 
 ```text
 ~/.local/bin/omd
@@ -102,64 +214,32 @@ q                   退出
 ~/.config/oh-my-devpod/
 ```
 
-## 命令行接口
+## Development
 
-```bash
-omd --update
-omd --update --github
-omd --update --gitee
-omd --list-components
-omd --status
-omd --plan install lazyvim
-omd --plan uninstall lazyvim neovim
-omd --execute install ripgrep fzf
-omd --version
-```
-
-### 自更新与全局源切换
-
-- `omd --update`：使用 `~/.config/oh-my-devpod/source` 保存的来源；未配置或配置无效时使用 GitHub。
-- `omd --update --github`：从 GitHub 更新，并将后续组件操作永久切换到官方上游源。
-- `omd --update --gitee`：从 Gitee 更新，并将后续组件操作永久切换到 USTC Homebrew 与 TUNA Python 镜像。
-- `--github` 与 `--gitee` 互斥。显式切换来源即使在当前版本已经最新时也会生效。
-
-自更新只替换经过 SHA256 校验的 `omd` release bundle，不会进入 TUI，也不会更新已安装组件。下载、校验或安装失败时，当前版本和原来源配置保持不变。
-
-## 项目结构
-
-```text
-oh-my-devpod/
-├── components.toml
-├── install/{bootstrap,update}.sh
-├── crates/omd/
-├── modules/
-│   ├── core/
-│   ├── tools/
-│   └── lib/
-├── build/
-├── config/
-├── vendor/
-├── tests/
-├── VERSION
-└── versions.env
-```
-
-- `components.toml`：组件、分类、依赖和模块路径的唯一目录。
-- `crates/omd/`：Rust + Ratatui TUI、依赖计划和模块执行器。
-- `modules/`：`status` / `managed` / `install` / `update` / `uninstall` 生命周期。
-- `build/`：release bundle 和 vendored 工具安装脚本。
-- `vendor/`：可复现安装所需的固定版本资产。
-- `VERSION`：`omd` release 版本真源。
-
-## 开发验证
+The catalog is declarative; each module implements the same
+`status` / `managed` / `install` / `update` / `uninstall` contract.
 
 ```bash
 bash tests/run.sh
 cargo fmt --all -- --check
 cargo test -p omd
+cargo run -p omd -- --version
 cargo run -p omd -- --list-components
-cargo run -p omd -- --plan install lazyvim
+cargo run -p omd -- --plan install micromamba lazyvim
 git diff --check
 ```
 
-当前第一版仅支持 Ubuntu 24.04 x86_64。
+Release bundles are built with:
+
+```bash
+bash build/package-omd.sh
+```
+
+See [`DEVELOPMENT.md`](./DEVELOPMENT.md) for module boundaries, ownership rules,
+mirror behavior, and release maintenance.
+
+---
+
+<p align="center">
+  <sub>Built for deliberate terminals: fast to bootstrap, explicit to change, safe to undo.</sub>
+</p>

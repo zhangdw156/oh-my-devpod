@@ -80,6 +80,7 @@ minimum_ids = {
     "git",
     "zsh",
     "uv",
+    "micromamba",
     "fzf",
     "atuin",
     "neovim",
@@ -101,6 +102,29 @@ def require_dependencies(component_id, expected):
         raise SystemExit(
             f"FAIL: {component_id} is missing dependencies: {', '.join(missing)}"
         )
+
+def require_component_shape(component_id, expected):
+    actual = by_id[component_id]
+    mismatches = [
+        f"{field}={actual.get(field)!r}, expected {value!r}"
+        for field, value in expected.items()
+        if actual.get(field) != value
+    ]
+    if mismatches:
+        raise SystemExit(
+            f"FAIL: {component_id} has invalid manifest shape: " + "; ".join(mismatches)
+        )
+
+require_component_shape(
+    "micromamba",
+    {
+        "category": "foundation",
+        "module": "modules/core/micromamba.sh",
+        "requires": [],
+        "install_requires": ["linuxbrew"],
+        "uninstall": True,
+    },
+)
 
 require_dependencies("lazyvim", {"neovim", "git"})
 

@@ -30,6 +30,7 @@ scan_paths=(
   install
   config
   README.md
+  Readme.osc.md
   README_EN.md
   DEVELOPMENT.md
   CLAUDE.md

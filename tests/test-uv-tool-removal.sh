@@ -27,6 +27,7 @@ scan_paths=(
   install
   config
   README.md
+  Readme.osc.md
   README_EN.md
   DEVELOPMENT.md
   versions.env
@@ -49,4 +50,3 @@ matches="$(
   printf '%s\n' "${matches}" >&2
   fail "uv-tool-installed tool references remain in runtime or user-facing product surfaces"
 }
-

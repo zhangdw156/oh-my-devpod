@@ -32,7 +32,7 @@ assert_absent Dockerfile.devpod
 assert_absent docker
 assert_absent runtime
 
-for doc in README.md README_EN.md; do
+for doc in README.md Readme.osc.md README_EN.md; do
   assert_doc_absent "${doc}" 'ghcr\.io/zhangdw156'
   assert_doc_absent "${doc}" 'docker compose'
   assert_doc_absent "${doc}" 'Dockerfile\.devpod'
