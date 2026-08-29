@@ -1,76 +1,91 @@
-<p align="center">
-  <img src="https://img.shields.io/badge/Ubuntu-24.04-E95420?style=for-the-badge&logo=ubuntu&logoColor=white" alt="Ubuntu 24.04"/>
-  <img src="https://img.shields.io/badge/Rust_TUI_Host_Installer-2496ED?style=for-the-badge" alt="Rust TUI Host Installer"/>
-  <img src="https://img.shields.io/badge/Zsh-Powerlevel10k-4EAA25?style=for-the-badge&logo=gnubash&logoColor=white" alt="Zsh"/>
-  <img src="https://img.shields.io/github/v/tag/zhangdw156/oh-my-devpod?style=for-the-badge&label=version&color=blue" alt="Version"/>
-</p>
-
 <h1 align="center">oh-my-devpod</h1>
 
 <p align="center">
-  <strong>One curl entrypoint, one Rust TUI installer</strong><br/>
-  Install and manage AI development tooling directly on Ubuntu 24.04 hosts.
+  <strong>One curl entry point and one dependency-aware Linux productivity tool manager.</strong><br/>
+  Select, install, update, and safely uninstall development tools on Ubuntu 24.04.
 </p>
 
 <p align="center">
   English | <a href="./README.md">中文</a>
 </p>
 
----
+## Quick start
 
-## One-line `omd` Start
-
-First run:
+GitHub:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/zhangdw156/oh-my-devpod/main/install/bootstrap.sh | bash
 ```
 
-`install/bootstrap.sh` is a minimal bootstrapper:
-
-1. verifies Ubuntu 24.04,
-2. checks `sudo` and may prompt for the sudo password,
-3. downloads the prebuilt Rust TUI binary,
-4. installs it to `~/.local/bin/omd`,
-5. launches `omd`.
-
-Repeat runs use:
+Gitee with China mirrors:
 
 ```bash
-omd
+curl -fsSL https://gitee.com/zhangdw156/oh-my-devpod/raw/main/install/bootstrap.sh \
+  | OHMYDEVPOD_SOURCE=gitee bash
 ```
 
-## Install Model
+The bootstrap downloads a complete SHA256-verified release bundle, installs it
+under the user account, and starts the TUI. Run `omd` directly afterwards.
 
-`omd` manages two component classes:
+Gitee mode persists the `cn` mirror profile. Component installations then use
+the USTC Homebrew mirrors and the TUNA Python index. GitHub mode keeps upstream
+sources.
 
-- **Required**: Homebrew, zsh environment, and baseline development tools.
-- **Optional**: Claude Code, Codex CLI, OpenCode, GitHub Copilot CLI, and Gemini CLI.
+## Components
 
-Optional uninstall removes only the software body, wrapper, symlink, or oh-my-devpod-managed package prefix. It does not delete user config, caches, auth state, tokens, or login sessions.
+| Category | Components |
+| --- | --- |
+| Foundation | Linuxbrew, Zsh, uv |
+| Development | Git |
+| Terminal | ripgrep, fzf, bat, fd, jq, Atuin, Zellij, Yazi, btop, witr |
+| Editor | Neovim, LazyVim |
+| Configuration | Zsh productivity configuration |
 
-Default user-level paths:
+Dependencies are resolved automatically. An external installation can satisfy a
+dependency, but oh-my-devpod will neither adopt nor remove it.
+
+## TUI
 
 ```text
-~/.local/bin/omd
-~/.local/share/oh-my-devpod/
-~/.local/state/oh-my-devpod/logs/
-~/.cache/oh-my-devpod/
+Tab                 switch install / update / uninstall
+Up / Down or j / k  move
+Space               select
+Enter               review and execute
+Esc                 go back or exit
+q                   exit
 ```
 
-## Repository Layout
+Install plans run dependencies first. Uninstall plans run dependants first and
+refuse to break installed components.
+
+## Safety
+
+- Only components carrying an oh-my-devpod ownership marker are removed.
+- External installations are never adopted or deleted.
+- Linuxbrew is protected from the normal uninstall flow.
+- Existing shell and editor configuration is preserved before takeover.
+- User data, caches, and backups are preserved during configuration removal.
+- Release archives must pass SHA256 verification before activation.
+
+## CLI
+
+```bash
+omd --list-components
+omd --status
+omd --plan install lazyvim
+omd --plan uninstall lazyvim neovim
+omd --execute install ripgrep fzf
+omd --version
+```
+
+## Repository layout
 
 ```text
 oh-my-devpod/
-├── install/
-│   ├── bootstrap.sh
-│   └── setup.sh
-├── crates/
-│   └── omd/
-├── modules/
-│   ├── core/
-│   ├── optional/
-│   └── lib/
+├── components.toml
+├── install/bootstrap.sh
+├── crates/omd/
+├── modules/{core,tools,lib}/
 ├── build/
 ├── config/
 ├── vendor/
@@ -79,26 +94,17 @@ oh-my-devpod/
 └── versions.env
 ```
 
-- `install/bootstrap.sh`: public one-line installer entrypoint.
-- `crates/omd/`: Rust + Ratatui + Crossterm TUI.
-- `modules/`: component lifecycle interface with `status` / `install` / `update` / `uninstall`.
-- `build/`: reusable installer scripts and vendored asset refresh scripts.
-- `vendor/`: zsh, Neovim, and release asset snapshots.
-- `VERSION`: repository-level source of truth for `omd` releases.
+`VERSION` is the release-version source of truth.
 
-## Development Verification
+## Development
 
 ```bash
 bash tests/run.sh
+cargo fmt --all -- --check
 cargo test -p omd
-cargo run -p omd -- --version
-cargo run -p omd -- --dry-run
 cargo run -p omd -- --list-components
+cargo run -p omd -- --plan install lazyvim
+git diff --check
 ```
 
-## Notes
-
-- `omd` is the long-lived command; `curl | bash` only installs and starts it.
-- The first version supports Ubuntu 24.04 only.
-- Normal uninstall does not delete user config, caches, auth state, or tokens.
-- The first `nvim` launch still needs network access because `lazy.nvim` downloads plugins on demand.
+The first release supports Ubuntu 24.04 x86_64.

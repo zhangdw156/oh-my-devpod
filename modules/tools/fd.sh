@@ -3,9 +3,9 @@ set -euo pipefail
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/common.sh"
 
-component="zsh"
-formula="zsh"
-command_name="zsh"
+component="fd"
+formula="fd"
+command_name="fd"
 
 status() { omd_module_formula_status "${formula}" "${command_name}"; }
 managed() { omd_module_formula_managed "${component}" "${formula}"; }

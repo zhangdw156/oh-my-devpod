@@ -1,189 +1,455 @@
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Component {
-    pub id: &'static str,
-    pub name: &'static str,
-    pub required: bool,
-    pub module: &'static str,
+use std::{
+    collections::{HashMap, HashSet},
+    error::Error,
+    fmt::{self, Display, Formatter},
+    fs,
+    path::Path,
+};
+
+use serde::Deserialize;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum Category {
+    Foundation,
+    Development,
+    Terminal,
+    Editor,
+    Configuration,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ToggleResult {
-    ToggledOn,
-    ToggledOff,
-    RequiredUnchanged,
-    UnknownComponent,
+impl Display for Category {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+        formatter.write_str(match self {
+            Self::Foundation => "foundation",
+            Self::Development => "development",
+            Self::Terminal => "terminal",
+            Self::Editor => "editor",
+            Self::Configuration => "configuration",
+        })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Component {
+    pub id: String,
+    pub name: String,
+    pub description: String,
+    pub category: Category,
+    pub module: String,
+    pub requires: Vec<String>,
+    pub install_requires: Vec<String>,
+    pub uninstall: bool,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ComponentManifest {
+    schema_version: u32,
+    #[serde(rename = "component")]
+    components: Vec<Component>,
 }
 
 #[derive(Debug, Clone)]
-pub struct SelectionState {
+pub struct Catalog {
     components: Vec<Component>,
-    selected: Vec<bool>,
-    cursor: usize,
+    indexes: HashMap<String, usize>,
 }
 
-pub fn catalog() -> Vec<Component> {
-    vec![
-        Component {
-            id: "brew",
-            name: "Homebrew on Linux",
-            required: true,
-            module: "modules/core/brew.sh",
-        },
-        Component {
-            id: "zsh",
-            name: "zsh environment",
-            required: true,
-            module: "modules/core/zsh.sh",
-        },
-        Component {
-            id: "base-tools",
-            name: "Baseline development tools",
-            required: true,
-            module: "modules/core/base-tools.sh",
-        },
-        Component {
-            id: "claude-code",
-            name: "Claude Code",
-            required: false,
-            module: "modules/optional/claude-code.sh",
-        },
-        Component {
-            id: "codex",
-            name: "Codex CLI",
-            required: false,
-            module: "modules/optional/codex.sh",
-        },
-        Component {
-            id: "opencode",
-            name: "OpenCode",
-            required: false,
-            module: "modules/optional/opencode.sh",
-        },
-        Component {
-            id: "copilot",
-            name: "GitHub Copilot CLI",
-            required: false,
-            module: "modules/optional/copilot.sh",
-        },
-        Component {
-            id: "gemini",
-            name: "Gemini CLI",
-            required: false,
-            module: "modules/optional/gemini.sh",
-        },
-    ]
+#[derive(Debug)]
+pub struct CatalogError(String);
+
+impl CatalogError {
+    fn new(message: impl Into<String>) -> Self {
+        Self(message.into())
+    }
 }
 
-impl SelectionState {
-    pub fn new(components: Vec<Component>) -> Self {
-        let selected = components
-            .iter()
-            .map(|component| component.required)
-            .collect();
-        Self {
-            components,
-            selected,
-            cursor: 0,
+impl Display for CatalogError {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+        formatter.write_str(&self.0)
+    }
+}
+
+impl Error for CatalogError {}
+
+impl Catalog {
+    pub fn load(path: &Path) -> Result<Self, Box<dyn Error>> {
+        let source = fs::read_to_string(path)?;
+        let catalog = Self::parse(&source)?;
+        catalog.validate_modules(path)?;
+        Ok(catalog)
+    }
+
+    pub fn parse(source: &str) -> Result<Self, CatalogError> {
+        let manifest: ComponentManifest =
+            toml::from_str(source).map_err(|error| CatalogError::new(error.to_string()))?;
+
+        if manifest.schema_version != 1 {
+            return Err(CatalogError::new(format!(
+                "unsupported component manifest schema version: {}",
+                manifest.schema_version
+            )));
         }
+
+        if manifest.components.is_empty() {
+            return Err(CatalogError::new("component manifest is empty"));
+        }
+
+        let mut indexes = HashMap::new();
+        for (index, component) in manifest.components.iter().enumerate() {
+            validate_component(component)?;
+            if indexes.insert(component.id.clone(), index).is_some() {
+                return Err(CatalogError::new(format!(
+                    "duplicate component id: {}",
+                    component.id
+                )));
+            }
+        }
+
+        for component in &manifest.components {
+            for dependency in component
+                .requires
+                .iter()
+                .chain(component.install_requires.iter())
+            {
+                if !indexes.contains_key(dependency) {
+                    return Err(CatalogError::new(format!(
+                        "component {} has unknown dependency {}",
+                        component.id, dependency
+                    )));
+                }
+            }
+        }
+
+        let catalog = Self {
+            components: manifest.components,
+            indexes,
+        };
+        catalog.validate_acyclic()?;
+        Ok(catalog)
     }
 
     pub fn components(&self) -> &[Component] {
         &self.components
     }
 
-    pub fn cursor(&self) -> usize {
-        self.cursor
+    pub fn get(&self, id: &str) -> Option<&Component> {
+        self.indexes
+            .get(id)
+            .and_then(|index| self.components.get(*index))
     }
 
-    pub fn is_selected(&self, id: &str) -> bool {
-        self.components
+    pub fn require(&self, id: &str) -> Result<&Component, CatalogError> {
+        self.get(id)
+            .ok_or_else(|| CatalogError::new(format!("unknown component: {id}")))
+    }
+
+    fn validate_modules(&self, manifest_path: &Path) -> Result<(), CatalogError> {
+        let root = manifest_path
+            .parent()
+            .ok_or_else(|| CatalogError::new("component manifest has no parent directory"))?;
+        let modules_root = root.join("modules").canonicalize().map_err(|error| {
+            CatalogError::new(format!("cannot resolve modules directory: {error}"))
+        })?;
+
+        for component in &self.components {
+            let module = root
+                .join(&component.module)
+                .canonicalize()
+                .map_err(|error| {
+                    CatalogError::new(format!(
+                        "cannot resolve module for {}: {} ({error})",
+                        component.id, component.module
+                    ))
+                })?;
+            if !module.starts_with(&modules_root) || !module.is_file() {
+                return Err(CatalogError::new(format!(
+                    "component {} module is outside the bundle modules directory: {}",
+                    component.id,
+                    module.display()
+                )));
+            }
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                if module
+                    .metadata()
+                    .map_err(|error| {
+                        CatalogError::new(format!(
+                            "cannot inspect module for {}: {error}",
+                            component.id
+                        ))
+                    })?
+                    .permissions()
+                    .mode()
+                    & 0o111
+                    == 0
+                {
+                    return Err(CatalogError::new(format!(
+                        "component {} module is not executable: {}",
+                        component.id,
+                        module.display()
+                    )));
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn validate_acyclic(&self) -> Result<(), CatalogError> {
+        let mut visiting = HashSet::new();
+        let mut visited = HashSet::new();
+        for component in &self.components {
+            self.visit_for_cycle(&component.id, &mut visiting, &mut visited)?;
+        }
+        Ok(())
+    }
+
+    fn visit_for_cycle(
+        &self,
+        id: &str,
+        visiting: &mut HashSet<String>,
+        visited: &mut HashSet<String>,
+    ) -> Result<(), CatalogError> {
+        if visited.contains(id) {
+            return Ok(());
+        }
+        if !visiting.insert(id.to_string()) {
+            return Err(CatalogError::new(format!(
+                "dependency cycle detected at component {id}"
+            )));
+        }
+
+        let component = self.require(id)?;
+        for dependency in component
+            .requires
             .iter()
-            .position(|component| component.id == id)
-            .map(|index| self.selected[index])
-            .unwrap_or(false)
-    }
-
-    pub fn selected_component(&self) -> Option<&Component> {
-        self.components.get(self.cursor)
-    }
-
-    pub fn move_next(&mut self) {
-        if self.components.is_empty() {
-            return;
-        }
-        self.cursor = (self.cursor + 1) % self.components.len();
-    }
-
-    pub fn move_previous(&mut self) {
-        if self.components.is_empty() {
-            return;
-        }
-        if self.cursor == 0 {
-            self.cursor = self.components.len() - 1;
-        } else {
-            self.cursor -= 1;
-        }
-    }
-
-    pub fn toggle_current(&mut self) -> ToggleResult {
-        match self.selected_component() {
-            Some(component) => self.toggle(component.id),
-            None => ToggleResult::UnknownComponent,
-        }
-    }
-
-    pub fn toggle(&mut self, id: &str) -> ToggleResult {
-        let Some(index) = self
-            .components
-            .iter()
-            .position(|component| component.id == id)
-        else {
-            return ToggleResult::UnknownComponent;
-        };
-
-        if self.components[index].required {
-            return ToggleResult::RequiredUnchanged;
+            .chain(component.install_requires.iter())
+        {
+            self.visit_for_cycle(dependency, visiting, visited)?;
         }
 
-        self.selected[index] = !self.selected[index];
-        if self.selected[index] {
-            ToggleResult::ToggledOn
-        } else {
-            ToggleResult::ToggledOff
+        visiting.remove(id);
+        visited.insert(id.to_string());
+        Ok(())
+    }
+}
+
+fn validate_component(component: &Component) -> Result<(), CatalogError> {
+    if component.id.is_empty()
+        || !component.id.chars().all(|character| {
+            character.is_ascii_lowercase()
+                || character.is_ascii_digit()
+                || character == '-'
+                || character == '_'
+        })
+    {
+        return Err(CatalogError::new(format!(
+            "invalid component id: {}",
+            component.id
+        )));
+    }
+
+    if component.name.trim().is_empty() {
+        return Err(CatalogError::new(format!(
+            "component {} has an empty name",
+            component.id
+        )));
+    }
+
+    if component.module.starts_with('/')
+        || component
+            .module
+            .split('/')
+            .any(|segment| segment == ".." || segment.is_empty())
+    {
+        return Err(CatalogError::new(format!(
+            "component {} has an unsafe module path: {}",
+            component.id, component.module
+        )));
+    }
+
+    let mut dependencies = HashSet::new();
+    for dependency in component
+        .requires
+        .iter()
+        .chain(component.install_requires.iter())
+    {
+        if dependency == &component.id {
+            return Err(CatalogError::new(format!(
+                "component {} depends on itself",
+                component.id
+            )));
+        }
+        if !dependencies.insert(dependency) {
+            return Err(CatalogError::new(format!(
+                "component {} declares duplicate dependency {}",
+                component.id, dependency
+            )));
         }
     }
+
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
-    fn catalog_has_required_core_components() {
-        let catalog = catalog();
-        let required: Vec<_> = catalog
-            .iter()
-            .filter(|c| c.required)
-            .map(|c| c.id)
-            .collect();
-        assert_eq!(required, vec!["brew", "zsh", "base-tools"]);
+    fn manifest(components: &str) -> String {
+        format!("schema_version = 1\n{components}")
     }
 
     #[test]
-    fn optional_components_start_unselected() {
-        let state = SelectionState::new(catalog());
-        assert!(!state.is_selected("claude-code"));
-        assert!(!state.is_selected("codex"));
-        assert!(!state.is_selected("opencode"));
-        assert!(!state.is_selected("copilot"));
-        assert!(!state.is_selected("gemini"));
+    fn parses_dependencies() {
+        let source = manifest(
+            r#"
+[[component]]
+id = "base"
+name = "Base"
+description = "base"
+category = "foundation"
+module = "modules/base.sh"
+requires = []
+install_requires = []
+uninstall = true
+
+[[component]]
+id = "tool"
+name = "Tool"
+description = "tool"
+category = "terminal"
+module = "modules/tool.sh"
+requires = ["base"]
+install_requires = []
+uninstall = true
+"#,
+        );
+
+        let catalog = Catalog::parse(&source).unwrap();
+        assert_eq!(catalog.require("tool").unwrap().requires, vec!["base"]);
     }
 
     #[test]
-    fn required_components_cannot_be_toggled_off() {
-        let mut state = SelectionState::new(catalog());
-        assert!(state.is_selected("brew"));
-        assert_eq!(state.toggle("brew"), ToggleResult::RequiredUnchanged);
-        assert!(state.is_selected("brew"));
+    fn rejects_unknown_dependencies() {
+        let source = manifest(
+            r#"
+[[component]]
+id = "tool"
+name = "Tool"
+description = "tool"
+category = "terminal"
+module = "modules/tool.sh"
+requires = ["missing"]
+install_requires = []
+uninstall = true
+"#,
+        );
+
+        let error = Catalog::parse(&source).unwrap_err();
+        assert!(error.to_string().contains("unknown dependency missing"));
+    }
+
+    #[test]
+    fn rejects_dependency_cycles() {
+        let source = manifest(
+            r#"
+[[component]]
+id = "one"
+name = "One"
+description = "one"
+category = "terminal"
+module = "modules/one.sh"
+requires = ["two"]
+install_requires = []
+uninstall = true
+
+[[component]]
+id = "two"
+name = "Two"
+description = "two"
+category = "terminal"
+module = "modules/two.sh"
+requires = ["one"]
+install_requires = []
+uninstall = true
+"#,
+        );
+
+        let error = Catalog::parse(&source).unwrap_err();
+        assert!(error.to_string().contains("dependency cycle"));
+    }
+
+    #[test]
+    fn rejects_unsafe_module_paths() {
+        let source = manifest(
+            r#"
+[[component]]
+id = "tool"
+name = "Tool"
+description = "tool"
+category = "terminal"
+module = "../tool.sh"
+requires = []
+install_requires = []
+uninstall = true
+"#,
+        );
+
+        let error = Catalog::parse(&source).unwrap_err();
+        assert!(error.to_string().contains("unsafe module path"));
+    }
+
+    #[test]
+    fn rejects_unknown_manifest_fields() {
+        let source = manifest(
+            r#"
+[[component]]
+id = "tool"
+name = "Tool"
+description = "tool"
+category = "terminal"
+module = "modules/tool.sh"
+requires = []
+install_requires = []
+uninstall = true
+dependecies = ["typo"]
+"#,
+        );
+
+        let error = Catalog::parse(&source).unwrap_err();
+        assert!(error.to_string().contains("unknown field"));
+    }
+
+    #[test]
+    fn rejects_duplicate_dependencies_across_dependency_types() {
+        let source = manifest(
+            r#"
+[[component]]
+id = "base"
+name = "Base"
+description = "base"
+category = "foundation"
+module = "modules/base.sh"
+requires = []
+install_requires = []
+uninstall = false
+
+[[component]]
+id = "tool"
+name = "Tool"
+description = "tool"
+category = "terminal"
+module = "modules/tool.sh"
+requires = ["base"]
+install_requires = ["base"]
+uninstall = true
+"#,
+        );
+
+        let error = Catalog::parse(&source).unwrap_err();
+        assert!(error.to_string().contains("duplicate dependency base"));
     }
 }
