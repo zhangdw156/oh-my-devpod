@@ -37,7 +37,7 @@ sources.
 | --- | --- |
 | Foundation | Linuxbrew, Zsh, uv |
 | Development | Git |
-| Terminal | ripgrep, fzf, bat, fd, jq, Atuin, Zellij, Yazi, btop, witr |
+| Terminal | ripgrep, fzf, bat, fd, jq, Atuin, Zellij, Yazi, btop |
 | Editor | Neovim, LazyVim |
 | Configuration | Zsh productivity configuration |
 

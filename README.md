@@ -49,7 +49,7 @@ Gitee 模式会持久化 `cn` 镜像配置。后续组件安装会自动使用 U
 | --- | --- |
 | 基础 | Linuxbrew、Zsh、uv |
 | 开发 | Git |
-| 终端 | ripgrep、fzf、bat、fd、jq、Atuin、Zellij、Yazi、btop、witr |
+| 终端 | ripgrep、fzf、bat、fd、jq、Atuin、Zellij、Yazi、btop |
 | 编辑器 | Neovim、LazyVim |
 | 配置 | Zsh productivity configuration |
 

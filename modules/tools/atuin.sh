@@ -4,49 +4,17 @@ set -euo pipefail
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/common.sh"
 
 component="atuin"
-bin_path="$(omd_module_bin_dir)/atuin"
+formula="atuin"
+command_name="atuin"
 
-status() {
-  if managed; then
-    [[ -x "${bin_path}" ]]
-  else
-    command -v atuin >/dev/null 2>&1 || [[ -x "${bin_path}" ]]
-  fi
-}
-managed() { omd_module_marker_matches "${component}" "${bin_path}"; }
-
+status() { omd_module_formula_status "${formula}" "${command_name}"; }
+managed() { omd_module_formula_managed "${component}" "${formula}"; }
 install_or_update() {
-  local action="$1" repo_root
+  local action="$1"
   shift
-  omd_module_reject_unknown_flags "$@" || return
-  if status && ! managed; then
-    omd_module_external_installation "${component}"
-    return 0
-  fi
-  if omd_module_path_exists "${bin_path}" && ! managed; then
-    omd_module_info error "refusing to overwrite unmanaged path: ${bin_path}"
-    return 1
-  fi
-  if omd_module_dry_run "$@"; then
-    omd_module_info plan "${action} vendored Atuin binary at ${bin_path}"
-    return 0
-  fi
-  repo_root="$(omd_module_repo_root)"
-  OHMYDEVPOD_ASSET_ROOT="${OHMYDEVPOD_ASSET_ROOT:-${repo_root}/vendor/releases}" \
-    OHMYDEVPOD_BIN_DIR="$(omd_module_bin_dir)" \
-    bash "${repo_root}/build/install-atuin.sh"
-  omd_module_mark_managed "${component}" binary "${bin_path}"
+  omd_module_formula_install_or_update "${component}" "${formula}" "${command_name}" "${action}" "$@"
 }
-
-uninstall() {
-  omd_module_require_managed_uninstall "${component}" managed "$@" || return
-  if omd_module_dry_run "$@"; then
-    omd_module_info plan "remove managed Atuin binary ${bin_path}"
-    return 0
-  fi
-  rm -f "${bin_path}"
-  omd_module_unmark_managed "${component}"
-}
+uninstall() { omd_module_formula_uninstall "${component}" "${formula}" "$@"; }
 
 case "${1:-}" in
   status) status ;;

@@ -59,14 +59,14 @@ cp "${repo_root}/components.toml" "${bundle_root}/components.toml"
 cp "${repo_root}/VERSION" "${bundle_root}/VERSION"
 cp "${repo_root}/versions.env" "${bundle_root}/versions.env"
 cp -R "${repo_root}/modules" "${bundle_root}/modules"
-cp -R "${repo_root}/build" "${bundle_root}/build"
+mkdir -p "${bundle_root}/build"
+cp "${repo_root}/build/install-antidote.sh" "${bundle_root}/build/install-antidote.sh"
+cp "${repo_root}/build/install-lazyvim.sh" "${bundle_root}/build/install-lazyvim.sh"
 cp -R "${repo_root}/config" "${bundle_root}/config"
-cp -R "${repo_root}/vendor" "${bundle_root}/vendor"
-
-# Release bundles are target-specific. Exclude other architecture payloads so
-# the archive remains small enough for both GitHub and Gitee release hosting.
-find "${bundle_root}/vendor/releases" -type f \
-  \( -name '*aarch64*' -o -name '*arm64*' \) -delete
+mkdir -p "${bundle_root}/vendor/releases"
+cp -R "${repo_root}/vendor/releases/antidote" "${bundle_root}/vendor/releases/antidote"
+cp -R "${repo_root}/vendor/nvim" "${bundle_root}/vendor/nvim"
+cp -R "${repo_root}/vendor/zsh" "${bundle_root}/vendor/zsh"
 
 tar -czf "${dist_dir}/${archive_name}" -C "${staging_dir}" oh-my-devpod
 (
