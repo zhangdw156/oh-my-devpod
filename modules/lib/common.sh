@@ -221,8 +221,9 @@ omd_module_brew_prefix() {
 omd_module_brew_exec() {
   local brew="$1"
   shift
-  env \
+  env -u HOMEBREW_ASK \
     NONINTERACTIVE=1 \
+    HOMEBREW_NO_ASK=1 \
     HOMEBREW_NO_AUTO_UPDATE=1 \
     HOMEBREW_NO_ENV_HINTS=1 \
     HOMEBREW_NO_INSTALL_CLEANUP=1 \

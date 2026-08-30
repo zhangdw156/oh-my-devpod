@@ -25,8 +25,10 @@ mkdir -p "${fake_bin}" "${state_dir}/managed" "$(dirname "${zsh_path}")"
 cat > "${fake_bin}/brew" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
-printf '%s|%s|%s|%s|%s\n' \
+printf '%s|%s|%s|%s|%s|%s|%s\n' \
   "${NONINTERACTIVE:-}" \
+  "${HOMEBREW_NO_ASK:-}" \
+  "${HOMEBREW_ASK:-unset}" \
   "${HOMEBREW_NO_AUTO_UPDATE:-}" \
   "${HOMEBREW_NO_ENV_HINTS:-}" \
   "${HOMEBREW_NO_INSTALL_CLEANUP:-}" \
@@ -70,9 +72,10 @@ EOF
 chmod +x "${fake_bin}/brew" "${fake_bin}/id" "${fake_bin}/sudo" "${zsh_path}"
 
 OMD_TEST_BREW_LOG="${brew_log}" \
-  omd_module_brew_exec "${fake_bin}/brew" install jq
-grep -Fqx '1|1|1|1|install jq' "${brew_log}" ||
-  fail "Homebrew commands must run non-interactively without auto-update prompts"
+  HOMEBREW_ASK=1 \
+  omd_module_brew_exec "${fake_bin}/brew" install micromamba
+grep -Fqx '1|1|unset|1|1|1|install micromamba' "${brew_log}" ||
+  fail "Homebrew commands must disable ask mode and auto-update prompts"
 
 mkdir -p "${tmp_dir}/Cellar/yazi/26.8.15"
 brew_log_lines="$(wc -l < "${brew_log}")"
