@@ -42,7 +42,7 @@ jobs:
           init-shell: none
           micromamba-root-path: ${{ runner.temp }}/setup-mamba-root
           micromamba-binary-path: ${{ runner.temp }}/micromamba-bin/micromamba
-          post-cleanup: all
+          post-cleanup: none
       - name: Verify managed Mamba activation
         env:
           OMD_TEST_REAL_MAMBA_BIN: ${{ runner.temp }}/micromamba-bin/micromamba
