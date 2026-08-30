@@ -144,12 +144,22 @@ omd --update --gitee   # 更新，并切换到国内镜像
 | 命令 | 持久化效果 |
 | --- | --- |
 | `omd --update` | 使用 `~/.config/oh-my-devpod/source`；配置缺失或无效时回退到 GitHub。 |
-| `omd --update --github` | 使用 GitHub release，并将受管 Homebrew/Python 源切换到上游。 |
-| `omd --update --gitee` | 使用 Gitee release，并切换到中科大 Homebrew 与清华 TUNA Python 镜像。 |
+| `omd --update --github` | 使用 GitHub release，并将受管 Homebrew、Micromamba、uv、pip 源切换到上游。 |
+| `omd --update --gitee` | 使用 Gitee release，并切换到中科大 Homebrew 与清华 TUNA Micromamba、uv、pip 镜像。 |
 
 `--github` 与 `--gitee` 互斥。即使当前版本已经是最新，显式源切换仍会生效。
 自更新只替换通过 SHA256 校验的 release bundle，不会打开 TUI，也不会更新
 已安装组件。下载、校验或激活失败时，当前版本与原来源配置保持不变。
+
+来源切换会立即作用于 OMD 启动的组件操作。已经运行的交互式 shell 需要重新
+启动，或重新
+`source ${OHMYDEVPOD_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/oh-my-devpod}/env`，
+才能刷新镜像环境变量。
+
+受管 Zsh 会初始化 Mamba shell hook，但不会覆盖 `MAMBA_ROOT_PREFIX`；
+通过 Homebrew 安装的 Mamba 会继续使用其实际版本对应的 Cellar root。
+从 0.14.1 或更早版本升级后，需要执行一次 `omd --execute update zsh-config`
+并重新启动 shell。
 
 ## 架构
 

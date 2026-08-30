@@ -29,6 +29,14 @@
 Bootstrap also records the managed install prefix, binary directory, and cache
 directory so later `omd --update` runs reuse the existing installation paths.
 
+Managed Zsh evaluates the Mamba shell hook so `mamba activate` and
+`micromamba activate` can modify the current shell. OMD does not set
+`MAMBA_ROOT_PREFIX`; the installed Mamba/Micromamba binary selects its root
+prefix, including the versioned Homebrew Cellar prefix used by the Homebrew
+formula.
+Managed Zsh configurations created before version 0.14.2 must be refreshed with
+`omd --execute update zsh-config`, followed by a new shell.
+
 The `cn` profile exports:
 
 ```text
@@ -36,9 +44,26 @@ HOMEBREW_BREW_GIT_REMOTE=https://mirrors.ustc.edu.cn/brew.git
 HOMEBREW_BOTTLE_DOMAIN=https://mirrors.ustc.edu.cn/homebrew-bottles
 HOMEBREW_API_DOMAIN=https://mirrors.ustc.edu.cn/homebrew-bottles/api
 UV_CONFIG_FILE=~/.config/oh-my-devpod/uv.toml
+PIP_INDEX_URL=https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
+CONDA_CHANNELS=conda-forge
+MAMBA_CHANNEL_ALIAS=https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+MAMBA_DEFAULT_CHANNELS=https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main,...
 ```
 
-The managed uv configuration points its default index at the TUNA PyPI mirror.
+The managed uv configuration and `PIP_INDEX_URL` point Python package downloads
+at the TUNA PyPI mirror. `CONDA_CHANNELS` makes `conda-forge` the default
+Micromamba channel, while the Mamba channel settings route named and `defaults`
+channels through TUNA. These variables are inherited by pip and Micromamba
+commands launched from the managed shell, including pip inside Micromamba
+environments. OMD does not write or replace user-owned Conda, Mamba, or pip
+configuration files.
+
+The managed source variables intentionally take precedence over user package
+source settings while the `cn` profile is active. An explicit source switch
+updates OMD subprocesses immediately; an already-running interactive shell must
+start a new shell or re-source
+`${OHMYDEVPOD_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/oh-my-devpod}/env`
+to receive the new values.
 
 ## Module/test overrides
 

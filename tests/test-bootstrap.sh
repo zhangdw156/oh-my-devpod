@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+unset XDG_CACHE_HOME XDG_CONFIG_HOME XDG_DATA_HOME XDG_STATE_HOME
+
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 bootstrap="${repo_root}/install/bootstrap.sh"
 tmp_dir="$(mktemp -d)"
@@ -28,6 +30,7 @@ assert_contains 'gitee' "${bootstrap}"
 assert_contains 'sha256' "${bootstrap}"
 assert_contains '/dev/tty' "${bootstrap}"
 assert_contains '/releases/' "${bootstrap}"
+assert_contains 'previous_dir=""' "${bootstrap}"
 
 payload_root="${tmp_dir}/payload/oh-my-devpod"
 mkdir -p \
@@ -127,11 +130,12 @@ chmod +x "${fake_bin}/curl"
 
 run_bootstrap() {
   local source="$1" home="$2" log="$3" checksum_file="${4:-${checksum}}"
-  local fail_github="${5:-0}"
+  local fail_github="${5:-0}" config_dir="${6:-}"
   mkdir -p "${home}"
   PATH="${fake_bin}:/usr/bin:/bin:/usr/sbin:/sbin" \
-  HOME="${home}" \
-  OHMYDEVPOD_OS_RELEASE="${ubuntu_release}" \
+    HOME="${home}" \
+    OHMYDEVPOD_CONFIG_DIR="${config_dir}" \
+    OHMYDEVPOD_OS_RELEASE="${ubuntu_release}" \
   OHMYDEVPOD_SOURCE="${source}" \
   OHMYDEVPOD_VERSION="1.2.3" \
   OHMYDEVPOD_SKIP_SUDO_CHECK=1 \
@@ -149,9 +153,36 @@ run_bootstrap github "${github_home}" "${github_log}"
 assert_contains 'github.com' "${github_log}"
 assert_contains 'github' "${github_home}/.config/oh-my-devpod/source"
 assert_contains 'upstream' "${github_home}/.config/oh-my-devpod/mirror-profile"
-if grep -Eq 'HOMEBREW_(BREW_GIT_REMOTE|BOTTLE_DOMAIN|API_DOMAIN)|UV_CONFIG_FILE' \
+if grep -Fq 'MAMBA_ROOT_PREFIX' "${github_home}/.config/oh-my-devpod/env"; then
+  fail "OMD must not override the Mamba root prefix"
+fi
+if grep -Eq \
+  '^export (HOMEBREW_(BREW_GIT_REMOTE|BOTTLE_DOMAIN|API_DOMAIN)|UV_CONFIG_FILE|PIP_INDEX_URL|CONDA_CHANNELS|MAMBA_(CHANNEL_ALIAS|DEFAULT_CHANNELS))=' \
   "${github_home}/.config/oh-my-devpod/env"; then
   fail "GitHub source should not retain managed mirror variables"
+fi
+assert_contains 'unset HOMEBREW_BREW_GIT_REMOTE' \
+  "${github_home}/.config/oh-my-devpod/env"
+if ! HOMEBREW_BREW_GIT_REMOTE=stale \
+  HOMEBREW_BOTTLE_DOMAIN=stale \
+  HOMEBREW_API_DOMAIN=stale \
+  UV_CONFIG_FILE=stale \
+  PIP_INDEX_URL=stale \
+  CONDA_CHANNELS=stale \
+  MAMBA_CHANNEL_ALIAS=stale \
+  MAMBA_DEFAULT_CHANNELS=stale \
+  bash -c '
+    source "$1"
+    [[ -z "${HOMEBREW_BREW_GIT_REMOTE:-}" ]]
+    [[ -z "${HOMEBREW_BOTTLE_DOMAIN:-}" ]]
+    [[ -z "${HOMEBREW_API_DOMAIN:-}" ]]
+    [[ -z "${UV_CONFIG_FILE:-}" ]]
+    [[ -z "${PIP_INDEX_URL:-}" ]]
+    [[ -z "${CONDA_CHANNELS:-}" ]]
+    [[ -z "${MAMBA_CHANNEL_ALIAS:-}" ]]
+    [[ -z "${MAMBA_DEFAULT_CHANNELS:-}" ]]
+  ' _ "${github_home}/.config/oh-my-devpod/env"; then
+  fail "sourcing the GitHub profile should clear inherited managed mirrors"
 fi
 assert_contains "${github_home}/.local/share/oh-my-devpod" \
   "${github_home}/.config/oh-my-devpod/install-prefix"
@@ -188,7 +219,33 @@ assert_contains 'gitee' "${gitee_home}/.config/oh-my-devpod/source"
 assert_contains 'cn' "${gitee_home}/.config/oh-my-devpod/mirror-profile"
 assert_contains 'mirrors.ustc.edu.cn' "${gitee_home}/.config/oh-my-devpod/env"
 assert_contains 'UV_CONFIG_FILE' "${gitee_home}/.config/oh-my-devpod/env"
+assert_contains 'PIP_INDEX_URL' "${gitee_home}/.config/oh-my-devpod/env"
+assert_contains 'CONDA_CHANNELS="conda-forge"' "${gitee_home}/.config/oh-my-devpod/env"
+assert_contains 'MAMBA_CHANNEL_ALIAS' "${gitee_home}/.config/oh-my-devpod/env"
+assert_contains 'MAMBA_DEFAULT_CHANNELS' "${gitee_home}/.config/oh-my-devpod/env"
+if grep -Fq 'MAMBA_ROOT_PREFIX' "${gitee_home}/.config/oh-my-devpod/env"; then
+  fail "Gitee profile must not override the Mamba root prefix"
+fi
 assert_contains 'mirrors.tuna.tsinghua.edu.cn' "${gitee_home}/.config/oh-my-devpod/uv.toml"
+
+custom_config_home="${tmp_dir}/custom-config-home"
+custom_config_dir="${tmp_dir}/custom-config-root"
+custom_config_log="${tmp_dir}/custom-config-curl.log"
+run_bootstrap gitee "${custom_config_home}" "${custom_config_log}" "${checksum}" 0 "${custom_config_dir}"
+assert_contains \
+  "export OHMYDEVPOD_CONFIG_DIR=${custom_config_dir}" \
+  "${custom_config_dir}/env"
+assert_contains \
+  'export UV_CONFIG_FILE="${OHMYDEVPOD_CONFIG_DIR}/uv.toml"' \
+  "${custom_config_dir}/env"
+[[ -f "${custom_config_dir}/uv.toml" ]] ||
+  fail "custom OMD config directory should contain the managed uv configuration"
+custom_uv_config="$(
+  env -u OHMYDEVPOD_CONFIG_DIR \
+    bash -c 'source "$1"; printf "%s\\n" "${UV_CONFIG_FILE}"' _ "${custom_config_dir}/env"
+)"
+[[ "${custom_uv_config}" == "${custom_config_dir}/uv.toml" ]] ||
+  fail "managed env should resolve uv config from the custom OMD directory"
 
 auto_home="${tmp_dir}/auto-home"
 auto_log="${tmp_dir}/auto-curl.log"

@@ -389,6 +389,10 @@ impl Runner {
             .env_remove("HOMEBREW_BOTTLE_DOMAIN")
             .env_remove("HOMEBREW_API_DOMAIN")
             .env_remove("UV_CONFIG_FILE")
+            .env_remove("PIP_INDEX_URL")
+            .env_remove("CONDA_CHANNELS")
+            .env_remove("MAMBA_CHANNEL_ALIAS")
+            .env_remove("MAMBA_DEFAULT_CHANNELS")
             .env("OHMYDEVPOD_BUNDLE_ROOT", &self.root)
             .env("OHMYDEVPOD_BIN_DIR", &self.bin_dir)
             .env("OHMYDEVPOD_PREFIX", &self.prefix)
@@ -418,7 +422,23 @@ impl Runner {
                         "HOMEBREW_API_DOMAIN",
                         "https://mirrors.ustc.edu.cn/homebrew-bottles/api",
                     )
-                    .env("UV_CONFIG_FILE", self.config_dir.join("uv.toml"));
+                    .env("UV_CONFIG_FILE", self.config_dir.join("uv.toml"))
+                    .env(
+                        "PIP_INDEX_URL",
+                        "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple",
+                    )
+                    .env("CONDA_CHANNELS", "conda-forge")
+                    .env(
+                        "MAMBA_CHANNEL_ALIAS",
+                        "https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud",
+                    )
+                    .env(
+                        "MAMBA_DEFAULT_CHANNELS",
+                        concat!(
+                            "https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main,",
+                            "https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/r"
+                        ),
+                    );
             }
         }
         command
