@@ -84,6 +84,10 @@ bootstrap 保存安装来源：
 这些配置通过受管环境变量提供，不写入或覆盖用户自己的 Conda、Mamba、
 pip 配置文件。vendored 二进制不需要访问其原始 GitHub release。
 
+受管 shell 将 Micromamba root prefix 默认放在
+`${XDG_DATA_HOME:-$HOME/.local/share}/mamba`，并由受管 Zsh 加载 Mamba
+shell hook。不得自动移动或删除 Homebrew Cellar 中已有的用户环境。
+
 `omd --update` 复用 bundle 内的 installer helper。更新事务必须先完成
 release 下载、SHA256 校验和 bundle 校验，再修改来源配置或激活新版本。
 来源配置使用临时文件和原子重命名；后续失败时恢复原配置和受管

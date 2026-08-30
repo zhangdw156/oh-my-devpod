@@ -57,6 +57,15 @@ elif [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
   eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 fi
 export PATH="$HOME/.local/bin:$PATH"
+omd_mamba_hook=""
+if command -v mamba >/dev/null 2>&1; then
+  omd_mamba_hook="$(mamba shell hook --shell zsh 2>/dev/null)" || omd_mamba_hook=""
+fi
+if [[ -z "${omd_mamba_hook}" ]] && command -v micromamba >/dev/null 2>&1; then
+  omd_mamba_hook="$(micromamba shell hook --shell zsh 2>/dev/null)" || omd_mamba_hook=""
+fi
+[[ -z "${omd_mamba_hook}" ]] || eval "${omd_mamba_hook}"
+unset omd_mamba_hook
 EOF
     while IFS= read -r line || [[ -n "${line}" ]]; do
       printf '%s\n' "${line//\/opt\/vendor\/zsh/${zsh_dir}}"

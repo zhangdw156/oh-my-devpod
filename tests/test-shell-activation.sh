@@ -15,6 +15,7 @@ trap 'rm -rf "${tmp_dir}"' EXIT
 fake_bin="${tmp_dir}/bin"
 brew_log="${tmp_dir}/brew.log"
 sudo_log="${tmp_dir}/sudo.log"
+mamba_log="${tmp_dir}/mamba.log"
 shells_file="${tmp_dir}/shells"
 state_dir="${tmp_dir}/state"
 zsh_prefix="${tmp_dir}/zsh-prefix"
@@ -65,11 +66,40 @@ case "${1:-}" in
 esac
 EOF
 
+cat > "${fake_bin}/mamba" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+printf 'mamba:%s\n' "$*" >> "${OMD_TEST_MAMBA_LOG}"
+[[ "${OMD_TEST_MAMBA_FAIL:-0}" != "1" ]] || exit 1
+if [[ "$*" == "shell hook --shell zsh" ]]; then
+  printf 'export OMD_TEST_MAMBA_HOOK=loaded\n'
+  exit 0
+fi
+exit 2
+EOF
+
+cat > "${fake_bin}/micromamba" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+printf 'micromamba:%s\n' "$*" >> "${OMD_TEST_MAMBA_LOG}"
+if [[ "$*" == "shell hook --shell zsh" ]]; then
+  printf 'export OMD_TEST_MAMBA_HOOK=fallback\n'
+  exit 0
+fi
+exit 2
+EOF
+
 cat > "${zsh_path}" <<'EOF'
 #!/usr/bin/env bash
 exit 0
 EOF
-chmod +x "${fake_bin}/brew" "${fake_bin}/id" "${fake_bin}/sudo" "${zsh_path}"
+chmod +x \
+  "${fake_bin}/brew" \
+  "${fake_bin}/id" \
+  "${fake_bin}/sudo" \
+  "${fake_bin}/mamba" \
+  "${fake_bin}/micromamba" \
+  "${zsh_path}"
 
 OMD_TEST_BREW_LOG="${brew_log}" \
   HOMEBREW_ASK=1 \
@@ -130,7 +160,11 @@ custom_config_dir="${tmp_dir}/custom-config"
 managed_zsh_dir="${tmp_dir}/managed-zsh"
 managed_zshrc="${tmp_dir}/managed.zshrc"
 managed_p10k="${tmp_dir}/managed.p10k.zsh"
+managed_mamba_root="${tmp_dir}/mamba-root"
+mkdir -p "${custom_config_dir}"
+printf 'export MAMBA_ROOT_PREFIX=%q\n' "${managed_mamba_root}" > "${custom_config_dir}/env"
 : > "${sudo_log}"
+: > "${mamba_log}"
 PATH="${fake_bin}:${PATH}" \
   HOME="${tmp_dir}/home" \
   OHMYDEVPOD_ASSET_ROOT="${repo_root}/vendor/releases" \
@@ -146,6 +180,7 @@ PATH="${fake_bin}:${PATH}" \
   OHMYDEVPOD_ZSH_DIR="${managed_zsh_dir}" \
   OHMYDEVPOD_ZSHRC="${managed_zshrc}" \
   OMD_TEST_BREW_LOG="${brew_log}" \
+  OMD_TEST_MAMBA_LOG="${mamba_log}" \
   OMD_TEST_ZSH_PREFIX="${zsh_prefix}" \
   OMD_TEST_SUDO_LOG="${sudo_log}" \
   bash "${repo_root}/modules/tools/zsh-config.sh" install >/dev/null
@@ -154,6 +189,61 @@ grep -Fqx "export OHMYDEVPOD_CONFIG_DIR=${custom_config_dir}" "${managed_zshrc}"
   fail "managed Zsh should persist the configured OMD config directory"
 grep -Fq 'source "${OHMYDEVPOD_CONFIG_DIR}/env"' "${managed_zshrc}" ||
   fail "managed Zsh should source mirrors from the configured OMD directory"
+grep -Fq 'mamba shell hook --shell zsh' "${managed_zshrc}" ||
+  fail "managed Zsh should initialize the mamba shell hook"
+grep -Fq 'micromamba shell hook --shell zsh' "${managed_zshrc}" ||
+  fail "managed Zsh should fall back to the micromamba shell hook"
+
+managed_zsh_prelude="${tmp_dir}/managed-zsh-prelude.zsh"
+awk '/^# Enable Powerlevel10k/{exit} {print}' "${managed_zshrc}" > "${managed_zsh_prelude}"
+PATH="${fake_bin}:${PATH}" \
+  HOME="${tmp_dir}/home" \
+  OMD_TEST_BREW_LOG="${brew_log}" \
+  OMD_TEST_MAMBA_LOG="${mamba_log}" \
+  zsh -dfc '
+    source "$1"
+    [[ "${MAMBA_ROOT_PREFIX}" == "$2" ]]
+    [[ "${OMD_TEST_MAMBA_HOOK}" == "loaded" ]]
+  ' _ "${managed_zsh_prelude}" "${managed_mamba_root}" ||
+  fail "managed Zsh prelude should load the mamba root and shell hook"
+grep -Fqx 'mamba:shell hook --shell zsh' "${mamba_log}" ||
+  fail "managed Zsh should invoke the mamba Zsh hook"
+
+: > "${mamba_log}"
+PATH="${fake_bin}:${PATH}" \
+  HOME="${tmp_dir}/home" \
+  OMD_TEST_BREW_LOG="${brew_log}" \
+  OMD_TEST_MAMBA_FAIL=1 \
+  OMD_TEST_MAMBA_LOG="${mamba_log}" \
+  zsh -dfc '
+    source "$1"
+    [[ "${OMD_TEST_MAMBA_HOOK}" == "fallback" ]]
+  ' _ "${managed_zsh_prelude}" ||
+  fail "managed Zsh should fall back when the mamba hook fails"
+grep -Fqx 'mamba:shell hook --shell zsh' "${mamba_log}" ||
+  fail "fallback test should attempt the mamba hook first"
+grep -Fqx 'micromamba:shell hook --shell zsh' "${mamba_log}" ||
+  fail "fallback test should invoke the micromamba hook"
+
+if [[ -n "${OMD_TEST_REAL_MAMBA_BIN:-}" ]]; then
+  [[ -x "${OMD_TEST_REAL_MAMBA_BIN}" ]] ||
+    fail "real Micromamba binary is not executable: ${OMD_TEST_REAL_MAMBA_BIN}"
+  rm -f "${fake_bin}/mamba" "${fake_bin}/micromamba"
+  cp "${OMD_TEST_REAL_MAMBA_BIN}" "${fake_bin}/mamba"
+  ln -s mamba "${fake_bin}/micromamba"
+  MAMBA_ROOT_PREFIX="${managed_mamba_root}" \
+    "${fake_bin}/mamba" create -n real-hook-probe -y >/dev/null
+  PATH="${fake_bin}:${PATH}" \
+    HOME="${tmp_dir}/home" \
+    OMD_TEST_BREW_LOG="${brew_log}" \
+    zsh -dfc '
+      source "$1"
+      mamba activate real-hook-probe
+      [[ "${CONDA_PREFIX}" == "${MAMBA_ROOT_PREFIX}/envs/real-hook-probe" ]]
+      [[ "${CONDA_DEFAULT_ENV}" == "real-hook-probe" ]]
+    ' _ "${managed_zsh_prelude}" ||
+    fail "Micromamba should activate an environment under the managed root prefix"
+fi
 
 cat > "${state_dir}/managed/zsh-config" <<'EOF'
 managed_by=oh-my-devpod

@@ -1,0 +1,42 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - name: Install Zsh
+        run: sudo apt-get update && sudo apt-get install -y zsh
+      - name: Run regression suite
+        run: bash tests/run.sh
+      - name: Check Rust formatting
+        run: cargo fmt --all -- --check
+      - name: Run Clippy
+        run: cargo clippy -p omd --all-targets -- -D warnings
+      - name: Check whitespace
+        run: git diff --check HEAD^ HEAD
+      - uses: mamba-org/setup-micromamba@f457c30a868e4760d3a6fcea5f25dc655b8edf39
+        with:
+          micromamba-version: 2.9.0-0
+          init-shell: none
+          micromamba-root-path: ${{ runner.temp }}/setup-mamba-root
+          micromamba-binary-path: ${{ runner.temp }}/micromamba-bin/micromamba
+          post-cleanup: all
+      - name: Verify managed Mamba activation
+        env:
+          OMD_TEST_REAL_MAMBA_BIN: ${{ runner.temp }}/micromamba-bin/micromamba
+        run: bash tests/test-shell-activation.sh
