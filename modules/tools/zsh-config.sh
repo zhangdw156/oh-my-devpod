@@ -40,13 +40,15 @@ preserve_modified_file() {
 }
 
 write_zshrc() {
-  local source_file="${repo_root}/config/.zshrc" line
+  local source_file="${repo_root}/config/.zshrc" source_config_dir line
+  source_config_dir="${OHMYDEVPOD_CONFIG_DIR:-${XDG_CONFIG_HOME:-${HOME}/.config}/oh-my-devpod}"
   {
     printf '%s\n' "${managed_header}"
+    printf 'export OHMYDEVPOD_CONFIG_DIR=%q\n' "${source_config_dir}"
     cat <<'EOF'
-if [[ -f "${XDG_CONFIG_HOME:-$HOME/.config}/oh-my-devpod/env" ]]; then
+if [[ -f "${OHMYDEVPOD_CONFIG_DIR}/env" ]]; then
   set -a
-  source "${XDG_CONFIG_HOME:-$HOME/.config}/oh-my-devpod/env"
+  source "${OHMYDEVPOD_CONFIG_DIR}/env"
   set +a
 fi
 if command -v brew >/dev/null 2>&1; then

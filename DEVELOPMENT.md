@@ -79,8 +79,10 @@ bootstrap 保存安装来源：
 - `github` 对应 `upstream` profile。
 - `gitee` 对应 `cn` profile。
 
-`cn` profile 在执行模块前配置 USTC Homebrew 源和 TUNA Python index。
-vendored 二进制不需要访问其原始 GitHub release。
+`cn` profile 在执行模块前配置 USTC Homebrew 源、TUNA uv/pip index，
+以及默认走 TUNA 的 Micromamba `conda-forge`/`defaults` channels。
+这些配置通过受管环境变量提供，不写入或覆盖用户自己的 Conda、Mamba、
+pip 配置文件。vendored 二进制不需要访问其原始 GitHub release。
 
 `omd --update` 复用 bundle 内的 installer helper。更新事务必须先完成
 release 下载、SHA256 校验和 bundle 校验，再修改来源配置或激活新版本。

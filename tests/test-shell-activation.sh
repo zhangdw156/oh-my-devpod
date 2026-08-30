@@ -126,6 +126,35 @@ PATH="${fake_bin}:${PATH}" \
 [[ ! -s "${sudo_log}" ]] ||
   fail "already active login shell should not trigger privileged changes"
 
+custom_config_dir="${tmp_dir}/custom-config"
+managed_zsh_dir="${tmp_dir}/managed-zsh"
+managed_zshrc="${tmp_dir}/managed.zshrc"
+managed_p10k="${tmp_dir}/managed.p10k.zsh"
+: > "${sudo_log}"
+PATH="${fake_bin}:${PATH}" \
+  HOME="${tmp_dir}/home" \
+  OHMYDEVPOD_ASSET_ROOT="${repo_root}/vendor/releases" \
+  OHMYDEVPOD_BREW_BIN="${fake_bin}/brew" \
+  OHMYDEVPOD_CONFIG_DIR="${custom_config_dir}" \
+  OHMYDEVPOD_CURRENT_SHELL="${zsh_path}" \
+  OHMYDEVPOD_P10K_CONFIG="${managed_p10k}" \
+  OHMYDEVPOD_PREFIX="${tmp_dir}/prefix" \
+  OHMYDEVPOD_SHELLS_FILE="${shells_file}" \
+  OHMYDEVPOD_STATE_DIR="${state_dir}" \
+  OHMYDEVPOD_SUDO_BIN="${fake_bin}/sudo" \
+  OHMYDEVPOD_TARGET_USER="test-user" \
+  OHMYDEVPOD_ZSH_DIR="${managed_zsh_dir}" \
+  OHMYDEVPOD_ZSHRC="${managed_zshrc}" \
+  OMD_TEST_BREW_LOG="${brew_log}" \
+  OMD_TEST_ZSH_PREFIX="${zsh_prefix}" \
+  OMD_TEST_SUDO_LOG="${sudo_log}" \
+  bash "${repo_root}/modules/tools/zsh-config.sh" install >/dev/null
+
+grep -Fqx "export OHMYDEVPOD_CONFIG_DIR=${custom_config_dir}" "${managed_zshrc}" ||
+  fail "managed Zsh should persist the configured OMD config directory"
+grep -Fq 'source "${OHMYDEVPOD_CONFIG_DIR}/env"' "${managed_zshrc}" ||
+  fail "managed Zsh should source mirrors from the configured OMD directory"
+
 cat > "${state_dir}/managed/zsh-config" <<'EOF'
 managed_by=oh-my-devpod
 component=zsh-config

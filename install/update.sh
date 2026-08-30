@@ -131,7 +131,7 @@ omd_update_abort_with_rollback() {
 omd_update_main() {
   local requested_source="" current_source update_source current_version latest_tag latest_version
   local target prefix bin_dir cache_dir config_dir archive checksum archive_version installed_version
-  local snapshot_dir="" source_changed=0 configure_source=0
+  local snapshot_dir="" source_changed=0 configure_source=0 manage_source=0
 
   case "$#" in
     0) ;;
@@ -165,6 +165,12 @@ omd_update_main() {
   current_source="$(omd_read_saved_source "${config_dir}")"
   update_source="${requested_source:-${current_source}}"
   [[ "${current_source}" == "${update_source}" ]] || source_changed=1
+  if [[ "${configure_source}" == "1" ]]; then
+    manage_source=1
+  elif omd_saved_source_is_valid "${config_dir}" &&
+    omd_validate_source_config_ownership "${update_source}" "${config_dir}" >/dev/null 2>&1; then
+    manage_source=1
+  fi
 
   mkdir -p "${cache_dir}" "$(dirname "${config_dir}")"
 
@@ -211,9 +217,11 @@ omd_update_main() {
     printf 'Switching managed software sources: %s -> %s\n' "${current_source}" "${update_source}"
   fi
 
-  if [[ "${configure_source}" == "1" ]]; then
-    omd_validate_source_config_ownership "${update_source}" "${config_dir}" ||
-      omd_error "Source configuration is not managed by oh-my-devpod; current installation and source were preserved"
+  if [[ "${manage_source}" == "1" ]]; then
+    if [[ "${configure_source}" == "1" ]]; then
+      omd_validate_source_config_ownership "${update_source}" "${config_dir}" ||
+        omd_error "Source configuration is not managed by oh-my-devpod; current installation and source were preserved"
+    fi
     snapshot_dir="$(mktemp -d "${cache_dir}/.source-snapshot.XXXXXX")" ||
       omd_error "Could not prepare source configuration transaction"
     omd_update_snapshot_source_config "${config_dir}" "${snapshot_dir}" || {
@@ -224,7 +232,7 @@ omd_update_main() {
       rm -rf "${snapshot_dir}"
       omd_error "Could not inspect the managed Homebrew remote"
     }
-    if ! omd_persist_source "${update_source}" "${config_dir}"; then
+    if ! omd_persist_source "${update_source}" "${config_dir}" "${configure_source}"; then
       omd_update_abort_with_rollback "Could not update source configuration" "${config_dir}" "${snapshot_dir}"
     fi
     if ! omd_persist_install_paths "${prefix}" "${bin_dir}" "${cache_dir}" "${config_dir}"; then
@@ -237,7 +245,7 @@ omd_update_main() {
 
   if [[ -n "${archive}" ]]; then
     if ! installed_version="$(omd_install_archive "${archive}" "${prefix}" "${bin_dir}")"; then
-      if [[ "${configure_source}" == "1" ]]; then
+      if [[ "${manage_source}" == "1" ]]; then
         omd_update_abort_with_rollback "Self-update installation failed" "${config_dir}" "${snapshot_dir}"
       fi
       omd_error "Self-update installation failed; current installation and source were preserved"

@@ -147,14 +147,19 @@ omd --update --gitee   # update and switch to China mirrors
 | Command | Persistent effect |
 | --- | --- |
 | `omd --update` | Uses `~/.config/oh-my-devpod/source`; invalid or missing configuration falls back to GitHub. |
-| `omd --update --github` | Uses GitHub releases and switches managed Homebrew/Python sources to upstream. |
-| `omd --update --gitee` | Uses Gitee releases and switches managed sources to USTC Homebrew and TUNA Python mirrors. |
+| `omd --update --github` | Uses GitHub releases and switches managed Homebrew, Micromamba, uv, and pip sources to upstream. |
+| `omd --update --gitee` | Uses Gitee releases and switches managed sources to USTC Homebrew plus TUNA Micromamba, uv, and pip mirrors. |
 
 `--github` and `--gitee` are mutually exclusive. A source switch is applied
 even when the installed version is already current. Self-update replaces only a
 SHA256-verified release bundle—it does not open the TUI or update installed
 components. Failed downloads, validation, or activation preserve the active
 version and previous source profile.
+
+Source changes apply immediately to OMD-launched component operations. Start a
+new managed shell, or re-source
+`${OHMYDEVPOD_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/oh-my-devpod}/env`,
+to refresh an interactive shell that was already running.
 
 ## Architecture
 
