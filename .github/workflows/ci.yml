@@ -19,8 +19,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
-      - name: Install Zsh
-        run: sudo apt-get update && sudo apt-get install -y zsh
+      - name: Install test dependencies
+        run: sudo apt-get update && sudo apt-get install -y ripgrep zsh
       - name: Run regression suite
         run: bash tests/run.sh
       - name: Check Rust formatting
