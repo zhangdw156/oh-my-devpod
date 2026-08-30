@@ -25,22 +25,17 @@
 | `OHMYDEVPOD_BUNDLE_ROOT` | executable-relative | Bundle root override for development/tests |
 | `OHMYDEVPOD_STATE_DIR` | `~/.local/state/oh-my-devpod` | Logs, locks, and ownership markers |
 | `OHMYDEVPOD_MIRROR_PROFILE` | persisted profile | `upstream` or `cn` |
-| `OHMYDEVPOD_MAMBA_ROOT_PREFIX` | empty | Override the managed Micromamba root prefix |
 
 Bootstrap also records the managed install prefix, binary directory, and cache
 directory so later `omd --update` runs reuse the existing installation paths.
 
-Managed shells default `MAMBA_ROOT_PREFIX` to
-`${XDG_DATA_HOME:-$HOME/.local/share}/mamba`. An existing explicit
-`MAMBA_ROOT_PREFIX` is preserved, while `OHMYDEVPOD_MAMBA_ROOT_PREFIX` provides
-an OMD-specific override. Managed Zsh evaluates the Mamba shell hook so
-`mamba activate` and `micromamba activate` can modify the current shell.
+Managed Zsh evaluates the Mamba shell hook so `mamba activate` and
+`micromamba activate` can modify the current shell. OMD does not set
+`MAMBA_ROOT_PREFIX`; the installed Mamba/Micromamba binary selects its root
+prefix, including the versioned Homebrew Cellar prefix used by the Homebrew
+formula.
 Managed Zsh configurations created before version 0.14.2 must be refreshed with
 `omd --execute update zsh-config`, followed by a new shell.
-
-OMD does not move or delete environments created under another root prefix.
-Environments previously created inside a Homebrew Cellar must be exported and
-recreated or migrated explicitly before that Cellar version is removed.
 
 The `cn` profile exports:
 

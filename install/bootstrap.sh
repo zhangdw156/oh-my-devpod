@@ -311,8 +311,6 @@ omd_persist_source() {
     printf 'export OHMYDEVPOD_CONFIG_DIR=%q\n' "${config_dir}"
     printf 'export OHMYDEVPOD_MIRROR_PROFILE=%q\n' "${mirror_profile}"
     printf '%s\n' \
-      'export MAMBA_ROOT_PREFIX="${OHMYDEVPOD_MAMBA_ROOT_PREFIX:-${MAMBA_ROOT_PREFIX:-${XDG_DATA_HOME:-$HOME/.local/share}/mamba}}"'
-    printf '%s\n' \
       'unset HOMEBREW_BREW_GIT_REMOTE HOMEBREW_BOTTLE_DOMAIN HOMEBREW_API_DOMAIN' \
       'unset UV_CONFIG_FILE PIP_INDEX_URL' \
       'unset CONDA_CHANNELS MAMBA_CHANNEL_ALIAS MAMBA_DEFAULT_CHANNELS'

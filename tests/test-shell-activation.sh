@@ -162,9 +162,9 @@ custom_config_dir="${tmp_dir}/custom-config"
 managed_zsh_dir="${tmp_dir}/managed-zsh"
 managed_zshrc="${tmp_dir}/managed.zshrc"
 managed_p10k="${tmp_dir}/managed.p10k.zsh"
-managed_mamba_root="${tmp_dir}/mamba-root"
+test_mamba_root="${tmp_dir}/mamba-root"
 mkdir -p "${custom_config_dir}"
-printf 'export MAMBA_ROOT_PREFIX=%q\n' "${managed_mamba_root}" > "${custom_config_dir}/env"
+printf 'export MAMBA_ROOT_PREFIX=%q\n' "${test_mamba_root}" > "${custom_config_dir}/env"
 : > "${sudo_log}"
 : > "${mamba_log}"
 PATH="${fake_bin}:${PATH}" \
@@ -206,7 +206,7 @@ PATH="${fake_bin}:${PATH}" \
     source "$1"
     [[ "${MAMBA_ROOT_PREFIX}" == "$2" ]]
     [[ "${OMD_TEST_MAMBA_HOOK}" == "loaded" ]]
-  ' _ "${managed_zsh_prelude}" "${managed_mamba_root}" ||
+  ' _ "${managed_zsh_prelude}" "${test_mamba_root}" ||
   fail "managed Zsh prelude should load the mamba root and shell hook"
 grep -Fqx 'mamba:shell hook --shell zsh' "${mamba_log}" ||
   fail "managed Zsh should invoke the mamba Zsh hook"
@@ -233,7 +233,7 @@ if [[ -n "${OMD_TEST_REAL_MAMBA_BIN:-}" ]]; then
   rm -f "${fake_bin}/mamba" "${fake_bin}/micromamba"
   cp "${OMD_TEST_REAL_MAMBA_BIN}" "${fake_bin}/mamba"
   ln -s mamba "${fake_bin}/micromamba"
-  MAMBA_ROOT_PREFIX="${managed_mamba_root}" \
+  MAMBA_ROOT_PREFIX="${test_mamba_root}" \
     "${fake_bin}/mamba" create -n real-hook-probe -y >/dev/null
   PATH="${fake_bin}:${PATH}" \
     HOME="${tmp_dir}/home" \
@@ -244,7 +244,7 @@ if [[ -n "${OMD_TEST_REAL_MAMBA_BIN:-}" ]]; then
       [[ "${CONDA_PREFIX}" == "${MAMBA_ROOT_PREFIX}/envs/real-hook-probe" ]]
       [[ "${CONDA_DEFAULT_ENV}" == "real-hook-probe" ]]
     ' _ "${managed_zsh_prelude}" ||
-    fail "Micromamba should activate an environment under the managed root prefix"
+    fail "Micromamba should activate an environment under the existing root prefix"
 fi
 
 cat > "${state_dir}/managed/zsh-config" <<'EOF'

@@ -156,9 +156,8 @@ omd --update --gitee   # 更新，并切换到国内镜像
 `source ${OHMYDEVPOD_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/oh-my-devpod}/env`，
 才能刷新镜像环境变量。
 
-受管 Zsh 会初始化 Mamba shell hook，并默认使用用户可写的
-`${XDG_DATA_HOME:-$HOME/.local/share}/mamba` root prefix。OMD 不会自动移动
-或删除旧 root prefix 中已有的环境。
+受管 Zsh 会初始化 Mamba shell hook，但不会覆盖 `MAMBA_ROOT_PREFIX`；
+通过 Homebrew 安装的 Mamba 会继续使用其实际版本对应的 Cellar root。
 从 0.14.1 或更早版本升级后，需要执行一次 `omd --execute update zsh-config`
 并重新启动 shell。
 

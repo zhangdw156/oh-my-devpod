@@ -161,9 +161,8 @@ new managed shell, or re-source
 `${OHMYDEVPOD_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/oh-my-devpod}/env`,
 to refresh an interactive shell that was already running.
 
-Managed Zsh initializes the Mamba shell hook and uses the user-writable
-`${XDG_DATA_HOME:-$HOME/.local/share}/mamba` root prefix by default. OMD never
-moves or removes environments created under an older root prefix.
+Managed Zsh initializes the Mamba shell hook without overriding
+`MAMBA_ROOT_PREFIX`; Homebrew-installed Mamba keeps its versioned Cellar root.
 After upgrading an existing installation from 0.14.1 or earlier, run
 `omd --execute update zsh-config` and start a new shell once.
 

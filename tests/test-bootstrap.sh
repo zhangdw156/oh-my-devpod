@@ -153,27 +153,14 @@ run_bootstrap github "${github_home}" "${github_log}"
 assert_contains 'github.com' "${github_log}"
 assert_contains 'github' "${github_home}/.config/oh-my-devpod/source"
 assert_contains 'upstream' "${github_home}/.config/oh-my-devpod/mirror-profile"
-assert_contains 'MAMBA_ROOT_PREFIX' "${github_home}/.config/oh-my-devpod/env"
+if grep -Fq 'MAMBA_ROOT_PREFIX' "${github_home}/.config/oh-my-devpod/env"; then
+  fail "OMD must not override the Mamba root prefix"
+fi
 if grep -Eq \
   '^export (HOMEBREW_(BREW_GIT_REMOTE|BOTTLE_DOMAIN|API_DOMAIN)|UV_CONFIG_FILE|PIP_INDEX_URL|CONDA_CHANNELS|MAMBA_(CHANNEL_ALIAS|DEFAULT_CHANNELS))=' \
   "${github_home}/.config/oh-my-devpod/env"; then
   fail "GitHub source should not retain managed mirror variables"
 fi
-default_mamba_root="$(
-  env -u MAMBA_ROOT_PREFIX -u OHMYDEVPOD_MAMBA_ROOT_PREFIX -u XDG_DATA_HOME \
-    HOME="${github_home}" \
-    bash -c 'source "$1"; printf "%s\\n" "${MAMBA_ROOT_PREFIX}"' \
-    _ "${github_home}/.config/oh-my-devpod/env"
-)"
-[[ "${default_mamba_root}" == "${github_home}/.local/share/mamba" ]] ||
-  fail "expected XDG mamba root, got ${default_mamba_root}"
-preserved_mamba_root="$(
-  MAMBA_ROOT_PREFIX="${tmp_dir}/user-mamba-root" \
-    bash -c 'source "$1"; printf "%s\\n" "${MAMBA_ROOT_PREFIX}"' \
-    _ "${github_home}/.config/oh-my-devpod/env"
-)"
-[[ "${preserved_mamba_root}" == "${tmp_dir}/user-mamba-root" ]] ||
-  fail "managed env should preserve an explicit MAMBA_ROOT_PREFIX"
 assert_contains 'unset HOMEBREW_BREW_GIT_REMOTE' \
   "${github_home}/.config/oh-my-devpod/env"
 if ! HOMEBREW_BREW_GIT_REMOTE=stale \
@@ -236,7 +223,9 @@ assert_contains 'PIP_INDEX_URL' "${gitee_home}/.config/oh-my-devpod/env"
 assert_contains 'CONDA_CHANNELS="conda-forge"' "${gitee_home}/.config/oh-my-devpod/env"
 assert_contains 'MAMBA_CHANNEL_ALIAS' "${gitee_home}/.config/oh-my-devpod/env"
 assert_contains 'MAMBA_DEFAULT_CHANNELS' "${gitee_home}/.config/oh-my-devpod/env"
-assert_contains 'MAMBA_ROOT_PREFIX' "${gitee_home}/.config/oh-my-devpod/env"
+if grep -Fq 'MAMBA_ROOT_PREFIX' "${gitee_home}/.config/oh-my-devpod/env"; then
+  fail "Gitee profile must not override the Mamba root prefix"
+fi
 assert_contains 'mirrors.tuna.tsinghua.edu.cn' "${gitee_home}/.config/oh-my-devpod/uv.toml"
 
 custom_config_home="${tmp_dir}/custom-config-home"

@@ -269,7 +269,7 @@ assert_contains 'PIP_INDEX_URL' "${legacy_profile_home}/.config/oh-my-devpod/env
 assert_contains 'CONDA_CHANNELS="conda-forge"' "${legacy_profile_home}/.config/oh-my-devpod/env"
 assert_contains 'MAMBA_CHANNEL_ALIAS' "${legacy_profile_home}/.config/oh-my-devpod/env"
 assert_contains 'MAMBA_DEFAULT_CHANNELS' "${legacy_profile_home}/.config/oh-my-devpod/env"
-assert_contains 'MAMBA_ROOT_PREFIX' "${legacy_profile_home}/.config/oh-my-devpod/env"
+assert_absent 'MAMBA_ROOT_PREFIX' "${legacy_profile_home}/.config/oh-my-devpod/env"
 
 explicit_github_home="${tmp_dir}/explicit-github-home"
 explicit_github_log="${tmp_dir}/explicit-github.log"
