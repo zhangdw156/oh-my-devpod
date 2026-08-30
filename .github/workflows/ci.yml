@@ -20,7 +20,14 @@ jobs:
         with:
           components: clippy, rustfmt
       - name: Install test dependencies
-        run: sudo apt-get update && sudo apt-get install -y ripgrep zsh
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zsh
+          cd "${RUNNER_TEMP}"
+          apt-get download ripgrep
+          mkdir -p "${RUNNER_TEMP}/ripgrep"
+          dpkg-deb -x ripgrep_*.deb "${RUNNER_TEMP}/ripgrep"
+          echo "${RUNNER_TEMP}/ripgrep/usr/bin" >> "${GITHUB_PATH}"
       - name: Run regression suite
         run: bash tests/run.sh
       - name: Check Rust formatting
