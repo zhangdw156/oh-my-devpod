@@ -19,6 +19,11 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install npm used by package tests
+        run: npm install --global npm@11.5.1
       - name: Install test dependencies
         run: |
           sudo apt-get update
@@ -30,6 +35,33 @@ jobs:
           echo "${RUNNER_TEMP}/ripgrep/usr/bin" >> "${GITHUB_PATH}"
       - name: Run regression suite
         run: bash tests/run.sh
+      - name: Smoke test npm package with the release binary
+        run: |
+          set -euo pipefail
+          npm_root="${RUNNER_TEMP}/npm-smoke"
+          npm_home="${RUNNER_TEMP}/npm-home"
+          cargo build --release -p omd
+          bash build/package-omd.sh \
+            target/release/omd \
+            "${RUNNER_TEMP}/release" \
+            x86_64-unknown-linux-gnu
+          package="$(
+            bash build/package-npm.sh \
+              "${RUNNER_TEMP}/release/omd-x86_64-unknown-linux-gnu.tar.gz" \
+              "${RUNNER_TEMP}/npm-dist"
+          )"
+          HOME="${npm_home}" OHMYDEVPOD_SOURCE=gitee \
+            npm install --global --prefix "${npm_root}" "${package}"
+          test "$(cat "${npm_root}/lib/node_modules/oh-my-devpod/.npm-source")" = gitee
+          test "$(cat "${npm_home}/.config/oh-my-devpod/npm-source")" = gitee
+          HOME="${npm_home}" "${npm_root}/bin/omd" --version
+          HOME="${npm_home}" "${npm_root}/bin/omd" --list-components
+          if HOME="${npm_home}" "${npm_root}/bin/omd" --update \
+            >"${RUNNER_TEMP}/npm-update.out" 2>&1; then
+            echo "npm-managed omd --update should fail" >&2
+            exit 1
+          fi
+          grep -Fq 'npm update -g oh-my-devpod' "${RUNNER_TEMP}/npm-update.out"
       - name: Check Rust formatting
         run: cargo fmt --all -- --check
       - name: Run Clippy

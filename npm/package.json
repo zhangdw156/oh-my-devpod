@@ -1,0 +1,49 @@
+{
+  "name": "oh-my-devpod",
+  "version": "0.14.2",
+  "description": "Ubuntu productivity tool manager with the omd terminal interface",
+  "license": "MIT",
+  "author": "zhangdw156",
+  "homepage": "https://github.com/zhangdw156/oh-my-devpod#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zhangdw156/oh-my-devpod.git"
+  },
+  "bugs": {
+    "url": "https://github.com/zhangdw156/oh-my-devpod/issues"
+  },
+  "keywords": [
+    "cli",
+    "developer-tools",
+    "terminal",
+    "ubuntu"
+  ],
+  "bin": {
+    "omd": "bin/omd"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "runtime/",
+    "README.md"
+  ],
+  "scripts": {
+    "postinstall": "node lib/postinstall.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "libc": [
+    "glibc"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

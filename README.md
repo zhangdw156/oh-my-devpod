@@ -44,6 +44,23 @@ remains explicit and inspectable.
 
 ## Quick start
 
+### npm
+
+Use the upstream source profile:
+
+```bash
+npm install --global oh-my-devpod
+```
+
+Or select the China mirror profile during installation:
+
+```bash
+OHMYDEVPOD_SOURCE=gitee npm install --global oh-my-devpod
+```
+
+Both commands install the `omd` executable. The npm package currently supports
+Ubuntu 24.04 x86_64 only.
+
 ### GitHub · upstream sources
 
 ```bash
@@ -58,8 +75,8 @@ curl -fsSL https://gitee.com/zhangdw156/oh-my-devpod/raw/main/install/bootstrap.
 ```
 
 The bootstrap downloads the complete release bundle, verifies its SHA256
-checksum, installs it under your user account, and opens the TUI. After the
-first run:
+checksum, installs it under your user account, and opens the TUI. After
+installation:
 
 ```bash
 omd
@@ -156,6 +173,16 @@ SHA256-verified release bundle—it does not open the TUI or update installed
 components. Failed downloads, validation, or activation preserve the active
 version and previous source profile.
 
+For npm-managed installations, update through npm instead:
+
+```bash
+npm update --global oh-my-devpod
+```
+
+`omd --update` is intentionally rejected for npm-managed installations so npm
+remains the single owner of the installed package. npm updates retain the saved
+source profile; pass `OHMYDEVPOD_SOURCE=github|gitee` only when changing it.
+
 Source changes apply immediately to OMD-launched component operations. Start a
 new managed shell, or re-source
 `${OHMYDEVPOD_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/oh-my-devpod}/env`,
@@ -195,6 +222,7 @@ install/bootstrap.sh
 | `crates/omd/` | Rust TUI, catalog validation, planning, and execution |
 | `modules/core/`, `modules/tools/` | Component lifecycle implementations |
 | `modules/lib/` | Shared ownership and safety primitives |
+| `npm/` | npm launcher, install-source selection, and package metadata |
 | `build/`, `vendor/`, `config/` | Release assembly and pinned assets |
 | `VERSION` | Release version source of truth |
 
@@ -243,10 +271,12 @@ Release bundles are built with:
 
 ```bash
 bash build/package-omd.sh
+bash build/package-npm.sh dist/omd-x86_64-unknown-linux-gnu.tar.gz
 ```
 
 See [`DEVELOPMENT.md`](./DEVELOPMENT.md) for module boundaries, ownership rules,
-mirror behavior, and release maintenance.
+mirror behavior, and release maintenance. npm release bootstrapping is
+documented in [`docs/npm-release.md`](./docs/npm-release.md).
 
 ---
 

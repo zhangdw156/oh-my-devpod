@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+script_path="${BASH_SOURCE[0]}"
+while [[ -L "${script_path}" ]]; do
+  script_dir="$(cd "$(dirname "${script_path}")" && pwd)"
+  script_path="$(readlink "${script_path}")"
+  [[ "${script_path}" == /* ]] || script_path="${script_dir}/${script_path}"
+done
+
+package_root="$(cd "$(dirname "${script_path}")/.." && pwd)"
+source_file="${package_root}/.npm-source"
+runtime_root="${package_root}/runtime"
+runtime_binary="${runtime_root}/bin/omd"
+
+[[ -f "${source_file}" ]] || {
+  printf 'oh-my-devpod: npm source selection is missing; reinstall the package\n' >&2
+  exit 1
+}
+
+source_name="$(cat "${source_file}")"
+case "${source_name}" in
+  github | gitee) ;;
+  *)
+    printf 'oh-my-devpod: invalid persisted npm source: %s\n' "${source_name}" >&2
+    exit 1
+    ;;
+esac
+
+[[ -x "${runtime_binary}" ]] || {
+  printf 'oh-my-devpod: bundled runtime is missing or not executable: %s\n' "${runtime_binary}" >&2
+  exit 1
+}
+
+export OHMYDEVPOD_BUNDLE_ROOT="${runtime_root}"
+export OHMYDEVPOD_INSTALL_CHANNEL="npm"
+export OHMYDEVPOD_NPM_SOURCE="${source_name}"
+export OHMYDEVPOD_BIN_DIR="${OHMYDEVPOD_BIN_DIR:-${HOME}/.local/bin}"
+
+exec "${runtime_binary}" "$@"

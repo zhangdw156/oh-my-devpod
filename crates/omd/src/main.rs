@@ -41,6 +41,10 @@ where
     I: IntoIterator<Item = String>,
 {
     let args: Vec<String> = args.into_iter().collect();
+    reject_npm_self_update(
+        &args,
+        env::var("OHMYDEVPOD_INSTALL_CHANNEL").ok().as_deref(),
+    )?;
     let paths = RuntimePaths::discover()?;
     let runner = Runner::new(&paths);
 
@@ -149,6 +153,19 @@ fn parse_update_request(args: &[String]) -> Result<Option<UpdateRequest>, Box<dy
     Ok(Some(source_flag.unwrap_or(UpdateRequest::SavedSource)))
 }
 
+fn reject_npm_self_update(
+    args: &[String],
+    install_channel: Option<&str>,
+) -> Result<(), Box<dyn Error>> {
+    if args.first().map(String::as_str) == Some("--update") && install_channel == Some("npm") {
+        return Err(
+            "self-update is unavailable for npm installations; run `npm update -g oh-my-devpod` instead"
+                .into(),
+        );
+    }
+    Ok(())
+}
+
 fn print_components(catalog: &Catalog) {
     for component in catalog.components() {
         let requires = if component.requires.is_empty() {
@@ -233,5 +250,24 @@ mod tests {
     fn rejects_multiple_self_update_source_flags() {
         let error = parse_update_request(&args(&["--update", "--github", "--gitee"])).unwrap_err();
         assert!(error.to_string().contains("mutually exclusive"));
+    }
+
+    #[test]
+    fn rejects_all_npm_self_update_forms() {
+        for arguments in [
+            args(&["--update"]),
+            args(&["--update", "--github"]),
+            args(&["--update", "--gitee"]),
+        ] {
+            let error = reject_npm_self_update(&arguments, Some("npm")).unwrap_err();
+            assert!(error.to_string().contains("npm update -g oh-my-devpod"));
+        }
+    }
+
+    #[test]
+    fn leaves_non_npm_commands_and_channels_unchanged() {
+        reject_npm_self_update(&args(&["--version"]), Some("npm")).unwrap();
+        reject_npm_self_update(&args(&["--update"]), None).unwrap();
+        reject_npm_self_update(&args(&["--update"]), Some("bootstrap")).unwrap();
     }
 }
