@@ -13,12 +13,12 @@ fail() {
 
 assert_contains() {
   local pattern="$1"
-  rg -q --fixed-strings "${pattern}" "${workflow}" || fail "workflow should contain: ${pattern}"
+  rg -q --fixed-strings -- "${pattern}" "${workflow}" || fail "workflow should contain: ${pattern}"
 }
 
 assert_not_contains() {
   local pattern="$1"
-  if rg -q --fixed-strings "${pattern}" "${workflow}"; then
+  if rg -q --fixed-strings -- "${pattern}" "${workflow}"; then
     fail "workflow should not contain: ${pattern}"
   fi
 }
@@ -29,6 +29,17 @@ assert_contains 'omd-x86_64-unknown-linux-gnu.tar.gz'
 assert_contains 'softprops/action-gh-release'
 assert_contains 'tar -czf'
 assert_contains 'sha256sum'
+assert_contains 'id-token: write'
+assert_contains 'actions/setup-node@v4'
+assert_contains 'npm@11.5.1'
+assert_contains 'bash build/package-npm.sh'
+assert_contains 'npm publish'
+assert_contains '--provenance'
+assert_contains '--access public'
+assert_contains '--tag "${npm_tag}"'
+assert_contains 'npm/package.json'
+assert_contains 'release tag {actual} does not match VERSION {version}'
+assert_contains 'publish-npm:'
 assert_not_contains 'docker/build-push-action'
 assert_not_contains 'ghcr.io'
 

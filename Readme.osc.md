@@ -43,6 +43,22 @@ oh-my-devpod 是面向 **Ubuntu 24.04 x86_64** 的开发生产力工具管理器
 
 ## 快速开始
 
+### npm
+
+使用 GitHub 官方上游源：
+
+```bash
+npm install --global oh-my-devpod
+```
+
+安装时选择国内镜像：
+
+```bash
+OHMYDEVPOD_SOURCE=gitee npm install --global oh-my-devpod
+```
+
+两种方式安装后的命令均为 `omd`。npm 包目前仅支持 Ubuntu 24.04 x86_64。
+
 ### Gitee · 国内镜像
 
 ```bash
@@ -57,7 +73,7 @@ curl -fsSL https://raw.githubusercontent.com/zhangdw156/oh-my-devpod/main/instal
 ```
 
 bootstrap 会下载完整 release bundle，校验 SHA256 后安装到当前用户目录，
-随后进入 TUI。首次安装后直接运行：
+随后进入 TUI。安装完成后直接运行：
 
 ```bash
 omd
@@ -151,6 +167,16 @@ omd --update --gitee   # 更新，并切换到国内镜像
 自更新只替换通过 SHA256 校验的 release bundle，不会打开 TUI，也不会更新
 已安装组件。下载、校验或激活失败时，当前版本与原来源配置保持不变。
 
+npm 管理的安装应通过 npm 更新：
+
+```bash
+npm update --global oh-my-devpod
+```
+
+npm 安装的 `omd --update` 会被明确拒绝，避免 npm 与内建更新器同时管理同一
+安装。npm 更新会保留此前选择的来源；仅在切换来源时传入
+`OHMYDEVPOD_SOURCE=github|gitee`。
+
 来源切换会立即作用于 OMD 启动的组件操作。已经运行的交互式 shell 需要重新
 启动，或重新
 `source ${OHMYDEVPOD_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/oh-my-devpod}/env`，
@@ -189,6 +215,7 @@ install/bootstrap.sh
 | `crates/omd/` | Rust TUI、目录校验、依赖规划与执行 |
 | `modules/core/`、`modules/tools/` | 组件生命周期实现 |
 | `modules/lib/` | 共享所有权与安全原语 |
+| `npm/` | npm 启动器、安装来源选择与包元数据 |
 | `build/`、`vendor/`、`config/` | release 组装与固定版本资产 |
 | `VERSION` | `omd` release 版本真源 |
 
@@ -232,10 +259,12 @@ git diff --check
 
 ```bash
 bash build/package-omd.sh
+bash build/package-npm.sh dist/omd-x86_64-unknown-linux-gnu.tar.gz
 ```
 
 模块边界、所有权规则、镜像行为和 release 维护说明见
-[`DEVELOPMENT.md`](./DEVELOPMENT.md)。
+[`DEVELOPMENT.md`](./DEVELOPMENT.md)；npm 首次发布流程见
+[`docs/npm-release.md`](./docs/npm-release.md)。
 
 ---
 

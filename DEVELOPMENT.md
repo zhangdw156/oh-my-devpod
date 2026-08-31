@@ -14,8 +14,10 @@ modules/core/              Linuxbrew、Zsh、uv
 modules/tools/             独立生产力工具与配置
 modules/lib/common.sh      所有权、安全路径和包管理公共逻辑
 build/package-omd.sh       完整 runtime bundle 打包
+build/package-npm.sh       从同一 runtime bundle 生成 npm 包
 build/install-*.sh         vendored 二进制/配置安装器
 config/                    项目维护的配置 overlay
+npm/                       npm launcher、来源选择与 package metadata
 vendor/                    固定版本 release 与配置快照
 tests/                     Shell 与 Rust 回归测试
 VERSION                    release 版本真源
@@ -93,6 +95,11 @@ release 下载、SHA256 校验和 bundle 校验，再修改来源配置或激活
 来源配置使用临时文件和原子重命名；后续失败时恢复原配置和受管
 Homebrew remote。显式来源切换在版本相同时仍需执行。
 
+npm 安装通过 `OHMYDEVPOD_SOURCE=github|gitee npm install -g
+oh-my-devpod` 选择 profile。npm launcher 将安装渠道和来源传递给 Rust
+runtime；npm 渠道不得执行内建 `omd --update`，必须提示使用
+`npm update -g oh-my-devpod`，避免出现两个安装所有者。
+
 ## Release bundle
 
 release archive 必须包含：
@@ -111,11 +118,17 @@ oh-my-devpod/
 ```
 
 GitHub 和 Gitee 必须发布相同 archive 与 checksum，不能分别构建。
+npm 包必须从同一个 release archive 组装，不得重新构建另一份二进制或在
+`postinstall` 阶段联网下载 release。
+
+npm 首次发布和后续 trusted publishing 配置见
+[`docs/npm-release.md`](./docs/npm-release.md)。
 
 ## 版本管理
 
-`VERSION` 与 `crates/omd/Cargo.toml` 必须保持完全一致。开发版本使用
-SemVer prerelease 格式，例如 `0.12.0-dev.0`。
+`VERSION`、`crates/omd/Cargo.toml` 与 `npm/package.json`
+必须保持完全一致。开发版本使用 SemVer prerelease 格式，例如
+`0.12.0-dev.0`。
 
 更新 vendored 工具：
 

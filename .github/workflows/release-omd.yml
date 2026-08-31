@@ -13,16 +13,54 @@ on:
         default: false
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build-linux-x86_64:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write
     env:
       ARCHIVE: omd-x86_64-unknown-linux-gnu.tar.gz
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Validate release versions
+        env:
+          RELEASE_REF_NAME: ${{ github.ref_name }}
+          RELEASE_REF_TYPE: ${{ github.ref_type }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import pathlib
+          import tomllib
+
+          root = pathlib.Path(".")
+          version = (root / "VERSION").read_text().strip()
+          with (root / "crates/omd/Cargo.toml").open("rb") as handle:
+              cargo_version = tomllib.load(handle)["package"]["version"]
+          npm_version = json.loads(
+              (root / "npm/package.json").read_text()
+          )["version"]
+
+          versions = {
+              "VERSION": version,
+              "crates/omd/Cargo.toml": cargo_version,
+              "npm/package.json": npm_version,
+          }
+          if len(set(versions.values())) != 1:
+              raise SystemExit(f"release versions do not match: {versions}")
+
+          if os.environ["RELEASE_REF_TYPE"] == "tag":
+              expected = f"v{version}"
+              actual = os.environ["RELEASE_REF_NAME"]
+              if actual != expected:
+                  raise SystemExit(
+                      f"release tag {actual} does not match VERSION {version}"
+                  )
+          PY
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -54,6 +92,20 @@ jobs:
           files: |
             dist/${{ env.ARCHIVE }}
             dist/${{ env.ARCHIVE }}.sha256
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Package npm distribution
+        run: bash build/package-npm.sh "dist/${ARCHIVE}" dist/npm
+
+      - name: Upload npm package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: oh-my-devpod-npm
+          path: dist/npm/oh-my-devpod-*.tgz
 
       # Optional Gitee surface:
       # - configure repository secret GITEE_TOKEN with release permissions;
@@ -108,3 +160,44 @@ jobs:
               -F "access_token=${GITEE_TOKEN}" \
               -F "file=@${asset}"
           done
+
+  publish-npm:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build-linux-x86_64
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+    steps:
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install npm with trusted publishing support
+        run: npm install --global npm@11.5.1
+
+      - name: Download npm package artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: oh-my-devpod-npm
+          path: dist/npm
+
+      - name: Publish npm package
+        run: |
+          set -euo pipefail
+          package="$(find dist/npm -maxdepth 1 -name 'oh-my-devpod-*.tgz' -print -quit)"
+          [[ -n "${package}" ]] || {
+            echo "npm package artifact is missing" >&2
+            exit 1
+          }
+          filename="$(basename "${package}")"
+          version="${filename#oh-my-devpod-}"
+          version="${version%.tgz}"
+          npm_tag="latest"
+          [[ "${version}" != *-* ]] || npm_tag="next"
+          npm publish "${package}" \
+            --access public \
+            --provenance \
+            --tag "${npm_tag}"

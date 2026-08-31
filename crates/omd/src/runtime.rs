@@ -35,6 +35,14 @@ pub enum MirrorProfile {
 
 impl MirrorProfile {
     fn discover(config_dir: &Path) -> Result<Self, Box<dyn Error>> {
+        let install_channel = env::var("OHMYDEVPOD_INSTALL_CHANNEL").ok();
+        let npm_source = env::var("OHMYDEVPOD_NPM_SOURCE").ok();
+        if let Some(profile) =
+            Self::npm_override(install_channel.as_deref(), npm_source.as_deref())?
+        {
+            return Ok(profile);
+        }
+
         let source_file = config_dir.join("source");
         match fs::read_to_string(source_file) {
             Ok(source) => {
@@ -71,6 +79,28 @@ impl MirrorProfile {
             return Self::parse(&value);
         }
         Ok(Self::Upstream)
+    }
+
+    fn npm_override(
+        install_channel: Option<&str>,
+        npm_source: Option<&str>,
+    ) -> Result<Option<Self>, Box<dyn Error>> {
+        if install_channel != Some("npm") {
+            return Ok(None);
+        }
+
+        match npm_source {
+            Some("github") => Ok(Some(Self::Upstream)),
+            Some("gitee") => Ok(Some(Self::China)),
+            Some(value) => Err(RuntimeError::new(format!(
+                "invalid OHMYDEVPOD_NPM_SOURCE {value}; expected github or gitee"
+            ))
+            .into()),
+            None => Err(RuntimeError::new(
+                "OHMYDEVPOD_NPM_SOURCE must be set to github or gitee for npm installations",
+            )
+            .into()),
+        }
     }
 
     fn parse(value: &str) -> Result<Self, Box<dyn Error>> {
@@ -598,6 +628,43 @@ mod tests {
         );
 
         fs::remove_dir_all(config_dir).unwrap();
+    }
+
+    #[test]
+    fn npm_source_selects_mirror_profile_without_process_environment() {
+        assert_eq!(
+            MirrorProfile::npm_override(Some("npm"), Some("github")).unwrap(),
+            Some(MirrorProfile::Upstream)
+        );
+        assert_eq!(
+            MirrorProfile::npm_override(Some("npm"), Some("gitee")).unwrap(),
+            Some(MirrorProfile::China)
+        );
+    }
+
+    #[test]
+    fn npm_source_is_required_and_validated_without_process_environment() {
+        let missing = MirrorProfile::npm_override(Some("npm"), None).unwrap_err();
+        assert!(missing
+            .to_string()
+            .contains("must be set to github or gitee"));
+
+        let invalid = MirrorProfile::npm_override(Some("npm"), Some("cn")).unwrap_err();
+        assert!(invalid
+            .to_string()
+            .contains("invalid OHMYDEVPOD_NPM_SOURCE cn"));
+    }
+
+    #[test]
+    fn npm_source_does_not_affect_other_install_channels() {
+        assert_eq!(
+            MirrorProfile::npm_override(None, Some("gitee")).unwrap(),
+            None
+        );
+        assert_eq!(
+            MirrorProfile::npm_override(Some("bootstrap"), Some("invalid")).unwrap(),
+            None
+        );
     }
 
     #[test]
