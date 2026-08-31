@@ -39,6 +39,9 @@ match. Push the matching `v<version>` tag. The release workflow:
    `next`;
 5. authenticates through npm trusted publishing and emits provenance.
 
+The npm publish job is idempotent: rerunning a release whose npm version already
+exists skips the immutable version instead of failing the GitHub release.
+
 ## Installation source
 
 The default npm source profile is GitHub/upstream:

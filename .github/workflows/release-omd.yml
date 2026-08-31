@@ -195,6 +195,10 @@ jobs:
           filename="$(basename "${package}")"
           version="${filename#oh-my-devpod-}"
           version="${version%.tgz}"
+          if npm view "oh-my-devpod@${version}" version >/dev/null 2>&1; then
+            echo "oh-my-devpod@${version} is already published; skipping."
+            exit 0
+          fi
           npm_tag="latest"
           [[ "${version}" != *-* ]] || npm_tag="next"
           npm publish "${package}" \

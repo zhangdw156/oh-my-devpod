@@ -40,6 +40,8 @@ assert_contains '--tag "${npm_tag}"'
 assert_contains 'npm/package.json'
 assert_contains 'release tag {actual} does not match VERSION {version}'
 assert_contains 'publish-npm:'
+assert_contains 'npm view "oh-my-devpod@${version}" version'
+assert_contains 'is already published; skipping.'
 assert_not_contains 'docker/build-push-action'
 assert_not_contains 'ghcr.io'
 
