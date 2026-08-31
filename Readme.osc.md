@@ -59,6 +59,13 @@ OHMYDEVPOD_SOURCE=gitee npm install --global oh-my-devpod
 
 两种方式安装后的命令均为 `omd`。npm 包目前仅支持 Ubuntu 24.04 x86_64。
 
+安装后可以随时切换组件下载源，无需重新安装 npm 包：
+
+```bash
+omd --source gitee
+omd --source github
+```
+
 ### Gitee · 国内镜像
 
 ```bash
@@ -90,10 +97,10 @@ omd
 | 分类 | 组件 | 用途 |
 | --- | --- | --- |
 | 基础 | **Linuxbrew**、**Zsh**、**uv**、**Micromamba** | 用户态软件包、Shell 与 Python/环境工具 |
-| 开发 | **Git** | 版本控制 |
-| 终端 | **ripgrep**、**fzf**、**bat**、**fd**、**jq**、**Atuin**、**Zellij**、**Yazi**、**btop** | 搜索、导航、历史、会话、文件与系统状态 |
+| 开发 | **Git**、**GitHub CLI**、**Gitee CLI** | 版本控制与代码托管平台自动化 |
+| 终端 | **ripgrep**、**fzf**、**bat**、**fd**、**jq**、**yq**、**Atuin**、**Zellij**、**Yazi**、**btop** | 搜索、结构化数据、导航、历史、会话、文件与系统状态 |
 | 编辑器 | **Neovim**、**LazyVim** | 终端编辑器与受管编辑器配置 |
-| 配置 | **Zsh productivity configuration** | Oh My Zsh、Powerlevel10k、补全、历史与模糊搜索 |
+| 配置 | **Zsh productivity configuration** | Oh My Zsh、Powerlevel10k、补全、历史、模糊搜索与 `z` 目录跳转 |
 
 例如，下列命令会为 Micromamba 与 LazyVim 生成计划，并自动把它们的提供者
 排在前面：
@@ -155,6 +162,8 @@ omd --execute install ripgrep fzf
 omd --update           # 使用已保存的来源更新
 omd --update --github  # 更新，并切换到官方上游源
 omd --update --gitee   # 更新，并切换到国内镜像
+omd --source github    # 只切源，不更新 omd
+omd --source gitee     # 只切源，不更新 omd
 ```
 
 | 命令 | 持久化效果 |
@@ -162,6 +171,8 @@ omd --update --gitee   # 更新，并切换到国内镜像
 | `omd --update` | 使用 `~/.config/oh-my-devpod/source`；配置缺失或无效时回退到 GitHub。 |
 | `omd --update --github` | 使用 GitHub release，并将受管 Homebrew、Micromamba、uv、pip 源切换到上游。 |
 | `omd --update --gitee` | 使用 Gitee release，并切换到中科大 Homebrew 与清华 TUNA Micromamba、uv、pip 镜像。 |
+| `omd --source github` | 不更新 `omd`，将已经安装且由 OMD 管理的包管理器和后续组件操作切换到官方上游源。 |
+| `omd --source gitee` | 不更新 `omd`，将已经安装且由 OMD 管理的包管理器和后续组件操作切换到国内镜像。 |
 
 `--github` 与 `--gitee` 互斥。即使当前版本已经是最新，显式源切换仍会生效。
 自更新只替换通过 SHA256 校验的 release bundle，不会打开 TUI，也不会更新
@@ -174,18 +185,35 @@ npm update --global oh-my-devpod
 ```
 
 npm 安装的 `omd --update` 会被明确拒绝，避免 npm 与内建更新器同时管理同一
-安装。npm 更新会保留此前选择的来源；仅在切换来源时传入
-`OHMYDEVPOD_SOURCE=github|gitee`。
+安装。来源切换由 `omd --source` 独立完成，不依赖 npm 是否实际安装了新版本。
 
 来源切换会立即作用于 OMD 启动的组件操作。已经运行的交互式 shell 需要重新
 启动，或重新
 `source ${OHMYDEVPOD_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/oh-my-devpod}/env`，
 才能刷新镜像环境变量。
 
+对于已经安装且由 OMD 管理的工具，切源还会同步修改它们的原生持久化配置：
+
+- 受管 Linuxbrew：切换 `brew`、`homebrew/core` remote，并更新
+  `${HOMEBREW_PREFIX}/etc/homebrew/brew.env`
+- 受管 uv：更新 `${XDG_CONFIG_HOME:-$HOME/.config}/uv/uv.toml`
+- 受管 Micromamba：更新 `~/.mambarc`
+- 受管 Python 环境工具：更新用户级 `pip.conf`
+
+切回 GitHub 时只删除 OMD 生成的文件。已有配置如果属于用户或已被修改，
+OMD 不会覆盖，而是终止切源并整体回滚。已经安装的包和环境会原样保留，
+不会为了切源而重新安装。
+
 受管 Zsh 会初始化 Mamba shell hook，但不会覆盖 `MAMBA_ROOT_PREFIX`；
 通过 Homebrew 安装的 Mamba 会继续使用其实际版本对应的 Cellar root。
+它还会启用 Oh My Zsh 内置的 `z` 插件，提供基于访问频率和最近使用情况的
+目录跳转。
 从 0.14.1 或更早版本升级后，需要执行一次 `omd --execute update zsh-config`
 并重新启动 shell。
+
+Gitee CLI 组件会把官方最新的、经过 SHA256 校验的 Linux release 安装到
+`~/.local/bin`。更新和卸载只管理该二进制，不会删除 `~/.config/gitee`、
+自定义 `GITEE_CONFIG_DIR`、Agent Skills 或登录状态。
 
 ## 架构
 

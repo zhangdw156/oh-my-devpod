@@ -75,11 +75,13 @@ cp "${repo_root}/components.toml" "${fixture}/components.toml"
 cp "${repo_root}/VERSION" "${fixture}/VERSION"
 printf '#!/usr/bin/env bash\n' > "${fixture}/modules/lib/common.sh"
 printf '#!/usr/bin/env bash\nexit 0\n' > "${fixture}/modules/lib/postflight.sh"
+printf '#!/usr/bin/env bash\nexit 0\n' > "${fixture}/modules/lib/source-config.sh"
 printf '#!/usr/bin/env bash\nexit 0\n' > "${fixture}/install/update.sh"
 chmod +x \
   "${fixture}/install/update.sh" \
   "${fixture}/modules/lib/common.sh" \
-  "${fixture}/modules/lib/postflight.sh"
+  "${fixture}/modules/lib/postflight.sh" \
+  "${fixture}/modules/lib/source-config.sh"
 
 python3 - "${fixture}" <<'PY'
 import pathlib

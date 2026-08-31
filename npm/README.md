@@ -24,6 +24,16 @@ npm update -g oh-my-devpod
 ```
 
 npm updates retain the saved source choice. Set
-`OHMYDEVPOD_SOURCE=github|gitee` during an update only when changing it.
+the source independently of npm updates with:
+
+```bash
+omd --source gitee
+omd --source github
+```
+
+This also migrates native source configuration for already installed,
+OMD-managed Linuxbrew, uv, Micromamba, and pip environments. User-owned
+configuration is preserved.
+
 `omd --update` is reserved for bootstrap-managed installations and is rejected
 in the npm package.

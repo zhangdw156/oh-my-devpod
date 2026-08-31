@@ -9,10 +9,14 @@ while [[ -L "${script_path}" ]]; do
 done
 
 package_root="$(cd "$(dirname "${script_path}")/.." && pwd)"
-source_file="${package_root}/.npm-source"
+package_source_file="${package_root}/.npm-source"
+config_dir="${OHMYDEVPOD_CONFIG_DIR:-${XDG_CONFIG_HOME:-${HOME}/.config}/oh-my-devpod}"
+persisted_source_file="${config_dir}/npm-source"
 runtime_root="${package_root}/runtime"
 runtime_binary="${runtime_root}/bin/omd"
 
+source_file="${persisted_source_file}"
+[[ -f "${source_file}" ]] || source_file="${package_source_file}"
 [[ -f "${source_file}" ]] || {
   printf 'oh-my-devpod: npm source selection is missing; reinstall the package\n' >&2
   exit 1
@@ -35,6 +39,7 @@ esac
 export OHMYDEVPOD_BUNDLE_ROOT="${runtime_root}"
 export OHMYDEVPOD_INSTALL_CHANNEL="npm"
 export OHMYDEVPOD_NPM_SOURCE="${source_name}"
+export OHMYDEVPOD_CONFIG_DIR="${config_dir}"
 export OHMYDEVPOD_BIN_DIR="${OHMYDEVPOD_BIN_DIR:-${HOME}/.local/bin}"
 
 exec "${runtime_binary}" "$@"

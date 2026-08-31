@@ -26,6 +26,7 @@ assert_file crates/omd/Cargo.toml
 assert_dir modules/core
 assert_dir modules/tools
 assert_executable modules/lib/postflight.sh
+assert_executable modules/lib/source-config.sh
 assert_absent modules/optional
 
 assert_absent Dockerfile.devpod

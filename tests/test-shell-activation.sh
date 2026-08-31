@@ -22,7 +22,11 @@ shells_file="${tmp_dir}/shells"
 state_dir="${tmp_dir}/state"
 zsh_prefix="${tmp_dir}/zsh-prefix"
 zsh_path="${zsh_prefix}/bin/zsh"
-mkdir -p "${fake_bin}" "${state_dir}/managed" "$(dirname "${zsh_path}")"
+mkdir -p \
+  "${fake_bin}" \
+  "${state_dir}/managed" \
+  "$(dirname "${zsh_path}")" \
+  "${tmp_dir}/Cellar/uv/1.0"
 : > "${shells_file}"
 
 cat > "${fake_bin}/brew" <<'EOF'
@@ -38,6 +42,8 @@ printf '%s|%s|%s|%s|%s|%s|%s\n' \
   "$*" >> "${OMD_TEST_BREW_LOG}"
 if [[ "${1:-}" == "--prefix" && "${2:-}" == "zsh" ]]; then
   printf '%s\n' "${OMD_TEST_ZSH_PREFIX}"
+elif [[ "${1:-}" == "--prefix" && "$#" -eq 1 ]]; then
+  cd "$(dirname "$0")/.." && pwd -P
 fi
 EOF
 
@@ -195,6 +201,23 @@ grep -Fq 'mamba shell hook --shell zsh' "${managed_zshrc}" ||
   fail "managed Zsh should initialize the mamba shell hook"
 grep -Fq 'micromamba shell hook --shell zsh' "${managed_zshrc}" ||
   fail "managed Zsh should fall back to the micromamba shell hook"
+grep -Fqx 'plugins=(git extract z)' "${managed_zshrc}" ||
+  fail "managed Zsh should enable the built-in z directory-jump plugin"
+[[ -f "${managed_zsh_dir}/ohmyzsh/plugins/z/z.plugin.zsh" ]] ||
+  fail "managed Zsh assets should include the built-in z plugin"
+
+ZSHZ_DATA="${tmp_dir}/z-data" \
+  PATH="${fake_bin}:${PATH}" \
+  HOME="${tmp_dir}/home" \
+  OMD_TEST_BREW_LOG="${brew_log}" \
+  OMD_TEST_MAMBA_LOG="${mamba_log}" \
+  zsh -dfc '
+    source "$1"
+    (( ${plugins[(Ie)z]} ))
+    (( ${+functions[zshz]} ))
+    [[ "${aliases[z]-}" == "zshz 2>&1" ]]
+  ' _ "${managed_zshrc}" ||
+  fail "managed Zsh should load the built-in z plugin"
 
 managed_zsh_prelude="${tmp_dir}/managed-zsh-prelude.zsh"
 awk '/^# Enable Powerlevel10k/{exit} {print}' "${managed_zshrc}" > "${managed_zsh_prelude}"
@@ -253,15 +276,25 @@ component=zsh-config
 kind=configuration
 artifact=/tmp/test-zshrc
 EOF
+cat > "${state_dir}/managed/uv" <<EOF
+managed_by=oh-my-devpod
+component=uv
+kind=brew-formula
+artifact=uv
+brew_prefix=${tmp_dir}
+EOF
 : > "${shells_file}"
 : > "${sudo_log}"
 PATH="${fake_bin}:${PATH}" \
+  HOME="${tmp_dir}/home" \
+  XDG_CONFIG_HOME="${tmp_dir}/postflight-config" \
   OHMYDEVPOD_BREW_BIN="${fake_bin}/brew" \
   OHMYDEVPOD_TARGET_USER="test-user" \
   OHMYDEVPOD_CURRENT_SHELL="/bin/bash" \
   OHMYDEVPOD_SHELLS_FILE="${shells_file}" \
   OHMYDEVPOD_SUDO_BIN="${fake_bin}/sudo" \
   OHMYDEVPOD_STATE_DIR="${state_dir}" \
+  OHMYDEVPOD_MIRROR_PROFILE=cn \
   OMD_TEST_BREW_LOG="${brew_log}" \
   OMD_TEST_ZSH_PREFIX="${zsh_prefix}" \
   OMD_TEST_SUDO_LOG="${sudo_log}" \
@@ -269,5 +302,20 @@ PATH="${fake_bin}:${PATH}" \
 
 grep -Fqx "chsh -s ${zsh_path} test-user" "${sudo_log}" ||
   fail "install postflight should migrate an existing managed Zsh installation"
+grep -Fq 'mirrors.tuna.tsinghua.edu.cn' \
+  "${tmp_dir}/postflight-config/uv/uv.toml" ||
+  fail "install postflight should configure an already managed uv installation"
+printf '# user modification\n' >> "${tmp_dir}/postflight-config/uv/uv.toml"
+if PATH="${fake_bin}:${PATH}" \
+  HOME="${tmp_dir}/home" \
+  XDG_CONFIG_HOME="${tmp_dir}/postflight-config" \
+  OHMYDEVPOD_BREW_BIN="${fake_bin}/brew" \
+  OHMYDEVPOD_STATE_DIR="${state_dir}" \
+  OHMYDEVPOD_MIRROR_PROFILE=cn \
+  bash "${repo_root}/modules/lib/postflight.sh" update >/dev/null 2>&1; then
+  fail "postflight should report native source configuration conflicts"
+fi
+grep -Fq '# user modification' "${tmp_dir}/postflight-config/uv/uv.toml" ||
+  fail "postflight should preserve modified native source configuration"
 
 echo "shell activation tests passed"

@@ -9,7 +9,7 @@ export ZSH=/opt/vendor/zsh/ohmyzsh
 export ZSH_DISABLE_COMPFIX=true
 export DISABLE_AUTO_UPDATE=true
 ZSH_THEME=""
-plugins=(git extract)
+plugins=(git extract z)
 
 source "${ZSH}/oh-my-zsh.sh"
 [[ -f /opt/vendor/zsh/zsh-autosuggestions/zsh-autosuggestions.zsh ]] && \

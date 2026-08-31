@@ -15,6 +15,9 @@ function selectSource(value, persistedValue) {
 }
 
 function sourceStatePath(env = process.env, homeDirectory = os.homedir()) {
+  if (env.OHMYDEVPOD_CONFIG_DIR) {
+    return path.join(env.OHMYDEVPOD_CONFIG_DIR, "npm-source");
+  }
   const configHome = env.XDG_CONFIG_HOME || path.join(homeDirectory, ".config");
   return path.join(configHome, "oh-my-devpod", "npm-source");
 }

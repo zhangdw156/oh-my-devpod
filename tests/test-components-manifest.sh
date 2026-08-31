@@ -77,7 +77,9 @@ for component in components:
             )
 
 minimum_ids = {
+    "gh",
     "git",
+    "gitee",
     "zsh",
     "uv",
     "micromamba",
@@ -85,6 +87,7 @@ minimum_ids = {
     "atuin",
     "neovim",
     "lazyvim",
+    "yq",
 }
 missing_ids = sorted(minimum_ids - set(ids))
 if missing_ids:
@@ -120,6 +123,39 @@ require_component_shape(
     {
         "category": "foundation",
         "module": "modules/core/micromamba.sh",
+        "requires": [],
+        "install_requires": ["linuxbrew"],
+        "uninstall": True,
+    },
+)
+
+require_component_shape(
+    "gh",
+    {
+        "category": "development",
+        "module": "modules/tools/gh.sh",
+        "requires": [],
+        "install_requires": ["linuxbrew"],
+        "uninstall": True,
+    },
+)
+
+require_component_shape(
+    "gitee",
+    {
+        "category": "development",
+        "module": "modules/tools/gitee.sh",
+        "requires": [],
+        "install_requires": [],
+        "uninstall": True,
+    },
+)
+
+require_component_shape(
+    "yq",
+    {
+        "category": "terminal",
+        "module": "modules/tools/yq.sh",
         "requires": [],
         "install_requires": ["linuxbrew"],
         "uninstall": True,

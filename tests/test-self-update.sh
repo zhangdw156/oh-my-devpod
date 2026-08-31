@@ -49,6 +49,7 @@ make_bundle() {
   install -m 0755 "${repo_root}/install/update.sh" "${payload_root}/install/update.sh"
   install -m 0755 "${repo_root}/modules/lib/common.sh" "${payload_root}/modules/lib/common.sh"
   install -m 0755 "${repo_root}/modules/lib/postflight.sh" "${payload_root}/modules/lib/postflight.sh"
+  install -m 0755 "${repo_root}/modules/lib/source-config.sh" "${payload_root}/modules/lib/source-config.sh"
   cat > "${payload_root}/components.toml" <<'EOF'
 schema_version = 1
 
@@ -71,6 +72,7 @@ case "${1:-}" in
     {
       printf 'profile=%s\n' "${OHMYDEVPOD_MIRROR_PROFILE:-}"
       printf 'brew_git=%s\n' "${HOMEBREW_BREW_GIT_REMOTE:-}"
+      printf 'brew_core=%s\n' "${HOMEBREW_CORE_GIT_REMOTE:-}"
       printf 'brew_bottle=%s\n' "${HOMEBREW_BOTTLE_DOMAIN:-}"
       printf 'brew_api=%s\n' "${HOMEBREW_API_DOMAIN:-}"
       printf 'uv_config=%s\n' "${UV_CONFIG_FILE:-}"
@@ -314,6 +316,9 @@ printf 'cache\n' > "${switch_home}/.cache/oh-my-devpod/preserved-cache"
 printf 'login\n' > "${switch_home}/.local/state/oh-my-devpod/preserved-login"
 brew_repo="${tmp_dir}/managed-brew"
 git init -q "${brew_repo}"
+mkdir -p "${brew_repo}/bin"
+printf '#!/usr/bin/env bash\nexit 0\n' > "${brew_repo}/bin/brew"
+chmod +x "${brew_repo}/bin/brew"
 git -C "${brew_repo}" remote add origin https://mirrors.ustc.edu.cn/brew.git
 managed_dir="${switch_home}/.local/state/oh-my-devpod/managed"
 mkdir -p "${managed_dir}"
@@ -395,6 +400,7 @@ PATH="${fake_bin}:/usr/bin:/bin:/usr/sbin:/sbin" \
   "${switch_home}/.local/bin/omd" --execute install probe >/dev/null
 assert_contains 'profile=upstream' "${component_log}"
 assert_contains 'brew_git=' "${component_log}"
+assert_contains 'brew_core=' "${component_log}"
 assert_contains 'pip_index=' "${component_log}"
 assert_contains 'conda_channels=' "${component_log}"
 assert_contains 'mamba_channel_alias=' "${component_log}"
@@ -438,6 +444,7 @@ PATH="${fake_bin}:/usr/bin:/bin:/usr/sbin:/sbin" \
   "${switch_home}/.local/bin/omd" --execute install probe >/dev/null
 assert_contains 'profile=cn' "${component_log}"
 assert_contains 'mirrors.ustc.edu.cn' "${component_log}"
+assert_contains 'brew_core=https://mirrors.ustc.edu.cn/homebrew-core.git' "${component_log}"
 assert_contains 'uv_config=' "${component_log}"
 assert_contains 'pip_index=https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple' "${component_log}"
 assert_contains 'conda_channels=conda-forge' "${component_log}"
@@ -461,6 +468,7 @@ assert_source_profile "${switch_home}" gitee cn
 legacy_home="${tmp_dir}/legacy-home"
 legacy_log="${tmp_dir}/legacy.log"
 legacy_brew="${tmp_dir}/legacy-brew"
+legacy_core="${legacy_brew}/Library/Taps/homebrew/homebrew-core"
 brew_source="${tmp_dir}/brew-source"
 brew_remote="${tmp_dir}/brew-remote.git"
 install_fixture github "${legacy_home}"
@@ -477,6 +485,8 @@ git clone -q --bare "${brew_source}" "${brew_remote}"
 mkdir -p "${legacy_brew}/bin" "${legacy_brew}/Cellar/preserved/1.0"
 printf '#!/usr/bin/env bash\nexit 0\n' > "${legacy_brew}/bin/brew"
 chmod +x "${legacy_brew}/bin/brew"
+git init -q "${legacy_core}"
+git -C "${legacy_core}" remote add origin https://github.com/Homebrew/homebrew-core.git
 mkdir -p "${legacy_home}/.local/state/oh-my-devpod/managed"
 cat > "${legacy_home}/.local/state/oh-my-devpod/managed/linuxbrew" <<EOF
 managed_by=oh-my-devpod
@@ -497,6 +507,10 @@ assert_equal \
   "${brew_remote}" \
   "$(git -C "${legacy_brew}" remote get-url origin)" \
   "legacy managed Homebrew remote"
+assert_equal \
+  'https://mirrors.ustc.edu.cn/homebrew-core.git' \
+  "$(git -C "${legacy_core}" remote get-url origin)" \
+  "legacy managed Homebrew core remote"
 grep -Fq 'exit 0' "${legacy_brew}/bin/brew" ||
   fail "legacy Homebrew source switching must not update component files"
 [[ -d "${legacy_brew}/Cellar/preserved/1.0" ]] ||
@@ -584,6 +598,9 @@ install_fixture gitee "${activation_failure_home}"
 activation_failure_link="$(readlink "${activation_failure_home}/.local/bin/omd")"
 activation_brew_repo="${tmp_dir}/activation-managed-brew"
 git init -q "${activation_brew_repo}"
+mkdir -p "${activation_brew_repo}/bin"
+printf '#!/usr/bin/env bash\nexit 0\n' > "${activation_brew_repo}/bin/brew"
+chmod +x "${activation_brew_repo}/bin/brew"
 git -C "${activation_brew_repo}" remote add origin https://mirrors.ustc.edu.cn/brew.git
 mkdir -p "${activation_failure_home}/.local/state/oh-my-devpod/managed"
 cat > "${activation_failure_home}/.local/state/oh-my-devpod/managed/linuxbrew" <<EOF
@@ -612,8 +629,186 @@ assert_equal \
   "$(git -C "${activation_brew_repo}" remote get-url origin)" \
   "managed Homebrew remote after activation rollback"
 
+source_only_home="${tmp_dir}/source-only-home"
+source_only_log="${tmp_dir}/source-only.log"
+source_only_output="${tmp_dir}/source-only.out"
+install_fixture github "${source_only_home}"
+source_only_brew="${tmp_dir}/source-only-brew"
+source_only_core="${source_only_brew}/Library/Taps/homebrew/homebrew-core"
+mkdir -p \
+  "${source_only_brew}/bin" \
+  "${source_only_brew}/Cellar/uv/1.0" \
+  "${source_only_brew}/Cellar/micromamba/1.0" \
+  "${source_only_core}"
+printf '#!/usr/bin/env bash\nexit 0\n' > "${source_only_brew}/bin/brew"
+chmod +x "${source_only_brew}/bin/brew"
+git init -q "${source_only_brew}"
+git -C "${source_only_brew}" remote add origin https://github.com/Homebrew/brew.git
+git init -q "${source_only_core}"
+git -C "${source_only_core}" remote add origin https://github.com/Homebrew/homebrew-core.git
+source_only_managed="${source_only_home}/.local/state/oh-my-devpod/managed"
+mkdir -p "${source_only_managed}"
+cat > "${source_only_managed}/linuxbrew" <<EOF
+managed_by=oh-my-devpod
+component=linuxbrew
+kind=directory
+artifact=${source_only_brew}
+EOF
+for component in uv micromamba; do
+  cat > "${source_only_managed}/${component}" <<EOF
+managed_by=oh-my-devpod
+component=${component}
+kind=brew-formula
+artifact=${component}
+EOF
+done
+: > "${source_only_log}"
+PATH="${fake_bin}:/usr/bin:/bin:/usr/sbin:/sbin" \
+  HOME="${source_only_home}" \
+  OHMYDEVPOD_BREW_BIN="${source_only_brew}/bin/brew" \
+  OHMYDEVPOD_TEST_CURL_LOG="${source_only_log}" \
+  "${source_only_home}/.local/bin/omd" --source gitee > "${source_only_output}"
+assert_source_profile "${source_only_home}" gitee cn
+[[ ! -s "${source_only_log}" ]] ||
+  fail "source-only switching must not query or download a release"
+assert_contains 'Source configuration updated successfully.' "${source_only_output}"
+assert_contains \
+  'HOMEBREW_BOTTLE_DOMAIN=https://mirrors.ustc.edu.cn/homebrew-bottles' \
+  "${source_only_brew}/etc/homebrew/brew.env"
+assert_contains \
+  'https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple' \
+  "${source_only_home}/.config/uv/uv.toml"
+assert_contains \
+  'index-url = https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple' \
+  "${source_only_home}/.config/pip/pip.conf"
+assert_contains \
+  'channel_alias: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud' \
+  "${source_only_home}/.mambarc"
+assert_equal \
+  'https://mirrors.ustc.edu.cn/brew.git' \
+  "$(git -C "${source_only_brew}" remote get-url origin)" \
+  "managed Homebrew remote after source-only switch"
+assert_equal \
+  'https://mirrors.ustc.edu.cn/homebrew-core.git' \
+  "$(git -C "${source_only_core}" remote get-url origin)" \
+  "managed Homebrew core remote after source-only switch"
+[[ -d "${source_only_brew}/Cellar/uv/1.0" ]] ||
+  fail "source switching should preserve the installed uv formula"
+[[ -d "${source_only_brew}/Cellar/micromamba/1.0" ]] ||
+  fail "source switching should preserve the installed micromamba formula"
+
+PATH="${fake_bin}:/usr/bin:/bin:/usr/sbin:/sbin" \
+  HOME="${source_only_home}" \
+  OHMYDEVPOD_BREW_BIN="${source_only_brew}/bin/brew" \
+  OHMYDEVPOD_TEST_CURL_LOG="${source_only_log}" \
+  "${source_only_home}/.local/bin/omd" --source github >/dev/null
+assert_source_profile "${source_only_home}" github upstream
+[[ ! -s "${source_only_log}" ]] ||
+  fail "repeated source-only switching must remain network-free"
+for path in \
+  "${source_only_brew}/etc/homebrew/brew.env" \
+  "${source_only_home}/.config/uv/uv.toml" \
+  "${source_only_home}/.config/pip/pip.conf" \
+  "${source_only_home}/.mambarc"; do
+  [[ ! -e "${path}" ]] ||
+    fail "upstream source switch should remove managed native config: ${path}"
+done
+assert_equal \
+  'https://github.com/Homebrew/brew.git' \
+  "$(git -C "${source_only_brew}" remote get-url origin)" \
+  "managed Homebrew remote after upstream source-only switch"
+assert_equal \
+  'https://github.com/Homebrew/homebrew-core.git' \
+  "$(git -C "${source_only_core}" remote get-url origin)" \
+  "managed Homebrew core remote after upstream source-only switch"
+
+native_failure_home="${tmp_dir}/native-failure-home"
+native_failure_log="${tmp_dir}/native-failure.log"
+native_failure_brew="${tmp_dir}/native-failure-brew"
+install_fixture github "${native_failure_home}"
+mkdir -p "${native_failure_brew}/bin" "${native_failure_brew}/Cellar/uv/1.0"
+printf '#!/usr/bin/env bash\nexit 0\n' > "${native_failure_brew}/bin/brew"
+chmod +x "${native_failure_brew}/bin/brew"
+git init -q "${native_failure_brew}"
+git -C "${native_failure_brew}" remote add origin https://github.com/Homebrew/brew.git
+native_failure_managed="${native_failure_home}/.local/state/oh-my-devpod/managed"
+mkdir -p "${native_failure_managed}"
+cat > "${native_failure_managed}/linuxbrew" <<EOF
+managed_by=oh-my-devpod
+component=linuxbrew
+kind=directory
+artifact=${native_failure_brew}
+EOF
+cat > "${native_failure_managed}/uv" <<'EOF'
+managed_by=oh-my-devpod
+component=uv
+kind=brew-formula
+artifact=uv
+EOF
+printf 'user-owned blocker\n' > "${native_failure_home}/.config/uv"
+: > "${native_failure_log}"
+if PATH="${fake_bin}:/usr/bin:/bin:/usr/sbin:/sbin" \
+  HOME="${native_failure_home}" \
+  OHMYDEVPOD_BREW_BIN="${native_failure_brew}/bin/brew" \
+  OHMYDEVPOD_TEST_CURL_LOG="${native_failure_log}" \
+  "${native_failure_home}/.local/bin/omd" --source gitee >/dev/null 2>&1; then
+  fail "native source write failure should fail the source switch"
+fi
+assert_source_profile "${native_failure_home}" github upstream
+assert_equal \
+  'https://github.com/Homebrew/brew.git' \
+  "$(git -C "${native_failure_brew}" remote get-url origin)" \
+  "Homebrew remote after native source rollback"
+[[ ! -e "${native_failure_brew}/etc/homebrew/brew.env" ]] ||
+  fail "native source rollback should remove the newly created brew.env"
+assert_contains 'user-owned blocker' "${native_failure_home}/.config/uv"
+[[ ! -s "${native_failure_log}" ]] ||
+  fail "failed native source migration must remain release-network-free"
+
+npm_source_home="${tmp_dir}/npm-source-home"
+npm_source_log="${tmp_dir}/npm-source.log"
+install_fixture github "${npm_source_home}"
+original_bootstrap_source="$(
+  cat "${npm_source_home}/.config/oh-my-devpod/source"
+)"
+: > "${npm_source_log}"
+PATH="${fake_bin}:/usr/bin:/bin:/usr/sbin:/sbin" \
+  HOME="${npm_source_home}" \
+  OHMYDEVPOD_INSTALL_CHANNEL=npm \
+  OHMYDEVPOD_NPM_SOURCE=github \
+  OHMYDEVPOD_TEST_CURL_LOG="${npm_source_log}" \
+  "${npm_source_home}/.local/bin/omd" --source gitee >/dev/null
+assert_equal \
+  gitee \
+  "$(cat "${npm_source_home}/.config/oh-my-devpod/npm-source")" \
+  "npm source selection"
+assert_equal \
+  "${original_bootstrap_source}" \
+  "$(cat "${npm_source_home}/.config/oh-my-devpod/source")" \
+  "npm source switch should not rewrite bootstrap ownership"
+assert_equal \
+  cn \
+  "$(cat "${npm_source_home}/.config/oh-my-devpod/mirror-profile")" \
+  "npm mirror profile"
+[[ ! -s "${npm_source_log}" ]] ||
+  fail "npm source switching must not invoke the release updater"
+
+if PATH="${fake_bin}:/usr/bin:/bin:/usr/sbin:/sbin" \
+  HOME="${npm_source_home}" \
+  OHMYDEVPOD_INSTALL_CHANNEL=npm \
+  OHMYDEVPOD_NPM_SOURCE=gitee \
+  "${npm_source_home}/.local/bin/omd" --source mirror >/dev/null 2>&1; then
+  fail "invalid source names should be rejected"
+fi
+assert_equal \
+  gitee \
+  "$(cat "${npm_source_home}/.config/oh-my-devpod/npm-source")" \
+  "invalid source request should preserve npm selection"
+
 help_output="$("${omd_binary}" --help)"
 grep -Fq 'omd --update [--github|--gitee]' <<<"${help_output}" ||
   fail "help should document self-update and source switching"
+grep -Fq 'omd --source <github|gitee>' <<<"${help_output}" ||
+  fail "help should document source-only switching"
 
 echo "self-update tests passed"

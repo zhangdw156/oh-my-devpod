@@ -157,7 +157,7 @@ if grep -Fq 'MAMBA_ROOT_PREFIX' "${github_home}/.config/oh-my-devpod/env"; then
   fail "OMD must not override the Mamba root prefix"
 fi
 if grep -Eq \
-  '^export (HOMEBREW_(BREW_GIT_REMOTE|BOTTLE_DOMAIN|API_DOMAIN)|UV_CONFIG_FILE|PIP_INDEX_URL|CONDA_CHANNELS|MAMBA_(CHANNEL_ALIAS|DEFAULT_CHANNELS))=' \
+  '^export (HOMEBREW_(BREW_GIT_REMOTE|CORE_GIT_REMOTE|BOTTLE_DOMAIN|API_DOMAIN)|UV_CONFIG_FILE|PIP_INDEX_URL|CONDA_CHANNELS|MAMBA_(CHANNEL_ALIAS|DEFAULT_CHANNELS))=' \
   "${github_home}/.config/oh-my-devpod/env"; then
   fail "GitHub source should not retain managed mirror variables"
 fi
@@ -174,6 +174,7 @@ if ! HOMEBREW_BREW_GIT_REMOTE=stale \
   bash -c '
     source "$1"
     [[ -z "${HOMEBREW_BREW_GIT_REMOTE:-}" ]]
+    [[ -z "${HOMEBREW_CORE_GIT_REMOTE:-}" ]]
     [[ -z "${HOMEBREW_BOTTLE_DOMAIN:-}" ]]
     [[ -z "${HOMEBREW_API_DOMAIN:-}" ]]
     [[ -z "${UV_CONFIG_FILE:-}" ]]
@@ -218,6 +219,7 @@ assert_contains 'gitee.com' "${gitee_log}"
 assert_contains 'gitee' "${gitee_home}/.config/oh-my-devpod/source"
 assert_contains 'cn' "${gitee_home}/.config/oh-my-devpod/mirror-profile"
 assert_contains 'mirrors.ustc.edu.cn' "${gitee_home}/.config/oh-my-devpod/env"
+assert_contains 'HOMEBREW_CORE_GIT_REMOTE' "${gitee_home}/.config/oh-my-devpod/env"
 assert_contains 'UV_CONFIG_FILE' "${gitee_home}/.config/oh-my-devpod/env"
 assert_contains 'PIP_INDEX_URL' "${gitee_home}/.config/oh-my-devpod/env"
 assert_contains 'CONDA_CHANNELS="conda-forge"' "${gitee_home}/.config/oh-my-devpod/env"

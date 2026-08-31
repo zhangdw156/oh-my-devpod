@@ -208,7 +208,7 @@ dependencies = [
 
 [[package]]
 name = "omd"
-version = "0.14.2"
+version = "0.14.3"
 dependencies = [
  "crossterm",
  "ratatui",

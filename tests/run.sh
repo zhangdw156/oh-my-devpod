@@ -9,6 +9,8 @@ bash "${repo_root}/tests/test-components-manifest.sh"
 bash "${repo_root}/tests/test-bootstrap.sh"
 bash "${repo_root}/tests/test-module-contracts.sh"
 bash "${repo_root}/tests/test-module-ownership.sh"
+bash "${repo_root}/tests/test-gitee-cli.sh"
+bash "${repo_root}/tests/test-source-config.sh"
 bash "${repo_root}/tests/test-shell-activation.sh"
 if command -v cargo >/dev/null 2>&1; then
   (cd "${repo_root}" && cargo test -p omd)

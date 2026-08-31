@@ -26,6 +26,21 @@ impl UpdateRequest {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SourceRequest {
+    GitHub,
+    Gitee,
+}
+
+impl SourceRequest {
+    fn name(self) -> &'static str {
+        match self {
+            Self::GitHub => "github",
+            Self::Gitee => "gitee",
+        }
+    }
+}
+
 fn main() -> ExitCode {
     match run(env::args().skip(1)) {
         Ok(()) => ExitCode::SUCCESS,
@@ -50,6 +65,9 @@ where
 
     if let Some(request) = parse_update_request(&args)? {
         return runner.self_update(request.source_flag());
+    }
+    if let Some(request) = parse_source_request(&args)? {
+        return runner.switch_source(request.name());
     }
 
     let catalog = Catalog::load(&paths.manifest)?;
@@ -126,12 +144,17 @@ fn print_help() {
     println!("  omd --execute <install|update|uninstall> <component>...");
     println!("  omd --dry-run");
     println!("  omd --update [--github|--gitee]");
+    println!("  omd --source <github|gitee>");
     println!("  omd --version");
     println!();
     println!("Self-update:");
     println!("  --update           update from the saved source (default: GitHub)");
     println!("  --update --github  update from GitHub and switch managed sources upstream");
     println!("  --update --gitee   update from Gitee and switch managed sources to China mirrors");
+    println!();
+    println!("Source switching:");
+    println!("  --source github    switch installed managed tools and future operations upstream");
+    println!("  --source gitee     switch installed managed tools and future operations to China mirrors");
 }
 
 fn parse_update_request(args: &[String]) -> Result<Option<UpdateRequest>, Box<dyn Error>> {
@@ -151,6 +174,20 @@ fn parse_update_request(args: &[String]) -> Result<Option<UpdateRequest>, Box<dy
         }
     }
     Ok(Some(source_flag.unwrap_or(UpdateRequest::SavedSource)))
+}
+
+fn parse_source_request(args: &[String]) -> Result<Option<SourceRequest>, Box<dyn Error>> {
+    if args.first().map(String::as_str) != Some("--source") {
+        return Ok(None);
+    }
+
+    match args {
+        [_, source] if source == "github" => Ok(Some(SourceRequest::GitHub)),
+        [_, source] if source == "gitee" => Ok(Some(SourceRequest::Gitee)),
+        [_] => Err("source name is required; expected github or gitee".into()),
+        [_, source] => Err(format!("unknown source: {source}; expected github or gitee").into()),
+        _ => Err("source switching accepts exactly one source: github or gitee".into()),
+    }
 }
 
 fn reject_npm_self_update(
@@ -250,6 +287,31 @@ mod tests {
     fn rejects_multiple_self_update_source_flags() {
         let error = parse_update_request(&args(&["--update", "--github", "--gitee"])).unwrap_err();
         assert!(error.to_string().contains("mutually exclusive"));
+    }
+
+    #[test]
+    fn parses_source_switch_requests() {
+        assert_eq!(
+            parse_source_request(&args(&["--source", "github"])).unwrap(),
+            Some(SourceRequest::GitHub)
+        );
+        assert_eq!(
+            parse_source_request(&args(&["--source", "gitee"])).unwrap(),
+            Some(SourceRequest::Gitee)
+        );
+        assert_eq!(parse_source_request(&args(&["--version"])).unwrap(), None);
+    }
+
+    #[test]
+    fn rejects_invalid_source_switch_requests() {
+        for arguments in [
+            args(&["--source"]),
+            args(&["--source", "mirror"]),
+            args(&["--source", "github", "extra"]),
+        ] {
+            let error = parse_source_request(&arguments).unwrap_err();
+            assert!(error.to_string().contains("source"));
+        }
     }
 
     #[test]

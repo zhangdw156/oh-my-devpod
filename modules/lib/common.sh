@@ -188,9 +188,8 @@ omd_module_brew_cmd() {
   return 1
 }
 
-omd_module_brew_formula_installed() {
-  local formula="$1" formula_name prefix cellar version
-  prefix="$(omd_module_brew_prefix)" || return 1
+omd_module_brew_formula_installed_at() {
+  local prefix="$1" formula="$2" formula_name cellar version
   formula_name="${formula##*/}"
   cellar="${prefix}/Cellar/${formula_name}"
   [[ -d "${cellar}" ]] || return 1
@@ -200,16 +199,40 @@ omd_module_brew_formula_installed() {
   return 1
 }
 
-omd_module_brew_prefix() {
-  local brew resolved
-  brew="$(omd_module_brew_cmd)" || return 1
-  if command -v readlink >/dev/null 2>&1; then
-    resolved="$(readlink -f "${brew}" 2>/dev/null || true)"
-    [[ -z "${resolved}" ]] || brew="${resolved}"
-  fi
-  if [[ "${brew}" == */bin/brew ]]; then
-    cd "$(dirname "${brew}")/.." 2>/dev/null && pwd -P
+omd_module_brew_formula_installed() {
+  local formula="$1" prefix
+  prefix="$(omd_module_brew_prefix)" || return 1
+  omd_module_brew_formula_installed_at "${prefix}" "${formula}"
+}
+
+omd_module_brew_prefix_for_cmd() {
+  local brew="$1" prefix
+  prefix="$(omd_module_brew_exec "${brew}" --prefix 2>/dev/null || true)"
+  if [[ "${prefix}" == /* && -d "${prefix}" ]]; then
+    cd "${prefix}" 2>/dev/null && pwd -P
     return
+  fi
+  [[ "${brew}" == */bin/brew ]] || return 1
+  cd "$(dirname "${brew}")/.." 2>/dev/null && pwd -P
+}
+
+omd_module_brew_cmd_matches_prefix() {
+  local brew="$1" expected_prefix="$2" resolved_brew reported_prefix
+  expected_prefix="$(cd "${expected_prefix}" 2>/dev/null && pwd -P)" || return 1
+  if [[ -L "${brew}" ]]; then
+    command -v readlink >/dev/null 2>&1 || return 1
+    resolved_brew="$(readlink -f "${brew}" 2>/dev/null || true)"
+    [[ "${resolved_brew}" == "${expected_prefix}"/* ]] || return 1
+  fi
+  reported_prefix="$(omd_module_brew_prefix_for_cmd "${brew}")" || return 1
+  [[ "${reported_prefix}" == "${expected_prefix}" ]]
+}
+
+omd_module_brew_prefix() {
+  local brew
+  brew="$(omd_module_brew_cmd)" || return 1
+  if omd_module_brew_prefix_for_cmd "${brew}"; then
+    return 0
   fi
   if [[ -n "${HOMEBREW_PREFIX:-}" && -d "${HOMEBREW_PREFIX}" ]]; then
     printf '%s\n' "${HOMEBREW_PREFIX}"
@@ -231,9 +254,10 @@ omd_module_brew_exec() {
 }
 
 omd_module_formula_status() {
-  local formula="$1" command_name="$2"
+  local formula="$1" command_name="$2" prefix
   if [[ -n "${component:-}" ]] && omd_module_formula_managed "${component}" "${formula}"; then
-    omd_module_brew_formula_installed "${formula}"
+    prefix="$(omd_module_formula_marker_prefix "${component}" "${formula}")" || return 1
+    omd_module_brew_formula_installed_at "${prefix}" "${formula}"
     return
   fi
   command -v "${command_name}" >/dev/null 2>&1 ||
@@ -241,12 +265,40 @@ omd_module_formula_status() {
 }
 
 omd_module_formula_managed() {
-  local component="$1" formula="$2"
-  omd_module_marker_matches "${component}" "${formula}"
+  local component="$1" formula="$2" kind
+  omd_module_marker_matches "${component}" "${formula}" || return 1
+  kind="$(omd_module_marker_value "${component}" kind || true)"
+  [[ "${kind}" == "brew-formula" ]]
+}
+
+omd_module_formula_marker_prefix() {
+  local component="$1" formula="$2" prefix linuxbrew_kind
+  omd_module_formula_managed "${component}" "${formula}" || return 1
+  prefix="$(omd_module_marker_value "${component}" brew_prefix || true)"
+  if [[ -z "${prefix}" ]] && omd_module_is_managed linuxbrew; then
+    linuxbrew_kind="$(omd_module_marker_value linuxbrew kind || true)"
+    if [[ "${linuxbrew_kind}" == "directory" ]]; then
+      prefix="$(omd_module_marker_value linuxbrew artifact || true)"
+      if ! omd_module_brew_formula_installed_at "${prefix}" "${formula}"; then
+        prefix=""
+      fi
+    fi
+  fi
+  [[ -n "${prefix}" && "${prefix}" == /* && ! -L "${prefix}" && -x "${prefix}/bin/brew" ]] ||
+    return 1
+  prefix="$(cd "${prefix}" 2>/dev/null && pwd -P)" || return 1
+  omd_module_brew_cmd_matches_prefix "${prefix}/bin/brew" "${prefix}" || return 1
+  printf '%s\n' "${prefix}"
+}
+
+omd_module_formula_brew_cmd() {
+  local component="$1" formula="$2" prefix
+  prefix="$(omd_module_formula_marker_prefix "${component}" "${formula}")" || return 1
+  printf '%s/bin/brew\n' "${prefix}"
 }
 
 omd_module_formula_install_or_update() {
-  local component="$1" formula="$2" command_name="$3" action="$4"
+  local component="$1" formula="$2" command_name="$3" action="$4" brew brew_prefix
   shift 4
   omd_module_reject_unknown_flags "$@" || return
 
@@ -261,24 +313,38 @@ omd_module_formula_install_or_update() {
     return 0
   fi
 
-  local brew
-  brew="$(omd_module_brew_cmd)" || {
-    omd_module_info error "Linuxbrew is required before ${component}"
+  if omd_module_formula_managed "${component}" "${formula}"; then
+    brew="$(omd_module_formula_brew_cmd "${component}" "${formula}")" || {
+      omd_module_info error "managed ${component} has no valid owning Homebrew prefix"
+      return 1
+    }
+  else
+    brew="$(omd_module_brew_cmd)" || {
+      omd_module_info error "Linuxbrew is required before ${component}"
+      return 1
+    }
+  fi
+  brew_prefix="$(omd_module_brew_prefix_for_cmd "${brew}")" || {
+    omd_module_info error "could not determine Homebrew prefix for ${component}"
     return 1
   }
 
   if [[ "${action}" == "update" ]] &&
-    omd_module_brew_exec "${brew}" list --formula "${formula}" >/dev/null 2>&1; then
+    omd_module_brew_formula_installed_at "${brew_prefix}" "${formula}"; then
     omd_module_brew_exec "${brew}" upgrade "${formula}"
   else
     omd_module_brew_exec "${brew}" install "${formula}"
   fi
-  omd_module_mark_managed "${component}" brew-formula "${formula}"
+  omd_module_mark_managed \
+    "${component}" \
+    brew-formula \
+    "${formula}" \
+    "brew_prefix=${brew_prefix}"
 }
 
-omd_module_formula_uninstall() {
-  local component="$1" formula="$2"
-  shift 2
+omd_module_formula_uninstall_impl() {
+  local component="$1" formula="$2" remove_marker="$3"
+  shift 3
   omd_module_reject_unknown_flags "$@" || return
 
   if omd_module_dry_run "$@"; then
@@ -289,11 +355,18 @@ omd_module_formula_uninstall() {
   omd_module_formula_managed "${component}" "${formula}" ||
     omd_module_refuse_unmanaged "${component}" || return
 
-  local brew dependants
-  brew="$(omd_module_brew_cmd)" || {
-    omd_module_info error "Linuxbrew is required to uninstall ${component}"
+  local brew brew_prefix dependants
+  brew="$(omd_module_formula_brew_cmd "${component}" "${formula}")" || {
+    omd_module_info error "managed ${component} has no valid owning Homebrew prefix"
     return 1
   }
+  brew_prefix="$(omd_module_brew_prefix_for_cmd "${brew}")" || return 1
+  if ! omd_module_brew_formula_installed_at "${brew_prefix}" "${formula}"; then
+    if [[ "${remove_marker}" == "1" ]]; then
+      omd_module_unmark_managed "${component}"
+    fi
+    return 0
+  fi
   if ! dependants="$(omd_module_brew_exec "${brew}" uses --installed "${formula}" 2>&1)"; then
     omd_module_info error "failed to inspect Homebrew dependants for ${component}: ${dependants}"
     return 1
@@ -303,7 +376,21 @@ omd_module_formula_uninstall() {
     return 1
   fi
   omd_module_brew_exec "${brew}" uninstall "${formula}"
-  omd_module_unmark_managed "${component}"
+  if [[ "${remove_marker}" == "1" ]]; then
+    omd_module_unmark_managed "${component}"
+  fi
+}
+
+omd_module_formula_uninstall() {
+  local component="$1" formula="$2"
+  shift 2
+  omd_module_formula_uninstall_impl "${component}" "${formula}" 1 "$@"
+}
+
+omd_module_formula_uninstall_keep_marker() {
+  local component="$1" formula="$2"
+  shift 2
+  omd_module_formula_uninstall_impl "${component}" "${formula}" 0 "$@"
 }
 
 omd_module_zsh_path() {

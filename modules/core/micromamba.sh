@@ -2,6 +2,8 @@
 set -euo pipefail
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/common.sh"
+# shellcheck source=../lib/source-config.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/source-config.sh"
 
 component="micromamba"
 formula="micromamba"
@@ -14,7 +16,15 @@ install_or_update() {
   shift
   omd_module_formula_install_or_update "${component}" "${formula}" "${command_name}" "${action}" "$@"
 }
-uninstall() { omd_module_formula_uninstall "${component}" "${formula}" "$@"; }
+uninstall() {
+  if omd_module_dry_run "$@"; then
+    omd_module_formula_uninstall "${component}" "${formula}" "$@"
+    return
+  fi
+  omd_module_formula_uninstall_keep_marker "${component}" "${formula}" "$@" || return
+  omd_source_config_remove_component "${component}" || return
+  omd_module_unmark_managed "${component}"
+}
 
 case "${1:-}" in
   status) status ;;

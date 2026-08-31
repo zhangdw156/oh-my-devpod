@@ -51,6 +51,26 @@ install_requires = ["linuxbrew"]
 uninstall = true
 
 [[component]]
+id = "gh"
+name = "GitHub CLI"
+description = "Official command-line client for GitHub"
+category = "development"
+module = "modules/tools/gh.sh"
+requires = []
+install_requires = ["linuxbrew"]
+uninstall = true
+
+[[component]]
+id = "gitee"
+name = "Gitee CLI"
+description = "Official command-line client for Gitee"
+category = "development"
+module = "modules/tools/gitee.sh"
+requires = []
+install_requires = []
+uninstall = true
+
+[[component]]
 id = "ripgrep"
 name = "ripgrep"
 description = "Fast recursive text search"
@@ -96,6 +116,16 @@ name = "jq"
 description = "JSON processor"
 category = "terminal"
 module = "modules/tools/jq.sh"
+requires = []
+install_requires = ["linuxbrew"]
+uninstall = true
+
+[[component]]
+id = "yq"
+name = "yq"
+description = "YAML, JSON, XML, CSV, TOML, and properties processor"
+category = "terminal"
+module = "modules/tools/yq.sh"
 requires = []
 install_requires = ["linuxbrew"]
 uninstall = true

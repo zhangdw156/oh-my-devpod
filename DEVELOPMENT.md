@@ -83,8 +83,20 @@ bootstrap 保存安装来源：
 
 `cn` profile 在执行模块前配置 USTC Homebrew 源、TUNA uv/pip index，
 以及默认走 TUNA 的 Micromamba `conda-forge`/`defaults` channels。
-这些配置通过受管环境变量提供，不写入或覆盖用户自己的 Conda、Mamba、
-pip 配置文件。vendored 二进制不需要访问其原始 GitHub release。
+对于已经安装且由 OMD marker 标记的 Linuxbrew、uv 和 Micromamba，
+`modules/lib/source-config.sh` 还会同步维护原生配置：
+
+```text
+${HOMEBREW_PREFIX}/etc/homebrew/brew.env
+${XDG_CONFIG_HOME:-$HOME/.config}/uv/uv.toml
+${XDG_CONFIG_HOME:-$HOME/.config}/pip/pip.conf
+$HOME/.mambarc
+```
+
+这些文件只有在不存在或内容仍与 OMD 生成模板完全一致时才允许修改。
+用户文件或用户修改过的 OMD 文件必须触发拒绝与事务回滚。切回 upstream
+或卸载对应组件时，只删除仍与 OMD 模板匹配的文件。vendored 二进制不需要
+访问其原始 GitHub release。
 
 受管 Zsh 加载 Mamba shell hook，但不设置 `MAMBA_ROOT_PREFIX`。root prefix
 由实际安装的 Mamba/Micromamba 决定；Homebrew formula 使用其当前版本的
@@ -92,13 +104,22 @@ Cellar prefix，代码不得硬编码具体版本目录。
 
 `omd --update` 复用 bundle 内的 installer helper。更新事务必须先完成
 release 下载、SHA256 校验和 bundle 校验，再修改来源配置或激活新版本。
-来源配置使用临时文件和原子重命名；后续失败时恢复原配置和受管
-Homebrew remote。显式来源切换在版本相同时仍需执行。
+来源配置使用临时文件和原子重命名；后续失败时恢复原配置、原生工具配置和
+受管 Homebrew/core remote。显式来源切换在版本相同时仍需执行。
+
+官方 Gitee CLI 没有 Homebrew formula。它由
+`build/install-gitee-cli.sh` 从 Gitee release API 获取最新 Linux
+amd64/arm64 资产，强制校验 release 内的 SHA256，验证二进制版本后在
+`~/.local/bin` 原子替换。该组件只能管理二进制和所有权标记，必须保留
+`~/.config/gitee`、自定义 `GITEE_CONFIG_DIR`、Agent Skills 与认证状态。
 
 npm 安装通过 `OHMYDEVPOD_SOURCE=github|gitee npm install -g
 oh-my-devpod` 选择 profile。npm launcher 将安装渠道和来源传递给 Rust
 runtime；npm 渠道不得执行内建 `omd --update`，必须提示使用
 `npm update -g oh-my-devpod`，避免出现两个安装所有者。
+`omd --source github|gitee` 独立切换组件来源；npm launcher 优先读取
+用户配置目录中的 `npm-source`，因此切源不依赖 npm 重新执行
+`postinstall`。source-only 路径不得查询或下载 `omd` release。
 
 ## Release bundle
 

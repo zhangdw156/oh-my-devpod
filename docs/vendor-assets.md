@@ -71,3 +71,4 @@ After running it:
 - Component install behavior belongs in `modules/` and reusable install helpers belong in `build/`.
 - This project intentionally avoids Git submodules.
 - Host installation still needs access to the selected package-manager mirrors for non-vendored formula operations.
+- Gitee CLI is not vendored; its installer fetches the official release and requires a matching SHA256 entry before activation.

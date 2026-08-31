@@ -138,6 +138,9 @@ impl RuntimePaths {
         if !root.join("modules/lib/postflight.sh").is_file() {
             return Err(RuntimeError::new("bundle is missing modules/lib/postflight.sh").into());
         }
+        if !root.join("modules/lib/source-config.sh").is_file() {
+            return Err(RuntimeError::new("bundle is missing modules/lib/source-config.sh").into());
+        }
         if !root.join("install/update.sh").is_file() {
             return Err(RuntimeError::new("bundle is missing install/update.sh").into());
         }
@@ -239,6 +242,24 @@ impl Runner {
             Ok(())
         } else {
             Err(RuntimeError::new(format!("self-update failed with {status}")).into())
+        }
+    }
+
+    pub fn switch_source(&self, source: &str) -> Result<(), Box<dyn Error>> {
+        let _lock = ExecutionLock::acquire_at(&self.state_dir)?;
+        let script = self.root.join("install/update.sh");
+        let status = self
+            .base_script_command(&script)
+            .arg("--source-only")
+            .arg(format!("--{source}"))
+            .stdin(Stdio::inherit())
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .status()?;
+        if status.success() {
+            Ok(())
+        } else {
+            Err(RuntimeError::new(format!("source switch failed with {status}")).into())
         }
     }
 
@@ -416,6 +437,7 @@ impl Runner {
             .env_remove("OHMYDEVPOD_ZSHRC")
             .env_remove("OHMYDEVPOD_P10K_CONFIG")
             .env_remove("HOMEBREW_BREW_GIT_REMOTE")
+            .env_remove("HOMEBREW_CORE_GIT_REMOTE")
             .env_remove("HOMEBREW_BOTTLE_DOMAIN")
             .env_remove("HOMEBREW_API_DOMAIN")
             .env_remove("UV_CONFIG_FILE")
@@ -443,6 +465,10 @@ impl Runner {
                     .env(
                         "HOMEBREW_BREW_GIT_REMOTE",
                         "https://mirrors.ustc.edu.cn/brew.git",
+                    )
+                    .env(
+                        "HOMEBREW_CORE_GIT_REMOTE",
+                        "https://mirrors.ustc.edu.cn/homebrew-core.git",
                     )
                     .env(
                         "HOMEBREW_BOTTLE_DOMAIN",

@@ -54,6 +54,7 @@ for required in \
   components.toml \
   install/bootstrap.sh \
   install/update.sh \
+  modules/lib/source-config.sh \
   modules \
   build \
   config \

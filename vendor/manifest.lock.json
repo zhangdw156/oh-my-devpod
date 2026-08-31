@@ -119,7 +119,7 @@
       "commit": "9e2c1548c3dfeefd055e1c6606f66657093ae928",
       "local_path": "vendor/zsh/ohmyzsh",
       "source_url": "https://codeload.github.com/ohmyzsh/ohmyzsh/tar.gz/9e2c1548c3dfeefd055e1c6606f66657093ae928",
-      "notes": "The host installer uses the vendored oh-my-zsh core plus the git and extract plugins."
+      "notes": "The host installer uses the vendored oh-my-zsh core plus the git, extract, and z plugins."
     },
     "powerlevel10k": {
       "repo": "romkatv/powerlevel10k",

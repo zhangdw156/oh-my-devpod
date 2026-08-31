@@ -88,7 +88,9 @@ for expected in \
   oh-my-devpod/components.toml \
   oh-my-devpod/install/update.sh \
   oh-my-devpod/modules/ \
+  oh-my-devpod/modules/lib/source-config.sh \
   oh-my-devpod/build/ \
+  oh-my-devpod/build/install-gitee-cli.sh \
   oh-my-devpod/config/ \
   oh-my-devpod/vendor/ \
   oh-my-devpod/VERSION \

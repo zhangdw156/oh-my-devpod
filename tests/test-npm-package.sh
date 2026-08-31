@@ -24,7 +24,7 @@ const manifest = require(path.join(root, "npm/package.json"));
 const version = fs.readFileSync(path.join(root, "VERSION"), "utf8").trim();
 
 assert.equal(manifest.name, "oh-my-devpod");
-assert.equal(manifest.version, "0.14.2");
+assert.equal(manifest.version, "0.14.3");
 assert.equal(manifest.version, version);
 assert.equal(manifest.bin.omd, "bin/omd");
 assert.equal(manifest.engines.node, ">=18");
@@ -86,6 +86,13 @@ assert.equal(source.selectSource("github"), "github");
 assert.equal(source.selectSource("gitee"), "gitee");
 assert.equal(source.selectSource(undefined, "gitee"), "gitee");
 assert.throws(() => source.selectSource("mirror"), /expected github or gitee/);
+assert.equal(
+  source.sourceStatePath(
+    { OHMYDEVPOD_CONFIG_DIR: "/tmp/custom-omd-config" },
+    "/home/test-user",
+  ),
+  "/tmp/custom-omd-config/npm-source",
+);
 
 for (const [requested, expected] of [
   [undefined, "github"],
@@ -142,7 +149,7 @@ launcher_fixture="${tmp_dir}/launcher-package"
 mkdir -p "${launcher_fixture}/bin" "${launcher_fixture}/runtime/bin"
 cp "${repo_root}/npm/bin/omd" "${launcher_fixture}/bin/omd"
 chmod +x "${launcher_fixture}/bin/omd"
-printf 'gitee\n' > "${launcher_fixture}/.npm-source"
+printf 'github\n' > "${launcher_fixture}/.npm-source"
 cat > "${launcher_fixture}/runtime/bin/omd" <<'MOCK'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -163,8 +170,13 @@ MOCK
 chmod +x "${launcher_fixture}/runtime/bin/omd"
 
 launcher_output="${tmp_dir}/launcher.out"
+launcher_config="${tmp_dir}/launcher-config"
+mkdir -p "${launcher_config}/oh-my-devpod"
+printf 'gitee\n' > "${launcher_config}/oh-my-devpod/npm-source"
 set +e
-OMD_TEST_OUTPUT="${launcher_output}" OMD_TEST_EXIT=37 \
+XDG_CONFIG_HOME="${launcher_config}" \
+  OMD_TEST_OUTPUT="${launcher_output}" \
+  OMD_TEST_EXIT=37 \
   "${launcher_fixture}/bin/omd" --plan "two words" '*.txt'
 launcher_status=$?
 set -e
@@ -186,13 +198,25 @@ grep -Fqx 'arg1=two words' "${launcher_output}" ||
 grep -Fqx 'arg2=*.txt' "${launcher_output}" ||
   fail "launcher should not expand arguments"
 
-OMD_TEST_OUTPUT="${launcher_output}" "${launcher_fixture}/bin/omd" --update
+empty_launcher_config="${tmp_dir}/empty-launcher-config"
+mkdir -p "${empty_launcher_config}"
+XDG_CONFIG_HOME="${empty_launcher_config}" \
+  OMD_TEST_OUTPUT="${launcher_output}" \
+  "${launcher_fixture}/bin/omd" --version
+grep -Fqx 'source=github' "${launcher_output}" ||
+  fail "launcher should fall back to the package source when user state is absent"
+
+XDG_CONFIG_HOME="${launcher_config}" \
+  OMD_TEST_OUTPUT="${launcher_output}" \
+  "${launcher_fixture}/bin/omd" --update
 grep -Fqx 'arg0=--update' "${launcher_output}" ||
   fail "launcher should pass update requests to the bundled omd binary"
 
 mkdir -p "${tmp_dir}/global-bin"
 ln -s "${launcher_fixture}/bin/omd" "${tmp_dir}/global-bin/omd"
-OMD_TEST_OUTPUT="${launcher_output}" "${tmp_dir}/global-bin/omd" --version
+XDG_CONFIG_HOME="${launcher_config}" \
+  OMD_TEST_OUTPUT="${launcher_output}" \
+  "${tmp_dir}/global-bin/omd" --version
 grep -Fqx "bundle=${launcher_fixture}/runtime" "${launcher_output}" ||
   fail "launcher should resolve an npm-style global symlink"
 grep -Fqx 'arg0=--version' "${launcher_output}" ||
@@ -219,12 +243,13 @@ fi
 exit 0
 MOCK
 chmod +x "${release_root}/bin/omd"
-printf '0.14.2\n' > "${release_root}/VERSION"
+printf '0.14.3\n' > "${release_root}/VERSION"
 printf 'fixture components\n' > "${release_root}/components.toml"
 printf 'fixture versions\n' > "${release_root}/versions.env"
 printf 'fixture bootstrap\n' > "${release_root}/install/bootstrap.sh"
 printf 'fixture update\n' > "${release_root}/install/update.sh"
 printf 'fixture module\n' > "${release_root}/modules/lib/common.sh"
+printf 'fixture source config\n' > "${release_root}/modules/lib/source-config.sh"
 printf 'fixture build\n' > "${release_root}/build/helper.sh"
 printf 'fixture config\n' > "${release_root}/config/example"
 printf 'fixture hidden config\n' > "${release_root}/config/.hidden-example"
@@ -236,7 +261,7 @@ tar -czf "${release_archive}" -C "${tmp_dir}/release" oh-my-devpod
 npm_dist="${tmp_dir}/dist"
 package_path="$("${repo_root}/build/package-npm.sh" "${release_archive}" "${npm_dist}")"
 [[ -f "${package_path}" ]] || fail "package script did not create npm archive"
-[[ "$(basename "${package_path}")" == "oh-my-devpod-0.14.2.tgz" ]] ||
+[[ "$(basename "${package_path}")" == "oh-my-devpod-0.14.3.tgz" ]] ||
   fail "unexpected npm archive name: ${package_path}"
 
 packed_listing="${tmp_dir}/packed.list"
@@ -252,6 +277,7 @@ for expected in \
   package/runtime/components.toml \
   package/runtime/install/update.sh \
   package/runtime/modules/lib/common.sh \
+  package/runtime/modules/lib/source-config.sh \
   package/runtime/build/helper.sh \
   package/runtime/config/example \
   package/runtime/config/.hidden-example \
@@ -302,11 +328,11 @@ if "${repo_root}/build/package-npm.sh" \
   "${tmp_dir}/wrong-version-dist" >"${tmp_dir}/wrong-version.out" 2>&1; then
   fail "package script should reject a mismatched bundle version"
 fi
-grep -Fq 'bundle version (0.14.1) does not match npm package version (0.14.2)' \
+grep -Fq 'bundle version (0.14.1) does not match npm package version (0.14.3)' \
   "${tmp_dir}/wrong-version.out" ||
   fail "version mismatch should produce a clear error"
 
-printf '0.14.2\n' > "${release_root}/VERSION"
+printf '0.14.3\n' > "${release_root}/VERSION"
 rm "${release_root}/install/update.sh"
 tar -czf "${tmp_dir}/incomplete.tar.gz" -C "${tmp_dir}/release" oh-my-devpod
 if "${repo_root}/build/package-npm.sh" \
