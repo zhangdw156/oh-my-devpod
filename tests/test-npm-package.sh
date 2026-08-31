@@ -277,11 +277,14 @@ if [[ "$(uname -s)" == "Linux" ]] &&
   grep -Eq '^ID="?ubuntu"?$' /etc/os-release &&
   grep -Eq '^VERSION_ID="?24\.04"?$' /etc/os-release; then
   npm_prefix="${tmp_dir}/npm-prefix"
+  npm_config_home="${tmp_dir}/npm-config"
   install_output="${tmp_dir}/npm-install.out"
-  OHMYDEVPOD_SOURCE=gitee npm install \
+  XDG_CONFIG_HOME="${npm_config_home}" OHMYDEVPOD_SOURCE=gitee npm install \
     --global \
     --prefix "${npm_prefix}" \
     "${package_path}" >"${install_output}"
+  [[ "$(cat "${npm_config_home}/oh-my-devpod/npm-source")" == "gitee" ]] ||
+    fail "npm install should persist the selected source outside node_modules"
   installed_output="${tmp_dir}/npm-installed-launcher.out"
   OMD_TEST_OUTPUT="${installed_output}" "${npm_prefix}/bin/omd" --version
   grep -Fqx 'channel=npm' "${installed_output}" ||

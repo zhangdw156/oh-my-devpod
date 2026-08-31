@@ -50,7 +50,8 @@ jobs:
               "${RUNNER_TEMP}/release/omd-x86_64-unknown-linux-gnu.tar.gz" \
               "${RUNNER_TEMP}/npm-dist"
           )"
-          HOME="${npm_home}" OHMYDEVPOD_SOURCE=gitee \
+          HOME="${npm_home}" XDG_CONFIG_HOME="${npm_home}/.config" \
+            OHMYDEVPOD_SOURCE=gitee \
             npm install --global --prefix "${npm_root}" "${package}"
           test "$(cat "${npm_root}/lib/node_modules/oh-my-devpod/.npm-source")" = gitee
           test "$(cat "${npm_home}/.config/oh-my-devpod/npm-source")" = gitee
