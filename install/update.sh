@@ -32,6 +32,40 @@ omd_update_archive_version() {
   printf '%s\n' "${version}"
 }
 
+omd_update_install_archive() {
+  local archive="$1" prefix="$2" bin_dir="$3" cache_dir="$4"
+  local staging_dir candidate_root candidate_bootstrap installed_version
+  staging_dir="$(mktemp -d "${cache_dir}/.candidate-bootstrap.XXXXXX")" || return 1
+  if ! tar -xzf "${archive}" -C "${staging_dir}"; then
+    rm -rf "${staging_dir}"
+    return 1
+  fi
+  candidate_root="${staging_dir}/oh-my-devpod"
+  if ! omd_validate_bundle "${candidate_root}"; then
+    rm -rf "${staging_dir}"
+    return 1
+  fi
+  candidate_bootstrap="${candidate_root}/install/bootstrap.sh"
+  if ! installed_version="$(
+    OHMYDEVPOD_BOOTSTRAP_LIB_ONLY=1 \
+      bash -c '
+        set -euo pipefail
+        source "$1"
+        omd_install_archive "$2" "$3" "$4"
+      ' _ \
+      "${candidate_bootstrap}" \
+      "${archive}" \
+      "${prefix}" \
+      "${bin_dir}"
+  )"; then
+    rm -rf "${staging_dir}"
+    return 1
+  fi
+  rm -rf "${staging_dir}"
+  [[ -n "${installed_version}" ]] || return 1
+  printf '%s\n' "${installed_version}"
+}
+
 omd_update_snapshot_source_config() {
   local config_dir="$1" snapshot_dir="$2" name
   mkdir -p "${snapshot_dir}" || return 1
@@ -374,7 +408,13 @@ omd_update_main() {
   fi
 
   if [[ -n "${archive}" ]]; then
-    if ! installed_version="$(omd_install_archive "${archive}" "${prefix}" "${bin_dir}")"; then
+    if ! installed_version="$(
+      omd_update_install_archive \
+        "${archive}" \
+        "${prefix}" \
+        "${bin_dir}" \
+        "${cache_dir}"
+    )"; then
       if [[ "${manage_source}" == "1" ]]; then
         omd_update_abort_with_rollback "Self-update installation failed" "${config_dir}" "${snapshot_dir}"
       fi

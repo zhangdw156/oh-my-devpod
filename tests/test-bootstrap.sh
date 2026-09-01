@@ -45,8 +45,11 @@ cat > "${payload_root}/bin/omd" <<'OMD'
 printf 'omd-test\n'
 OMD
 chmod +x "${payload_root}/bin/omd"
+printf '#!/usr/bin/env bash\nexit 0\n' > "${payload_root}/install/bootstrap.sh"
 printf '#!/usr/bin/env bash\nexit 0\n' > "${payload_root}/install/update.sh"
-chmod +x "${payload_root}/install/update.sh"
+chmod +x \
+  "${payload_root}/install/bootstrap.sh" \
+  "${payload_root}/install/update.sh"
 printf 'schema_version = 1\n' > "${payload_root}/components.toml"
 printf '1.2.3\n' > "${payload_root}/VERSION"
 printf 'TEST_VERSION=1\n' > "${payload_root}/versions.env"

@@ -102,8 +102,9 @@ $HOME/.mambarc
 由实际安装的 Mamba/Micromamba 决定；Homebrew formula 使用其当前版本的
 Cellar prefix，代码不得硬编码具体版本目录。
 
-`omd --update` 复用 bundle 内的 installer helper。更新事务必须先完成
-release 下载、SHA256 校验和 bundle 校验，再修改来源配置或激活新版本。
+`omd --update` 必须先完成 release 下载、SHA256 校验和 bundle 校验，再由
+候选 release 自带的 bootstrap 在隔离子 shell 中激活新版本。当前 release
+不得使用自己的安装函数替换候选版本，避免旧安装器缺陷阻断后续修复。
 来源配置使用临时文件和原子重命名；后续失败时恢复原配置、原生工具配置和
 受管 Homebrew/core remote。显式来源切换在版本相同时仍需执行。
 

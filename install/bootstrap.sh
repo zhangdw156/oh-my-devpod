@@ -135,6 +135,7 @@ omd_validate_bundle() {
   for required in \
     bin/omd \
     components.toml \
+    install/bootstrap.sh \
     install/update.sh \
     modules \
     build \
