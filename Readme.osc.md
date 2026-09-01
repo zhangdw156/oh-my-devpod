@@ -178,6 +178,11 @@ omd --source gitee     # 只切源，不更新 omd
 自更新只替换通过 SHA256 校验的 release bundle，不会打开 TUI，也不会更新
 已安装组件。下载、校验或激活失败时，当前版本与原来源配置保持不变。
 
+旧版 `0.14.1` 可能在新 bundle 已经激活后仍提示
+`previous_dir: unbound variable`。先运行 `omd --version`，再执行一次
+`omd --update` 即可确认完成。从 `0.14.4` 开始，自更新会把激活工作交给
+已校验候选 release 的 bootstrap，使后续安装器修复可以跨版本生效。
+
 npm 管理的安装应通过 npm 更新：
 
 ```bash

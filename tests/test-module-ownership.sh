@@ -110,6 +110,12 @@ if env \
 fi
 [[ -f "${external_state}" ]] || fail "external formula must remain installed"
 
+isolated_bin="${tmp_dir}/isolated-bin"
+mkdir -p "${isolated_bin}"
+for command_name in bash date dirname env grep head mkdir mv pwd readlink rm sed; do
+  ln -s "$(command -v "${command_name}")" "${isolated_bin}/${command_name}"
+done
+
 for component in yq gh; do
   module="${repo_root}/modules/tools/${component}.sh"
   formula_home="${tmp_dir}/${component}-home"
@@ -119,7 +125,7 @@ for component in yq gh; do
 
   env \
     HOME="${formula_home}" \
-    PATH="/usr/bin:/bin" \
+    PATH="${isolated_bin}" \
     OHMYDEVPOD_BREW_BIN="${fake_brew}" \
     OHMYDEVPOD_TEST_BREW_STATE="${formula_state}" \
     "${module}" install
@@ -138,14 +144,14 @@ for component in yq gh; do
 
   env \
     HOME="${formula_home}" \
-    PATH="/usr/bin:/bin" \
+    PATH="${isolated_bin}" \
     OHMYDEVPOD_BREW_BIN="${fake_brew}" \
     OHMYDEVPOD_TEST_BREW_STATE="${formula_state}" \
     "${module}" managed
 
   env \
     HOME="${formula_home}" \
-    PATH="/usr/bin:/bin" \
+    PATH="${isolated_bin}" \
     OHMYDEVPOD_BREW_BIN="${fake_brew}" \
     OHMYDEVPOD_TEST_BREW_STATE="${formula_state}" \
     "${module}" uninstall
@@ -205,7 +211,7 @@ EOF
 
 env \
   HOME="${prefix_home}" \
-  PATH="/usr/bin:/bin" \
+  PATH="${isolated_bin}" \
   OHMYDEVPOD_BREW_BIN="${external_prefix}/bin/brew" \
   "${repo_root}/modules/tools/yq.sh" update
 grep -Fqx 'upgrade yq' "${owned_log}" ||
@@ -215,7 +221,7 @@ grep -Fqx 'upgrade yq' "${owned_log}" ||
 
 env \
   HOME="${prefix_home}" \
-  PATH="/usr/bin:/bin" \
+  PATH="${isolated_bin}" \
   OHMYDEVPOD_BREW_BIN="${external_prefix}/bin/brew" \
   "${repo_root}/modules/tools/yq.sh" uninstall
 [[ ! -d "${owned_prefix}/Cellar/yq" ]] ||
@@ -243,7 +249,7 @@ EOF
 
 env \
   HOME="${prefix_home}" \
-  PATH="/usr/bin:/bin" \
+  PATH="${isolated_bin}" \
   OHMYDEVPOD_BREW_BIN="${external_prefix}/bin/brew" \
   "${repo_root}/modules/tools/yq.sh" update
 grep -Fqx 'upgrade yq' "${owned_log}" ||
@@ -279,7 +285,7 @@ ln -s ../Homebrew/bin/brew "${symlink_prefix}/bin/brew"
 
 env \
   HOME="${symlink_home}" \
-  PATH="/usr/bin:/bin" \
+  PATH="${isolated_bin}" \
   OHMYDEVPOD_BREW_BIN="${symlink_prefix}/bin/brew" \
   "${repo_root}/modules/tools/yq.sh" install
 grep -Fqx \
@@ -306,7 +312,7 @@ EOF
 : > "${external_log}"
 if env \
   HOME="${hijack_home}" \
-  PATH="/usr/bin:/bin" \
+  PATH="${isolated_bin}" \
   OHMYDEVPOD_BREW_BIN="${external_prefix}/bin/brew" \
   "${repo_root}/modules/tools/yq.sh" update >/dev/null 2>&1; then
   fail "managed formula update should reject a brew symlink escaping its owned prefix"

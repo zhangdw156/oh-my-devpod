@@ -231,6 +231,30 @@ assert_contains 'Update source: github' "${default_output}"
 assert_contains 'Latest version: 1.2.4' "${default_output}"
 assert_contains 'Successfully updated omd to 1.2.4' "${default_output}"
 
+candidate_bootstrap_home="${tmp_dir}/candidate-bootstrap-home"
+candidate_bootstrap_log="${tmp_dir}/candidate-bootstrap.log"
+candidate_bootstrap_output="${tmp_dir}/candidate-bootstrap.out"
+install_fixture github "${candidate_bootstrap_home}"
+cat >> \
+  "${candidate_bootstrap_home}/.local/share/oh-my-devpod/releases/1.2.3/install/bootstrap.sh" <<'EOF'
+
+omd_install_archive() {
+  printf 'the active release bootstrap must not install its replacement\n' >&2
+  return 97
+}
+EOF
+run_update \
+  "${candidate_bootstrap_home}" \
+  "${candidate_bootstrap_log}" \
+  > "${candidate_bootstrap_output}"
+assert_equal \
+  'omd 1.2.4' \
+  "$("${candidate_bootstrap_home}/.local/bin/omd" --version)" \
+  "candidate bootstrap updated version"
+assert_contains \
+  'Successfully updated omd to 1.2.4' \
+  "${candidate_bootstrap_output}"
+
 saved_github_home="${tmp_dir}/saved-github-home"
 saved_github_log="${tmp_dir}/saved-github.log"
 install_fixture github "${saved_github_home}"

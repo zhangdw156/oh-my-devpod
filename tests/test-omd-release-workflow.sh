@@ -86,6 +86,7 @@ tar -tzf "${archive}" > "${archive_listing}"
 for expected in \
   oh-my-devpod/bin/omd \
   oh-my-devpod/components.toml \
+  oh-my-devpod/install/bootstrap.sh \
   oh-my-devpod/install/update.sh \
   oh-my-devpod/modules/ \
   oh-my-devpod/modules/lib/source-config.sh \

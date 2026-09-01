@@ -184,6 +184,12 @@ SHA256-verified release bundle—it does not open the TUI or update installed
 components. Failed downloads, validation, or activation preserve the active
 version and previous source profile.
 
+Legacy `0.14.1` installations may print `previous_dir: unbound variable` after
+the newer bundle has already been activated. Run `omd --version`, then rerun
+`omd --update` once. Releases from `0.14.4` onward delegate activation to the
+verified candidate bootstrap so future installer fixes can cross release
+boundaries.
+
 For npm-managed installations, update through npm instead:
 
 ```bash
