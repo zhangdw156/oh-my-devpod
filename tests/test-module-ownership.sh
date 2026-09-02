@@ -116,7 +116,7 @@ for command_name in bash date dirname env grep head mkdir mv pwd readlink rm sed
   ln -s "$(command -v "${command_name}")" "${isolated_bin}/${command_name}"
 done
 
-for component in yq gh; do
+for component in yq gh witr; do
   module="${repo_root}/modules/tools/${component}.sh"
   formula_home="${tmp_dir}/${component}-home"
   formula_state="${brew_prefix}/Cellar/${component}/1.0.0"

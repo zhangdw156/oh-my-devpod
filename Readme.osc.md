@@ -98,7 +98,7 @@ omd
 | --- | --- | --- |
 | 基础 | **Linuxbrew**、**Zsh**、**uv**、**Micromamba** | 用户态软件包、Shell 与 Python/环境工具 |
 | 开发 | **Git**、**GitHub CLI**、**Gitee CLI** | 版本控制与代码托管平台自动化 |
-| 终端 | **ripgrep**、**fzf**、**bat**、**fd**、**jq**、**yq**、**Atuin**、**Zellij**、**Yazi**、**btop** | 搜索、结构化数据、导航、历史、会话、文件与系统状态 |
+| 终端 | **ripgrep**、**fzf**、**bat**、**fd**、**jq**、**yq**、**Atuin**、**Zellij**、**Yazi**、**btop**、**witr** | 搜索、结构化数据、导航、历史、会话、文件、进程追踪与系统状态 |
 | 编辑器 | **Neovim**、**LazyVim** | 终端编辑器与受管编辑器配置 |
 | 配置 | **Zsh productivity configuration** | Oh My Zsh、Powerlevel10k、补全、历史、模糊搜索与 `z` 目录跳转 |
 

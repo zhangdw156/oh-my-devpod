@@ -102,7 +102,7 @@ install-time providers are resolved automatically.
 | --- | --- | --- |
 | Foundation | **Linuxbrew**, **Zsh**, **uv**, **Micromamba** | User-space packages, shell, and Python/environment tooling |
 | Development | **Git**, **GitHub CLI**, **Gitee CLI** | Version control and forge automation |
-| Terminal | **ripgrep**, **fzf**, **bat**, **fd**, **jq**, **yq**, **Atuin**, **Zellij**, **Yazi**, **btop** | Search, structured data, navigation, history, sessions, files, and system visibility |
+| Terminal | **ripgrep**, **fzf**, **bat**, **fd**, **jq**, **yq**, **Atuin**, **Zellij**, **Yazi**, **btop**, **witr** | Search, structured data, navigation, history, sessions, files, process tracing, and system visibility |
 | Editor | **Neovim**, **LazyVim** | Terminal editing and a managed editor configuration |
 | Configuration | **Zsh productivity configuration** | Oh My Zsh, Powerlevel10k, completions, history, fuzzy search, and `z` directory jumping |
 

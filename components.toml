@@ -171,6 +171,16 @@ install_requires = ["linuxbrew"]
 uninstall = true
 
 [[component]]
+id = "witr"
+name = "witr"
+description = "Trace processes, ports, containers, and files to their launch chain"
+category = "terminal"
+module = "modules/tools/witr.sh"
+requires = []
+install_requires = ["linuxbrew"]
+uninstall = true
+
+[[component]]
 id = "neovim"
 name = "Neovim"
 description = "Modern terminal editor"

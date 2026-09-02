@@ -87,6 +87,7 @@ minimum_ids = {
     "atuin",
     "neovim",
     "lazyvim",
+    "witr",
     "yq",
 }
 missing_ids = sorted(minimum_ids - set(ids))
@@ -156,6 +157,17 @@ require_component_shape(
     {
         "category": "terminal",
         "module": "modules/tools/yq.sh",
+        "requires": [],
+        "install_requires": ["linuxbrew"],
+        "uninstall": True,
+    },
+)
+
+require_component_shape(
+    "witr",
+    {
+        "category": "terminal",
+        "module": "modules/tools/witr.sh",
         "requires": [],
         "install_requires": ["linuxbrew"],
         "uninstall": True,
