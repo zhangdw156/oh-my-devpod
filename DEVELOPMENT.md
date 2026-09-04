@@ -71,6 +71,8 @@ Linuxbrew 是裸机上的 host-scoped 组件，固定前缀为
 `/var/lib/oh-my-devpod/linuxbrew/locks/mutation.lock`，共享公式记录位于
 `/var/lib/oh-my-devpod/linuxbrew/inventory/`。普通用户本地 marker
 只用于严格校验旧版本迁移，不能作为共享状态的第二份真相。
+gateway 必须保留 service user 可读的 cwd；不可读时回退到 service
+home，避免私有用户 home 阻止普通 Brew 命令。
 
 已存在的 Linuxbrew 只有在前缀 owner、owner 的 legacy OMD marker 和
 `brew --prefix` 完全一致时才能自动迁移；未标记、伪造、前缀不一致或

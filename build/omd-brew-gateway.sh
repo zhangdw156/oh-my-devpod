@@ -247,6 +247,15 @@ run_real_brew() {
   env -i "${clean_env[@]}" "${real_brew}" "$@"
 }
 
+prepare_backend_working_directory() {
+  local fallback="$1" current=""
+  current="$(pwd -P 2>/dev/null || true)"
+  if [[ -n "${current}" && -r "${current}" && -x "${current}" ]]; then
+    return 0
+  fi
+  cd -P "${fallback}" 2>/dev/null || fail "service home is not an accessible working directory"
+}
+
 run_backend() {
   local home status mutates=0 before name value
   if [[ "${1:-}" == "--omd-forwarded" ]]; then
@@ -281,6 +290,7 @@ run_backend() {
   [[ "$(id -u)" == "$(manifest_value service_uid)" ]] || fail "backend must run as $(service_user)"
   validate_inventory_records
   home="$(service_home "$(service_user)")"
+  prepare_backend_working_directory "${home}"
   before="${state_dir}/.inventory-before.$$"
   if is_inventory_mutation "${1:-}"; then
     mutates=1

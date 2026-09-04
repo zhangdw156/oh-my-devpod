@@ -274,6 +274,9 @@ root-owned gateway transparently runs the real Brew process under the service
 UID and serializes mutations on one host lock. OMD installs a
 `/usr/local/bin/brew` shim and login-shell activation; start a new shell after
 first enrollment so the gateway is ahead of the real prefix.
+Readable working directories are preserved for relative-path Brew commands;
+when a private user directory is inaccessible to `omd-brew`, the gateway runs
+the backend from its service home instead.
 
 The first OMD user initializes the prefix. A later user's bootstrap detects the
 shared manifest, enrolls that user, and reuses the existing Cellar without

@@ -261,6 +261,8 @@ Linuxbrew 默认是主机级组件：全机只使用
 root-owned gateway 会透明切换到服务 UID，并用同一个主机锁串行化
 所有变更。首次入组后请启动一个新 shell，让 OMD 安装的
 `/usr/local/bin/brew` shim 位于真实前缀之前。
+可读的当前目录会继续保留，以支持相对路径参数；如果用户私有目录对
+`omd-brew` 不可访问，gateway 会自动从 service home 运行后端。
 
 第一个用户负责初始化；后续用户安装 OMD 时会自动检测共享 manifest、
 加入管理组并复用已有 Cellar，不会重复安装。旧版 OMD 的 Linuxbrew

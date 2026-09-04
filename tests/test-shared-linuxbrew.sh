@@ -41,6 +41,7 @@ prefix="${OHMYDEVPOD_SHARED_BREW_PREFIX}"
 printf '<%s>' "$@" >> "${OMD_TEST_BREW_LOG}"
 printf '\n' >> "${OMD_TEST_BREW_LOG}"
 printf '[no_analytics=%s]\n' "${HOMEBREW_NO_ANALYTICS:-}" >> "${OMD_TEST_BREW_LOG}"
+printf '[cwd=%s]\n' "$(pwd -P)" >> "${OMD_TEST_BREW_LOG}"
 case "${1:-}" in
   --prefix)
     printf '%s\n' "${prefix}"
@@ -114,6 +115,34 @@ assert_file_contains "${state_dir}/inventory/ripgrep" "state=managed"
 assert_file_contains "${state_dir}/inventory/ripgrep" "artifact=ripgrep"
 run_gateway "${prefix}" "${state_dir}" "${libexec_dir}" "${user_a_home}" --service --omd-forwarded --omd-env HOMEBREW_NO_ANALYTICS 1 -- info ripgrep
 grep -Fqx '[no_analytics=1]' "${brew_log}" || fail "gateway should safely forward supported Brew environment"
+
+readable_cwd="${tmp_dir}/readable-cwd"
+private_cwd="${user_a_home}/private-cwd"
+mkdir -p "${readable_cwd}" "${private_cwd}"
+: > "${brew_log}"
+(
+  cd "${readable_cwd}"
+  run_gateway "${prefix}" "${state_dir}" "${libexec_dir}" "${user_a_home}" --prefix >/dev/null 2>&1
+)
+grep -Fqx "[cwd=${readable_cwd}]" "${brew_log}" || fail "gateway should preserve a readable working directory"
+
+if command -v getent >/dev/null 2>&1; then
+  expected_service_home="$(getent passwd "${service_user}" | awk -F: '{print $6}')"
+else
+  expected_service_home="${state_dir}/service-home"
+fi
+: > "${brew_log}"
+(
+  cd "${private_cwd}"
+  chmod 0000 "${private_cwd}"
+  set +e
+  run_gateway "${prefix}" "${state_dir}" "${libexec_dir}" "${user_a_home}" --prefix >/dev/null 2>&1
+  gateway_status=$?
+  set -e
+  chmod 0700 "${private_cwd}"
+  [[ "${gateway_status}" -eq 0 ]]
+)
+grep -Fqx "[cwd=${expected_service_home}]" "${brew_log}" || fail "gateway should fall back from an unreadable working directory"
 
 if env HOME="${user_b_home}" OHMYDEVPOD_SHARED_BREW_TEST_MODE=1 OHMYDEVPOD_SHARED_BREW_PREFIX="${prefix}" OHMYDEVPOD_SHARED_BREW_STATE_DIR="${state_dir}" OHMYDEVPOD_SHARED_BREW_LIBEXEC_DIR="${libexec_dir}" OHMYDEVPOD_SHARED_BREW_TEST_SERVICE_GID="${service_gid}" OHMYDEVPOD_SHARED_BREW_TEST_CURRENT_USER=user-b OHMYDEVPOD_SHARED_BREW_TEST_CURRENT_UID="${service_uid}" "${repo_root}/modules/core/linuxbrew.sh" status; then
   fail "an unenrolled user should cause Linuxbrew to be planned for enrollment"
