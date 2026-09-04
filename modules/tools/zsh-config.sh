@@ -51,11 +51,19 @@ if [[ -f "${OHMYDEVPOD_CONFIG_DIR}/env" ]]; then
   source "${OHMYDEVPOD_CONFIG_DIR}/env"
   set +a
 fi
+omd_brew_gateway_dir="/usr/local/libexec/oh-my-devpod/bin"
+if [[ -x "${omd_brew_gateway_dir}/brew" ]]; then
+  export PATH="${omd_brew_gateway_dir}:${PATH}"
+fi
 if command -v brew >/dev/null 2>&1; then
   eval "$(brew shellenv)"
 elif [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
   eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 fi
+if [[ -x "${omd_brew_gateway_dir}/brew" ]]; then
+  export PATH="${omd_brew_gateway_dir}:${PATH}"
+fi
+unset omd_brew_gateway_dir
 export PATH="$HOME/.local/bin:$PATH"
 omd_mamba_hook=""
 if command -v mamba >/dev/null 2>&1; then

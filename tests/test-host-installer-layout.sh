@@ -27,6 +27,9 @@ assert_dir modules/core
 assert_dir modules/tools
 assert_executable modules/lib/postflight.sh
 assert_executable modules/lib/source-config.sh
+assert_executable modules/lib/shared-linuxbrew.sh
+assert_executable build/omd-brew-gateway.sh
+assert_executable build/omd-brew-provisioner.sh
 assert_absent modules/optional
 
 assert_absent Dockerfile.devpod

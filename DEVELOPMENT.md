@@ -64,10 +64,23 @@ uninstall [--dry-run]
 - 所有卸载路径只能删除所有权标记中记录且位于允许目录内的对象。
 - Linuxbrew 不支持普通卸载。
 
+Linuxbrew 是裸机上的 host-scoped 组件，固定前缀为
+`/home/linuxbrew/.linuxbrew`。真实前缀只由非 root 的 `omd-brew`
+服务账号写入；`omd-brew` 组成员通过 root-owned gateway 使用标准
+`brew` 命令。任意 Brew 变更都必须经过
+`/var/lib/oh-my-devpod/linuxbrew/locks/mutation.lock`，共享公式记录位于
+`/var/lib/oh-my-devpod/linuxbrew/inventory/`。普通用户本地 marker
+只用于严格校验旧版本迁移，不能作为共享状态的第二份真相。
+
+已存在的 Linuxbrew 只有在前缀 owner、owner 的 legacy OMD marker 和
+`brew --prefix` 完全一致时才能自动迁移；未标记、伪造、前缀不一致或
+包含 symlink 的安装必须以 `unmanaged-prefix-conflict` 失败。
+
 所有权状态默认位于：
 
 ```text
 ~/.local/state/oh-my-devpod/managed/
+/var/lib/oh-my-devpod/linuxbrew/
 ```
 
 ## 镜像配置

@@ -252,6 +252,30 @@ install/bootstrap.sh
 | `build/`、`vendor/`、`config/` | release 组装与固定版本资产 |
 | `VERSION` | `omd` release 版本真源 |
 
+## 裸机多用户共享 Linuxbrew
+
+Linuxbrew 默认是主机级组件：全机只使用
+`/home/linuxbrew/.linuxbrew`。真实前缀由非 root 的 `omd-brew`
+服务账号独占写入；加入 `omd-brew` 组的用户仍直接使用标准
+`brew install`、`brew upgrade` 和 `brew uninstall`。OMD 安装的
+root-owned gateway 会透明切换到服务 UID，并用同一个主机锁串行化
+所有变更。首次入组后请启动一个新 shell，让 OMD 安装的
+`/usr/local/bin/brew` shim 位于真实前缀之前。
+
+第一个用户负责初始化；后续用户安装 OMD 时会自动检测共享 manifest、
+加入管理组并复用已有 Cellar，不会重复安装。旧版 OMD 的 Linuxbrew
+仅在 owner、legacy marker 与 `brew --prefix` 完全一致时随首次更新
+自动迁移；任何未标记或不匹配的前缀都会以
+`unmanaged-prefix-conflict` 拒绝接管。
+
+软件集合是全局的：安装、升级、卸载和换源都会影响所有用户，因此
+`omd-brew` 组成员必须互相信任。自动入组需要 sudo；没有 sudo 权限时
+由管理员在该用户的登录上下文中执行固定 provisioner：
+
+```bash
+sudo env SUDO_USER=user-b /usr/local/libexec/oh-my-devpod/brew-provisioner ensure upstream
+```
+
 ## 内建安全边界
 
 - **所有权控制卸载**：只删除带有 oh-my-devpod 所有权标记的产物。

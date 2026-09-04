@@ -264,12 +264,41 @@ install/bootstrap.sh
 | `build/`, `vendor/`, `config/` | Release assembly and pinned assets |
 | `VERSION` | Release version source of truth |
 
+## Shared Linuxbrew on multi-user hosts
+
+On a bare-metal host, Linuxbrew is host-scoped by default. OMD maintains one
+installation at `/home/linuxbrew/.linuxbrew`, owned by the non-login
+`omd-brew` service account. Users enrolled in the `omd-brew` group use the
+ordinary `brew install`, `brew upgrade`, and `brew uninstall` commands; a
+root-owned gateway transparently runs the real Brew process under the service
+UID and serializes mutations on one host lock. OMD installs a
+`/usr/local/bin/brew` shim and login-shell activation; start a new shell after
+first enrollment so the gateway is ahead of the real prefix.
+
+The first OMD user initializes the prefix. A later user's bootstrap detects the
+shared manifest, enrolls that user, and reuses the existing Cellar without
+reinstalling Brew. An old OMD-owned prefix is migrated during the first update
+to a shared-aware release only when its owner, marker, and reported Brew prefix
+all match exactly. An unmarked or mismatched prefix is rejected as
+`unmanaged-prefix-conflict` and is never adopted.
+
+The package set is global: a direct Brew or OMD install is visible to every
+user, and an upgrade, uninstall, or source switch affects every user. Members
+of `omd-brew` must therefore be mutually trusted. Enrollment requires sudo; if
+a user has no sudo authority, an administrator must run the fixed provisioner
+for that user's login context, for example:
+
+```bash
+sudo env SUDO_USER=user-b /usr/local/libexec/oh-my-devpod/brew-provisioner ensure upstream
+```
+
 ## Safety by construction
 
 - **Ownership-gated removal** — only artifacts carrying an oh-my-devpod marker
   can be removed.
 - **External means external** — pre-existing tools are detected but never
-  adopted or deleted.
+  adopted or deleted, except for the exact legacy OMD Linuxbrew marker
+  migration described above.
 - **Dependency-safe plans** — uninstall is blocked while an installed dependant
   would be broken.
 - **Protected foundation** — Linuxbrew is excluded from the normal uninstall flow.
@@ -288,6 +317,8 @@ Managed state lives under:
 ~/.local/share/oh-my-devpod/opt/
 ~/.local/state/oh-my-devpod/
 ~/.config/oh-my-devpod/
+/var/lib/oh-my-devpod/linuxbrew/       # shared manifest, inventory, and lock
+/usr/local/libexec/oh-my-devpod/bin/   # shared brew gateway
 ```
 
 ## Development

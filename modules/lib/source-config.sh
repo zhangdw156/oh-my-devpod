@@ -51,14 +51,19 @@ omd_source_config_formula_managed() {
 }
 
 omd_source_config_linuxbrew_prefix() {
-  local prefix kind
+  local prefix kind brew
   omd_module_is_managed linuxbrew || return 1
   prefix="$(omd_module_marker_value linuxbrew artifact || true)"
   kind="$(omd_module_marker_value linuxbrew kind || true)"
   [[ "${kind}" == "directory" && -n "${prefix}" && ! -L "${prefix}" && -x "${prefix}/bin/brew" ]] ||
     return 1
   prefix="$(cd "${prefix}" 2>/dev/null && pwd -P)" || return 1
-  omd_module_brew_cmd_matches_prefix "${prefix}/bin/brew" "${prefix}" || return 1
+  if omd_shared_linuxbrew_managed; then
+    brew="$(omd_shared_linuxbrew_gateway)"
+  else
+    brew="${prefix}/bin/brew"
+  fi
+  omd_module_brew_cmd_matches_prefix "${brew}" "${prefix}" || return 1
   printf '%s\n' "${prefix}"
 }
 
@@ -132,7 +137,7 @@ omd_source_config_file_is_managed() {
 
 omd_source_config_active_paths() {
   local prefix need_pip=0
-  if prefix="$(omd_source_config_linuxbrew_prefix)"; then
+  if ! omd_shared_linuxbrew_managed && prefix="$(omd_source_config_linuxbrew_prefix)"; then
     printf 'brew\t%s/etc/homebrew/brew.env\t%s\n' "${prefix}" "${prefix}"
   fi
   if omd_source_config_formula_managed uv uv; then

@@ -90,8 +90,11 @@ for expected in \
   oh-my-devpod/install/update.sh \
   oh-my-devpod/modules/ \
   oh-my-devpod/modules/lib/source-config.sh \
+  oh-my-devpod/modules/lib/shared-linuxbrew.sh \
   oh-my-devpod/build/ \
   oh-my-devpod/build/install-gitee-cli.sh \
+  oh-my-devpod/build/omd-brew-gateway.sh \
+  oh-my-devpod/build/omd-brew-provisioner.sh \
   oh-my-devpod/config/ \
   oh-my-devpod/vendor/ \
   oh-my-devpod/VERSION \

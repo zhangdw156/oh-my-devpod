@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Shared helpers for oh-my-devpod component modules.
 
+# shellcheck source=shared-linuxbrew.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/shared-linuxbrew.sh"
+
 omd_module_repo_root() {
   local script_dir
   script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -34,6 +37,10 @@ omd_module_marker_path() {
 
 omd_module_is_managed() {
   local component="$1" marker
+  if [[ "${component}" == "linuxbrew" ]] && omd_shared_linuxbrew_state_claim_present; then
+    omd_shared_linuxbrew_managed && omd_shared_linuxbrew_current_user_enrolled
+    return
+  fi
   marker="$(omd_module_marker_path "${component}")" || return
   [[ -f "${marker}" ]] && grep -qx 'managed_by=oh-my-devpod' "${marker}"
 }
@@ -60,6 +67,15 @@ omd_module_mark_managed() {
 
 omd_module_marker_value() {
   local component="$1" key="$2" marker
+  if [[ "${component}" == "linuxbrew" ]] && omd_shared_linuxbrew_state_claim_present; then
+    omd_shared_linuxbrew_managed && omd_shared_linuxbrew_current_user_enrolled || return 1
+    case "${key}" in
+      artifact) omd_shared_linuxbrew_prefix ;;
+      kind) printf 'directory\n' ;;
+      *) omd_shared_linuxbrew_manifest_value "${key}" ;;
+    esac
+    return
+  fi
   marker="$(omd_module_marker_path "${component}")" || return
   [[ -f "${marker}" ]] || return 1
   sed -n "s/^${key}=//p" "${marker}" | head -n 1
@@ -171,6 +187,12 @@ omd_module_brew_cmd() {
     printf '%s\n' "${OHMYDEVPOD_BREW_BIN}"
     return 0
   fi
+  if omd_shared_linuxbrew_managed; then
+    candidate="$(omd_shared_linuxbrew_gateway)"
+    [[ -x "${candidate}" ]] || return 1
+    printf '%s\n' "${candidate}"
+    return 0
+  fi
   if command -v brew >/dev/null 2>&1; then
     command -v brew
     return 0
@@ -245,6 +267,7 @@ omd_module_brew_exec() {
   local brew="$1"
   shift
   env -u HOMEBREW_ASK \
+    OHMYDEVPOD_BREW_NONINTERACTIVE=1 \
     NONINTERACTIVE=1 \
     HOMEBREW_NO_ASK=1 \
     HOMEBREW_NO_AUTO_UPDATE=1 \
@@ -266,6 +289,10 @@ omd_module_formula_status() {
 
 omd_module_formula_managed() {
   local component="$1" formula="$2" kind
+  if omd_shared_linuxbrew_state_claim_present; then
+    omd_shared_linuxbrew_formula_managed "${component}" "${formula}"
+    return
+  fi
   omd_module_marker_matches "${component}" "${formula}" || return 1
   kind="$(omd_module_marker_value "${component}" kind || true)"
   [[ "${kind}" == "brew-formula" ]]
@@ -273,6 +300,10 @@ omd_module_formula_managed() {
 
 omd_module_formula_marker_prefix() {
   local component="$1" formula="$2" prefix linuxbrew_kind
+  if omd_shared_linuxbrew_state_claim_present; then
+    omd_shared_linuxbrew_formula_prefix "${component}" "${formula}"
+    return
+  fi
   omd_module_formula_managed "${component}" "${formula}" || return 1
   prefix="$(omd_module_marker_value "${component}" brew_prefix || true)"
   if [[ -z "${prefix}" ]] && omd_module_is_managed linuxbrew; then
@@ -293,6 +324,10 @@ omd_module_formula_marker_prefix() {
 
 omd_module_formula_brew_cmd() {
   local component="$1" formula="$2" prefix
+  if omd_shared_linuxbrew_formula_managed "${component}" "${formula}"; then
+    omd_shared_linuxbrew_gateway
+    return
+  fi
   prefix="$(omd_module_formula_marker_prefix "${component}" "${formula}")" || return 1
   printf '%s/bin/brew\n' "${prefix}"
 }
@@ -309,7 +344,7 @@ omd_module_formula_install_or_update() {
   fi
 
   if omd_module_dry_run "$@"; then
-    omd_module_info plan "${action} Homebrew formula ${formula}"
+    omd_module_info plan "${action} host-shared Homebrew formula ${formula}"
     return 0
   fi
 
@@ -335,11 +370,18 @@ omd_module_formula_install_or_update() {
   else
     omd_module_brew_exec "${brew}" install "${formula}"
   fi
-  omd_module_mark_managed \
-    "${component}" \
-    brew-formula \
-    "${formula}" \
-    "brew_prefix=${brew_prefix}"
+  if omd_shared_linuxbrew_managed; then
+    omd_shared_linuxbrew_formula_managed "${component}" "${formula}" || {
+      omd_module_info error "shared Brew inventory did not record ${formula}"
+      return 1
+    }
+  else
+    omd_module_mark_managed \
+      "${component}" \
+      brew-formula \
+      "${formula}" \
+      "brew_prefix=${brew_prefix}"
+  fi
 }
 
 omd_module_formula_uninstall_impl() {
@@ -348,7 +390,7 @@ omd_module_formula_uninstall_impl() {
   omd_module_reject_unknown_flags "$@" || return
 
   if omd_module_dry_run "$@"; then
-    omd_module_info plan "uninstall managed Homebrew formula ${formula}"
+    omd_module_info plan "uninstall host-shared Homebrew formula ${formula} for all users"
     return 0
   fi
 
@@ -376,7 +418,7 @@ omd_module_formula_uninstall_impl() {
     return 1
   fi
   omd_module_brew_exec "${brew}" uninstall "${formula}"
-  if [[ "${remove_marker}" == "1" ]]; then
+  if [[ "${remove_marker}" == "1" ]] && ! omd_shared_linuxbrew_managed; then
     omd_module_unmark_managed "${component}"
   fi
 }

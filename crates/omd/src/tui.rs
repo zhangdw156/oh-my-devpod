@@ -199,6 +199,11 @@ fn draw(frame: &mut Frame<'_>, catalog: &Catalog, app: &App) {
                     component.category.to_string(),
                     Style::default().fg(Color::DarkGray),
                 ),
+                Span::raw("  "),
+                Span::styled(
+                    format!("scope={}", component.scope()),
+                    Style::default().fg(Color::DarkGray),
+                ),
             ]))
         })
         .collect();
@@ -229,16 +234,20 @@ fn draw_preview(
             .iter()
             .enumerate()
             .map(|(index, step)| {
-                let name = catalog
-                    .get(&step.component_id)
+                let component = catalog.get(&step.component_id);
+                let name = component
                     .map(|component| component.name.as_str())
                     .unwrap_or(&step.component_id);
+                let scope = component
+                    .map(|component| component.scope())
+                    .unwrap_or("user");
                 Line::from(format!(
-                    "{}. {} {} ({})",
+                    "{}. {} {} ({}, scope={})",
                     index + 1,
                     step.action,
                     name,
-                    step.component_id
+                    step.component_id,
+                    scope
                 ))
             })
             .collect(),

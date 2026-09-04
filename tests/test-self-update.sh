@@ -48,8 +48,11 @@ make_bundle() {
   install -m 0755 "${repo_root}/install/bootstrap.sh" "${payload_root}/install/bootstrap.sh"
   install -m 0755 "${repo_root}/install/update.sh" "${payload_root}/install/update.sh"
   install -m 0755 "${repo_root}/modules/lib/common.sh" "${payload_root}/modules/lib/common.sh"
+  install -m 0755 "${repo_root}/modules/lib/shared-linuxbrew.sh" "${payload_root}/modules/lib/shared-linuxbrew.sh"
   install -m 0755 "${repo_root}/modules/lib/postflight.sh" "${payload_root}/modules/lib/postflight.sh"
   install -m 0755 "${repo_root}/modules/lib/source-config.sh" "${payload_root}/modules/lib/source-config.sh"
+  install -m 0755 "${repo_root}/build/omd-brew-gateway.sh" "${payload_root}/build/omd-brew-gateway.sh"
+  install -m 0755 "${repo_root}/build/omd-brew-provisioner.sh" "${payload_root}/build/omd-brew-provisioner.sh"
   cat > "${payload_root}/components.toml" <<'EOF'
 schema_version = 1
 

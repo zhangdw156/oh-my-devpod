@@ -137,6 +137,9 @@ omd_validate_bundle() {
     components.toml \
     install/bootstrap.sh \
     install/update.sh \
+    modules/lib/shared-linuxbrew.sh \
+    build/omd-brew-gateway.sh \
+    build/omd-brew-provisioner.sh \
     modules \
     build \
     config \
@@ -154,7 +157,7 @@ omd_validate_bundle() {
 omd_install_archive() {
   local archive="$1" prefix="$2" bin_dir="${3:-${OMD_DEFAULT_BIN_DIR}}"
   local releases_dir staging_dir bundle_root version release_dir previous_dir="" link_tmp
-  local active_path
+  local active_path previous_active_target="" mirror_profile
   [[ -f "${archive}" ]] || {
     omd_warn "Missing omd archive: ${archive}"
     return 1
@@ -202,6 +205,9 @@ omd_install_archive() {
   rm -rf "${staging_dir}" || true
 
   active_path="${bin_dir}/omd"
+  if [[ -L "${active_path}" ]]; then
+    previous_active_target="$(readlink "${active_path}")"
+  fi
   link_tmp="${bin_dir}/.omd.$$.tmp"
   if ! ln -s "${release_dir}/bin/omd" "${link_tmp}"; then
     rm -rf "${release_dir}"
@@ -219,6 +225,16 @@ omd_install_archive() {
     rm -f "${link_tmp}"
     rm -rf "${release_dir}"
     [[ -z "${previous_dir}" ]] || mv "${previous_dir}" "${release_dir}"
+    return 1
+  fi
+  mirror_profile="${OHMYDEVPOD_MIRROR_PROFILE:-upstream}"
+  case "${mirror_profile}" in upstream|cn) ;; *) mirror_profile=upstream ;; esac
+  if ! omd_activate_shared_linuxbrew_profile_if_present "${release_dir}" "${mirror_profile}"; then
+    rm -f "${active_path}"
+    [[ -z "${previous_active_target}" ]] || ln -s "${previous_active_target}" "${active_path}"
+    rm -rf "${release_dir}"
+    [[ -z "${previous_dir}" ]] || mv "${previous_dir}" "${release_dir}"
+    omd_warn "Shared Linuxbrew activation failed; restored the previous omd release"
     return 1
   fi
   [[ -z "${previous_dir}" ]] || rm -rf "${previous_dir}" || true
@@ -404,6 +420,30 @@ omd_source_brew_core_remote() {
   esac
 }
 
+omd_activate_shared_linuxbrew_profile_if_present() {
+  local release_root="$1" profile="$2" helper prefix state_dir
+  helper="${release_root}/modules/lib/shared-linuxbrew.sh"
+  if [[ "${OHMYDEVPOD_SHARED_BREW_TEST_MODE:-0}" == "1" ]]; then
+    prefix="${OHMYDEVPOD_SHARED_BREW_PREFIX:-/home/linuxbrew/.linuxbrew}"
+    state_dir="${OHMYDEVPOD_SHARED_BREW_STATE_DIR:-/var/lib/oh-my-devpod/linuxbrew}"
+  else
+    prefix="/home/linuxbrew/.linuxbrew"
+    state_dir="/var/lib/oh-my-devpod/linuxbrew"
+  fi
+  [[ -e "${prefix}" || -L "${prefix}" || -e "${state_dir}/manifest" || -L "${state_dir}/manifest" ]] || return 0
+  [[ -f "${helper}" && ! -L "${helper}" ]] || {
+    omd_warn "Installed release cannot activate the existing shared Linuxbrew installation"
+    return 1
+  }
+  bash -c 'set -euo pipefail; source "$1"; omd_shared_linuxbrew_activate_if_present "$2" "$3"' _ "${helper}" "${release_root}" "${profile}"
+}
+
+omd_activate_shared_linuxbrew_if_present() {
+  local release_root="$1" source="$2" profile
+  profile="$(omd_source_mirror_profile "${source}")" || return 1
+  omd_activate_shared_linuxbrew_profile_if_present "${release_root}" "${profile}"
+}
+
 omd_main() {
   local os_release target requested_version source bin_dir prefix cache_dir config_dir
   local archive checksum selected_source installed_version candidate
@@ -458,7 +498,7 @@ omd_main() {
     selected_source="${OMD_SELECTED_SOURCE}"
   fi
 
-  installed_version="$(omd_install_archive "${archive}" "${prefix}" "${bin_dir}")"
+  installed_version="$(OHMYDEVPOD_MIRROR_PROFILE="$(omd_source_mirror_profile "${selected_source}")" omd_install_archive "${archive}" "${prefix}" "${bin_dir}")"
   omd_persist_source "${selected_source}" "${config_dir}"
   omd_persist_install_paths "${prefix}" "${bin_dir}" "${cache_dir}" "${config_dir}"
   omd_info "Installed oh-my-devpod ${installed_version} from ${selected_source}"

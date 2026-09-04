@@ -4,9 +4,26 @@ set -euo pipefail
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/common.sh"
 
 component="linuxbrew"
-brew_prefix="${HOMEBREW_PREFIX:-/home/linuxbrew/.linuxbrew}"
+if omd_shared_linuxbrew_enabled; then
+  brew_prefix="$(omd_shared_linuxbrew_prefix)"
+else
+  brew_prefix="${HOMEBREW_PREFIX:-/home/linuxbrew/.linuxbrew}"
+fi
 
 status() {
+  if omd_shared_linuxbrew_enabled; then
+    if omd_shared_linuxbrew_managed && omd_shared_linuxbrew_current_user_enrolled; then
+      return 0
+    fi
+    if omd_shared_linuxbrew_state_claim_present; then
+      return 1
+    fi
+    if omd_module_marker_matches "${component}" "${brew_prefix}"; then
+      [[ -x "${brew_prefix}/bin/brew" ]]
+      return
+    fi
+    return 1
+  fi
   if managed; then
     [[ -x "${brew_prefix}/bin/brew" ]]
     return
@@ -15,6 +32,12 @@ status() {
 }
 
 managed() {
+  if omd_shared_linuxbrew_managed && omd_shared_linuxbrew_current_user_enrolled; then
+    return 0
+  fi
+  if omd_shared_linuxbrew_state_claim_present; then
+    return 1
+  fi
   omd_module_marker_matches "${component}" "${brew_prefix}"
 }
 
@@ -22,6 +45,18 @@ install_or_update() {
   local action="$1" brew_remote
   shift
   omd_module_reject_unknown_flags "$@" || return
+
+  if omd_shared_linuxbrew_enabled; then
+    if omd_module_dry_run "$@"; then
+      omd_module_info plan "${action} host-shared Linuxbrew under ${brew_prefix}"
+      return 0
+    fi
+    omd_shared_linuxbrew_provision "$(omd_module_repo_root)" "${OHMYDEVPOD_MIRROR_PROFILE:-upstream}"
+    if [[ "${action}" == "update" ]]; then
+      omd_module_brew_exec "$(omd_shared_linuxbrew_gateway)" update
+    fi
+    return 0
+  fi
 
   if status && ! managed; then
     omd_module_external_installation "${component}"

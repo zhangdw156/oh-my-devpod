@@ -315,11 +315,12 @@ impl Runner {
         for (index, step) in plan.steps.iter().enumerate() {
             let component = catalog.require(&step.component_id)?;
             println!(
-                "==> [{}/{}] {} {}",
+                "==> [{}/{}] {} {} (scope={})",
                 index + 1,
                 plan.steps.len(),
                 step.action,
-                component.name
+                component.name,
+                component.scope()
             );
             self.execute_step(component, step, false)?;
         }

@@ -36,7 +36,7 @@ payload_root="${tmp_dir}/payload/oh-my-devpod"
 mkdir -p \
   "${payload_root}/bin" \
   "${payload_root}/install" \
-  "${payload_root}/modules" \
+  "${payload_root}/modules/lib" \
   "${payload_root}/build" \
   "${payload_root}/config" \
   "${payload_root}/vendor"
@@ -54,6 +54,9 @@ printf 'schema_version = 1\n' > "${payload_root}/components.toml"
 printf '1.2.3\n' > "${payload_root}/VERSION"
 printf 'TEST_VERSION=1\n' > "${payload_root}/versions.env"
 printf 'module\n' > "${payload_root}/modules/marker"
+install -m 0755 "${repo_root}/modules/lib/shared-linuxbrew.sh" "${payload_root}/modules/lib/shared-linuxbrew.sh"
+install -m 0755 "${repo_root}/build/omd-brew-gateway.sh" "${payload_root}/build/omd-brew-gateway.sh"
+install -m 0755 "${repo_root}/build/omd-brew-provisioner.sh" "${payload_root}/build/omd-brew-provisioner.sh"
 printf 'build\n' > "${payload_root}/build/marker"
 printf 'config\n' > "${payload_root}/config/marker"
 printf 'vendor\n' > "${payload_root}/vendor/marker"

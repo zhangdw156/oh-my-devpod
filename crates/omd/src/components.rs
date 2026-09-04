@@ -43,6 +43,21 @@ pub struct Component {
     pub uninstall: bool,
 }
 
+impl Component {
+    pub fn scope(&self) -> &'static str {
+        if self.id == "linuxbrew"
+            || self
+                .install_requires
+                .iter()
+                .any(|dependency| dependency == "linuxbrew")
+        {
+            "host"
+        } else {
+            "user"
+        }
+    }
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct ComponentManifest {
