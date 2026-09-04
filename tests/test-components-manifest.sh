@@ -50,6 +50,13 @@ for component in components:
         raise SystemExit(f"FAIL: {component_id}.requires must be an array")
     if not isinstance(component["install_requires"], list):
         raise SystemExit(f"FAIL: {component_id}.install_requires must be an array")
+    provider = component.get("provider")
+    if provider is not None and (
+        not isinstance(provider, str) or provider not in component["install_requires"]
+    ):
+        raise SystemExit(
+            f"FAIL: {component_id}.provider must name one of its install requirements"
+        )
     if not isinstance(component["uninstall"], bool):
         raise SystemExit(f"FAIL: {component_id}.uninstall must be a boolean")
     if component["category"] not in allowed_categories:
@@ -124,6 +131,7 @@ require_component_shape(
     {
         "category": "foundation",
         "module": "modules/core/micromamba.sh",
+        "provider": "linuxbrew",
         "requires": [],
         "install_requires": ["linuxbrew"],
         "uninstall": True,
@@ -135,6 +143,7 @@ require_component_shape(
     {
         "category": "development",
         "module": "modules/tools/gh.sh",
+        "provider": "linuxbrew",
         "requires": [],
         "install_requires": ["linuxbrew"],
         "uninstall": True,
@@ -146,6 +155,7 @@ require_component_shape(
     {
         "category": "development",
         "module": "modules/tools/gitee.sh",
+        "provider": None,
         "requires": [],
         "install_requires": [],
         "uninstall": True,
@@ -157,6 +167,7 @@ require_component_shape(
     {
         "category": "terminal",
         "module": "modules/tools/yq.sh",
+        "provider": "linuxbrew",
         "requires": [],
         "install_requires": ["linuxbrew"],
         "uninstall": True,
@@ -168,6 +179,7 @@ require_component_shape(
     {
         "category": "terminal",
         "module": "modules/tools/witr.sh",
+        "provider": "linuxbrew",
         "requires": [],
         "install_requires": ["linuxbrew"],
         "uninstall": True,
@@ -193,5 +205,14 @@ for component in components:
     if unknown:
         raise SystemExit(
             f"FAIL: {component['id']} has unknown dependencies: {', '.join(unknown)}"
+        )
+    provider = component.get("provider")
+    if provider is not None and provider not in known:
+        raise SystemExit(
+            f"FAIL: {component['id']} has unknown provider: {provider}"
+        )
+    if "linuxbrew" in component["install_requires"] and provider != "linuxbrew":
+        raise SystemExit(
+            f"FAIL: {component['id']} must declare linuxbrew as its provider"
         )
 PY

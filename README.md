@@ -128,14 +128,18 @@ oh-my-devpod, it satisfies the dependency without being adopted.
 The interface keeps discovery and mutation separate:
 
 1. **Choose an action** — install, update, or uninstall.
-2. **Select components** — states are shown as missing, managed, broken, or external.
-3. **Review the plan** — dependencies are ordered before installation; dependants are ordered before removal.
-4. **Execute explicitly** — the reviewed plan is revalidated before any module runs.
+2. **Browse the provider tree** — tools installed through Linuxbrew appear below Linuxbrew and can be folded as one branch.
+3. **Select components** — each parent and child keeps its own state, scope, and selection.
+4. **Search when needed** — matching children remain visible with their provider ancestors automatically expanded.
+5. **Review the plan** — dependencies are ordered before installation; dependants are ordered before removal.
+6. **Execute explicitly** — the reviewed plan is revalidated before any module runs.
 
 | Key | Action |
 | --- | --- |
 | `Tab` | Cycle install / update / uninstall |
 | `↑` / `↓` or `j` / `k` | Move through components |
+| `←` / `→` or `h` / `l` | Collapse / expand a provider branch |
+| `/` | Search components; `Enter` keeps the filter and `Esc` clears it |
 | `Space` | Toggle selection |
 | `Enter` | Review, then execute |
 | `Esc` | Go back or exit |

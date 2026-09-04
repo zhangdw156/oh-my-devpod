@@ -38,6 +38,8 @@ pub struct Component {
     pub description: String,
     pub category: Category,
     pub module: String,
+    #[serde(default)]
+    pub provider: Option<String>,
     pub requires: Vec<String>,
     pub install_requires: Vec<String>,
     pub uninstall: bool,
@@ -55,6 +57,10 @@ impl Component {
         } else {
             "user"
         }
+    }
+
+    pub fn provider(&self) -> Option<&str> {
+        self.provider.as_deref()
     }
 }
 
@@ -133,6 +139,25 @@ impl Catalog {
                     return Err(CatalogError::new(format!(
                         "component {} has unknown dependency {}",
                         component.id, dependency
+                    )));
+                }
+            }
+
+            if let Some(provider) = component.provider() {
+                if !indexes.contains_key(provider) {
+                    return Err(CatalogError::new(format!(
+                        "component {} has unknown provider {}",
+                        component.id, provider
+                    )));
+                }
+                if !component
+                    .install_requires
+                    .iter()
+                    .any(|dependency| dependency == provider)
+                {
+                    return Err(CatalogError::new(format!(
+                        "component {} provider {} is not an install requirement",
+                        component.id, provider
                     )));
                 }
             }
@@ -345,6 +370,73 @@ uninstall = true
 
         let catalog = Catalog::parse(&source).unwrap();
         assert_eq!(catalog.require("tool").unwrap().requires, vec!["base"]);
+    }
+
+    #[test]
+    fn parses_installation_provider() {
+        let source = manifest(
+            r#"
+[[component]]
+id = "linuxbrew"
+name = "Linuxbrew"
+description = "provider"
+category = "foundation"
+module = "modules/linuxbrew.sh"
+requires = []
+install_requires = []
+uninstall = false
+
+[[component]]
+id = "tool"
+name = "Tool"
+description = "tool"
+category = "terminal"
+module = "modules/tool.sh"
+provider = "linuxbrew"
+requires = []
+install_requires = ["linuxbrew"]
+uninstall = true
+"#,
+        );
+
+        let catalog = Catalog::parse(&source).unwrap();
+        assert_eq!(
+            catalog.require("tool").unwrap().provider(),
+            Some("linuxbrew")
+        );
+    }
+
+    #[test]
+    fn rejects_provider_that_is_not_an_install_requirement() {
+        let source = manifest(
+            r#"
+[[component]]
+id = "linuxbrew"
+name = "Linuxbrew"
+description = "provider"
+category = "foundation"
+module = "modules/linuxbrew.sh"
+requires = []
+install_requires = []
+uninstall = false
+
+[[component]]
+id = "tool"
+name = "Tool"
+description = "tool"
+category = "terminal"
+module = "modules/tool.sh"
+provider = "linuxbrew"
+requires = []
+install_requires = []
+uninstall = true
+"#,
+        );
+
+        let error = Catalog::parse(&source).unwrap_err();
+        assert!(error
+            .to_string()
+            .contains("provider linuxbrew is not an install requirement"));
     }
 
     #[test]
