@@ -8,6 +8,7 @@ bin_dir="${OHMYDEVPOD_BIN_DIR:-${HOME}/.local/bin}"
 target_arch="${TARGETARCH:-}"
 repo="oschina/gitee-cli"
 staged_path=""
+tar_version=""
 
 fail() {
   printf 'error: %s\n' "$*" >&2
@@ -110,7 +111,12 @@ actual_sha="$(sha256_file "${archive_path}")"
 
 extract_dir="${tmp_dir}/extract"
 mkdir -p "${extract_dir}"
-tar -xzf "${archive_path}" -C "${extract_dir}" gitee ||
+tar_extract_args=(-xzf "${archive_path}" -C "${extract_dir}")
+tar_version="$(tar --version 2>/dev/null || true)"
+if [[ "${tar_version%%$'\n'*}" == *"GNU tar"* ]]; then
+  tar_extract_args=(--warning=no-unknown-keyword "${tar_extract_args[@]}")
+fi
+tar "${tar_extract_args[@]}" gitee ||
   fail "failed to extract Gitee CLI binary"
 [[ -f "${extract_dir}/gitee" && ! -L "${extract_dir}/gitee" ]] ||
   fail "release archive does not contain a regular gitee binary"

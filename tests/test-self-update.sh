@@ -115,6 +115,7 @@ checksum_124="${archive_124}.sha256"
 fake_bin="${tmp_dir}/fake-bin"
 mkdir -p "${fake_bin}"
 real_mv="$(command -v mv)"
+real_id="$(command -v id)"
 cat > "${fake_bin}/uname" <<'EOF'
 #!/usr/bin/env bash
 case "${1:-}" in
@@ -173,7 +174,42 @@ if [[ "\${OHMYDEVPOD_TEST_FAIL_ACTIVATION:-0}" == "1" && "\${destination}" == */
 fi
 exec "${real_mv}" "\$@"
 EOF
-chmod +x "${fake_bin}/uname" "${fake_bin}/curl" "${fake_bin}/mv"
+cat > "${fake_bin}/id" <<EOF
+#!/usr/bin/env bash
+case "\${1:-}" in
+  -u)
+    [[ -z "\${OMD_TEST_ID_UID:-}" ]] || { printf '%s\n' "\${OMD_TEST_ID_UID}"; exit 0; }
+    ;;
+  -un)
+    [[ -z "\${OMD_TEST_ID_USER:-}" ]] || { printf '%s\n' "\${OMD_TEST_ID_USER}"; exit 0; }
+    ;;
+esac
+exec "${real_id}" "\$@"
+EOF
+cat > "${fake_bin}/sudo" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' "$*" >> "${OMD_TEST_SUDO_LOG}"
+case "${1:-}" in
+  tee)
+    shift
+    exec tee "$@"
+    ;;
+  chsh) exit 0 ;;
+  *) exit 2 ;;
+esac
+EOF
+cat > "${fake_bin}/zsh" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+chmod +x \
+  "${fake_bin}/uname" \
+  "${fake_bin}/curl" \
+  "${fake_bin}/mv" \
+  "${fake_bin}/id" \
+  "${fake_bin}/sudo" \
+  "${fake_bin}/zsh"
 
 ubuntu_release="${tmp_dir}/ubuntu-os-release"
 cat > "${ubuntu_release}" <<'EOF'
@@ -257,6 +293,34 @@ assert_equal \
 assert_contains \
   'Successfully updated omd to 1.2.4' \
   "${candidate_bootstrap_output}"
+
+shell_repair_home="${tmp_dir}/shell-repair-home"
+shell_repair_log="${tmp_dir}/shell-repair.log"
+shell_repair_output="${tmp_dir}/shell-repair.out"
+shell_repair_sudo_log="${tmp_dir}/shell-repair-sudo.log"
+shell_repair_shells="${tmp_dir}/shell-repair-shells"
+install_fixture github "${shell_repair_home}"
+mkdir -p "${shell_repair_home}/.local/state/oh-my-devpod/managed"
+cat > "${shell_repair_home}/.local/state/oh-my-devpod/managed/zsh-config" <<'EOF'
+managed_by=oh-my-devpod
+component=zsh-config
+kind=configuration
+artifact=/tmp/test-zshrc
+EOF
+: > "${shell_repair_sudo_log}"
+: > "${shell_repair_shells}"
+OMD_TEST_ID_UID=1002 \
+  OMD_TEST_ID_USER=bywei \
+  OMD_TEST_SUDO_LOG="${shell_repair_sudo_log}" \
+  SUDO_USER=zhangdw \
+  OHMYDEVPOD_CURRENT_SHELL=/bin/bash \
+  OHMYDEVPOD_SHELLS_FILE="${shell_repair_shells}" \
+  OHMYDEVPOD_SUDO_BIN="${fake_bin}/sudo" \
+  run_update "${shell_repair_home}" "${shell_repair_log}" >"${shell_repair_output}" 2>&1
+assert_contains "tee -a ${shell_repair_shells}" "${shell_repair_sudo_log}"
+assert_contains "chsh -s ${fake_bin}/zsh bywei" "${shell_repair_sudo_log}"
+assert_absent "chsh -s ${fake_bin}/zsh zhangdw" "${shell_repair_sudo_log}"
+assert_contains 'Successfully updated omd to 1.2.4' "${shell_repair_output}"
 
 saved_github_home="${tmp_dir}/saved-github-home"
 saved_github_log="${tmp_dir}/saved-github.log"

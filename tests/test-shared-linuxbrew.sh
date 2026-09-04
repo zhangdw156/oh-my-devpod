@@ -96,9 +96,10 @@ mkdir -p "${user_a_home}" "${user_b_home}" "$(dirname "${sudoers_file}")"
 run_provision "${prefix}" "${state_dir}" "${libexec_dir}" "${sudoers_file}" user-a "${user_a_home}"
 
 gateway="${libexec_dir}/bin/brew"
+profile_file="${state_dir}/profile.d/oh-my-devpod-brew.sh"
 [[ -x "${gateway}" ]] || fail "provisioner should install the Brew gateway"
 [[ -L "${libexec_dir}/global-bin/brew" ]] || fail "provisioner should install a global Brew command shim"
-[[ -f "${state_dir}/profile.d/oh-my-devpod-brew.sh" ]] || fail "provisioner should install login-shell gateway activation"
+[[ -f "${profile_file}" ]] || fail "provisioner should install login-shell gateway activation"
 [[ -x "${prefix}/bin/brew" ]] || fail "provisioner should install the real Brew backend"
 assert_file_contains "${state_dir}/manifest" "prefix=${prefix}"
 assert_file_contains "${state_dir}/manifest" "schema_version=2"
@@ -108,6 +109,15 @@ assert_file_contains "${state_dir}/manifest" "service_uid=${service_uid}"
 assert_file_contains "${state_dir}/manifest" "service_gid=${service_gid}"
 [[ -f "${state_dir}/members/user-a" ]] || fail "user A should be enrolled"
 assert_file_contains "${sudoers_file}" "%${manager_group} ALL=(${service_user}) NOPASSWD: ${libexec_dir}/brew-gateway --service *"
+
+login_path="$(
+  env PATH="/usr/bin:/bin" bash --noprofile --norc -c \
+    'source "$1"; printf "%s\n" "$PATH"' _ "${profile_file}"
+)"
+case ":${login_path}:" in
+  ":${libexec_dir}/bin:${prefix}/bin:${prefix}/sbin:"*) ;;
+  *) fail "login activation should expose shared formulae behind the Brew gateway: ${login_path}" ;;
+esac
 
 run_gateway "${prefix}" "${state_dir}" "${libexec_dir}" "${user_a_home}" install ripgrep
 [[ -d "${prefix}/Cellar/ripgrep/1.0" ]] || fail "direct brew install should mutate the shared prefix"

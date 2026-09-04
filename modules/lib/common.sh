@@ -448,6 +448,16 @@ omd_module_zsh_path() {
   command -v zsh
 }
 
+omd_module_target_user() {
+  if [[ -n "${OHMYDEVPOD_TARGET_USER:-}" ]]; then
+    printf '%s\n' "${OHMYDEVPOD_TARGET_USER}"
+  elif [[ "$(id -u)" -eq 0 && -n "${SUDO_USER:-}" ]]; then
+    printf '%s\n' "${SUDO_USER}"
+  else
+    id -un
+  fi
+}
+
 omd_module_set_login_shell() {
   local zsh_path="$1" target_user current_shell shells_file sudo_bin
   [[ -x "${zsh_path}" ]] || {
@@ -455,7 +465,7 @@ omd_module_set_login_shell() {
     return 1
   }
 
-  target_user="${OHMYDEVPOD_TARGET_USER:-${SUDO_USER:-$(id -un)}}"
+  target_user="$(omd_module_target_user)"
   shells_file="${OHMYDEVPOD_SHELLS_FILE:-/etc/shells}"
   sudo_bin="${OHMYDEVPOD_SUDO_BIN:-sudo}"
   if [[ -n "${OHMYDEVPOD_CURRENT_SHELL:-}" ]]; then

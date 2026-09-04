@@ -73,6 +73,9 @@ Linuxbrew 是裸机上的 host-scoped 组件，固定前缀为
 只用于严格校验旧版本迁移，不能作为共享状态的第二份真相。
 gateway 必须保留 service user 可读的 cwd；不可读时回退到 service
 home，避免私有用户 home 阻止普通 Brew 命令。
+共享登录 profile 必须保持 gateway 位于 PATH 最前，同时加入共享前缀
+的 `bin` 和 `sbin`。非 root 进程配置登录 shell 时使用有效用户；只有
+root 进程才可用 `SUDO_USER` 推导原始调用者。
 
 已存在的 Linuxbrew 只有在前缀 owner、owner 的 legacy OMD marker 和
 `brew --prefix` 完全一致时才能自动迁移；未标记、伪造、前缀不一致或

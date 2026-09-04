@@ -260,7 +260,8 @@ Linuxbrew 默认是主机级组件：全机只使用
 `brew install`、`brew upgrade` 和 `brew uninstall`。OMD 安装的
 root-owned gateway 会透明切换到服务 UID，并用同一个主机锁串行化
 所有变更。首次入组后请启动一个新 shell，让 OMD 安装的
-`/usr/local/bin/brew` shim 位于真实前缀之前。
+`/usr/local/bin/brew` shim 位于真实前缀之前。登录激活还会加入共享
+前缀的 `bin` 和 `sbin`，因此 Bash 与托管 Zsh 都能直接找到公式命令。
 可读的当前目录会继续保留，以支持相对路径参数；如果用户私有目录对
 `omd-brew` 不可访问，gateway 会自动从 service home 运行后端。
 
@@ -274,7 +275,9 @@ root-owned gateway 会透明切换到服务 UID，并用同一个主机锁串行
 以 `unmanaged-prefix-conflict` 拒绝接管。
 
 软件集合是全局的：安装、升级、卸载和换源都会影响所有用户，因此
-`omd-brew` 组成员必须互相信任。自动入组需要 sudo；没有 sudo 权限时
+`omd-brew` 组成员必须互相信任。非 root 用户通过 `sudo -iu` 登录后
+运行 OMD 时，用户级 shell 配置以当前有效账号为目标，不会误用继承的
+`SUDO_USER`。自动入组需要 sudo；没有 sudo 权限时
 由管理员在该用户的登录上下文中执行固定 provisioner：
 
 ```bash

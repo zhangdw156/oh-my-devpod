@@ -273,7 +273,9 @@ ordinary `brew install`, `brew upgrade`, and `brew uninstall` commands; a
 root-owned gateway transparently runs the real Brew process under the service
 UID and serializes mutations on one host lock. OMD installs a
 `/usr/local/bin/brew` shim and login-shell activation; start a new shell after
-first enrollment so the gateway is ahead of the real prefix.
+first enrollment so the gateway is ahead of the real prefix. Login activation
+also exposes the shared prefix's `bin` and `sbin` directories, so formula
+commands are available from Bash as well as the managed Zsh configuration.
 Readable working directories are preserved for relative-path Brew commands;
 when a private user directory is inaccessible to `omd-brew`, the gateway runs
 the backend from its service home instead.
@@ -292,7 +294,9 @@ is never adopted.
 The package set is global: a direct Brew or OMD install is visible to every
 user, and an upgrade, uninstall, or source switch affects every user. Members
 of `omd-brew` must therefore be mutually trusted. Enrollment requires sudo; if
-a user has no sudo authority, an administrator must run the fixed provisioner
+a non-root user runs OMD from a `sudo -iu` login, per-user shell configuration
+targets that effective account rather than the inherited `SUDO_USER` account.
+If a user has no sudo authority, an administrator must run the fixed provisioner
 for that user's login context, for example:
 
 ```bash

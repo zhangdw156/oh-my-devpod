@@ -42,7 +42,19 @@ printf 'gitee ${reported_version} ${arch}\n'
 EOF
     chmod +x "${staging}/gitee"
     archive="gitee_${version}_linux_${arch}.tar.gz"
-    tar -czf "${release_dir}/${archive}" -C "${staging}" gitee
+    python3 - "${release_dir}/${archive}" "${staging}/gitee" <<'PY'
+import pathlib
+import sys
+import tarfile
+
+archive = pathlib.Path(sys.argv[1])
+source = pathlib.Path(sys.argv[2])
+with tarfile.open(archive, "w:gz", format=tarfile.PAX_FORMAT) as handle:
+    info = handle.gettarinfo(source, arcname="gitee")
+    info.pax_headers["LIBARCHIVE.xattr.com.apple.provenance"] = "fixture"
+    with source.open("rb") as stream:
+        handle.addfile(info, stream)
+PY
   done
 
   : > "${release_dir}/checksums.txt"
@@ -122,7 +134,11 @@ chmod 600 "${managed_config}/credentials.yml"
 config_hash_before="$(sha256_file "${managed_config}/config.yml")"
 credentials_hash_before="$(sha256_file "${managed_config}/credentials.yml")"
 
-run_module "${managed_home}" x86_64 install >/dev/null
+gitee_install_stderr="${tmp_dir}/gitee-install.stderr"
+run_module "${managed_home}" x86_64 install >/dev/null 2>"${gitee_install_stderr}"
+if grep -Fq "Ignoring unknown extended header keyword" "${gitee_install_stderr}"; then
+  fail "install should suppress harmless upstream pax extended-header warnings"
+fi
 [[ -x "${managed_bin}" ]] || fail "install should create the managed Gitee CLI binary"
 [[ "$("${managed_bin}")" == "gitee 1.2.3 amd64" ]] ||
   fail "x86_64 should select the amd64 release asset"

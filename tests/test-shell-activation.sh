@@ -50,8 +50,8 @@ EOF
 cat > "${fake_bin}/id" <<'EOF'
 #!/usr/bin/env bash
 case "${1:-}" in
-  -u) printf '1000\n' ;;
-  -un) printf 'test-user\n' ;;
+  -u) printf '%s\n' "${OMD_TEST_ID_UID:-1000}" ;;
+  -un) printf '%s\n' "${OMD_TEST_ID_USER:-test-user}" ;;
   *) exit 2 ;;
 esac
 EOF
@@ -136,6 +136,26 @@ resolved="$(
 )"
 [[ "${resolved}" == "${zsh_path}" ]] ||
   fail "expected Homebrew Zsh path ${zsh_path}, got ${resolved}"
+
+effective_target="$(
+  PATH="${fake_bin}:${PATH}" \
+    SUDO_USER="zhangdw" \
+    OMD_TEST_ID_UID=1002 \
+    OMD_TEST_ID_USER="bywei" \
+    omd_module_target_user
+)"
+[[ "${effective_target}" == "bywei" ]] ||
+  fail "non-root shell changes should target the effective user, got ${effective_target}"
+
+sudo_target="$(
+  PATH="${fake_bin}:${PATH}" \
+    SUDO_USER="bywei" \
+    OMD_TEST_ID_UID=0 \
+    OMD_TEST_ID_USER="root" \
+    omd_module_target_user
+)"
+[[ "${sudo_target}" == "bywei" ]] ||
+  fail "root shell changes should target the original sudo user, got ${sudo_target}"
 
 PATH="${fake_bin}:${PATH}" \
   OHMYDEVPOD_TARGET_USER="test-user" \
@@ -306,6 +326,21 @@ grep -Fq 'mirrors.tuna.tsinghua.edu.cn' \
   "${tmp_dir}/postflight-config/uv/uv.toml" ||
   fail "install postflight should configure an already managed uv installation"
 printf '# user modification\n' >> "${tmp_dir}/postflight-config/uv/uv.toml"
+PATH="${fake_bin}:${PATH}" \
+  HOME="${tmp_dir}/home" \
+  XDG_CONFIG_HOME="${tmp_dir}/postflight-config" \
+  OHMYDEVPOD_BREW_BIN="${fake_bin}/brew" \
+  OHMYDEVPOD_TARGET_USER="test-user" \
+  OHMYDEVPOD_CURRENT_SHELL="${zsh_path}" \
+  OHMYDEVPOD_SHELLS_FILE="${shells_file}" \
+  OHMYDEVPOD_SUDO_BIN="${fake_bin}/sudo" \
+  OHMYDEVPOD_STATE_DIR="${state_dir}" \
+  OMD_TEST_BREW_LOG="${brew_log}" \
+  OMD_TEST_ZSH_PREFIX="${zsh_prefix}" \
+  OMD_TEST_SUDO_LOG="${sudo_log}" \
+  bash "${repo_root}/modules/lib/postflight.sh" repair-login-shell >/dev/null
+grep -Fq '# user modification' "${tmp_dir}/postflight-config/uv/uv.toml" ||
+  fail "login-shell repair should not touch native source configuration"
 if PATH="${fake_bin}:${PATH}" \
   HOME="${tmp_dir}/home" \
   XDG_CONFIG_HOME="${tmp_dir}/postflight-config" \

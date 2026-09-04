@@ -237,6 +237,9 @@ omd_install_archive() {
     omd_warn "Shared Linuxbrew activation failed; restored the previous omd release"
     return 1
   fi
+  if ! omd_repair_managed_login_shell_if_present "${release_dir}"; then
+    omd_warn "Updated omd, but could not repair the managed login shell; run omd to retry"
+  fi
   [[ -z "${previous_dir}" ]] || rm -rf "${previous_dir}" || true
   printf '%s\n' "${version}"
 }
@@ -428,6 +431,25 @@ omd_activate_shared_linuxbrew_profile_if_present() {
     return 1
   }
   bash -c 'set -euo pipefail; source "$1"; omd_shared_linuxbrew_activate_if_present "$2" "$3"' _ "${helper}" "${release_root}" "${profile}"
+}
+
+omd_repair_managed_login_shell_if_present() {
+  local release_root="$1" postflight managed_dir marker managed=0
+  managed_dir="${OHMYDEVPOD_MANAGED_DIR:-${OHMYDEVPOD_STATE_DIR:-${XDG_STATE_HOME:-${HOME}/.local/state}/oh-my-devpod}/managed}"
+  for marker in "${managed_dir}/zsh" "${managed_dir}/zsh-config"; do
+    if [[ -f "${marker}" && ! -L "${marker}" ]] &&
+      grep -Fqx 'managed_by=oh-my-devpod' "${marker}"; then
+      managed=1
+      break
+    fi
+  done
+  [[ "${managed}" == "1" ]] || return 0
+  postflight="${release_root}/modules/lib/postflight.sh"
+  [[ -f "${postflight}" && ! -L "${postflight}" ]] || {
+    omd_warn "Installed release cannot repair an existing managed login shell"
+    return 1
+  }
+  bash "${postflight}" repair-login-shell >&2
 }
 
 omd_activate_shared_linuxbrew_if_present() {
