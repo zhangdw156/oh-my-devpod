@@ -284,11 +284,12 @@ The first OMD user initializes the prefix. A later user's bootstrap detects the
 shared manifest, enrolls that user, and reuses the existing Cellar without
 reinstalling Brew. An old OMD-owned prefix is migrated during the first update
 to a shared-aware release only when its owner, marker, and reported Brew prefix
-resolve to the same trusted directory. Both the logical prefix and its resolved
-storage path are accepted in legacy formula markers. Releases also recover a
-formula previously misclassified as legacy-external when an enrolled user still
-has the matching OMD marker; unmarked formulas remain external. The ordinary
-directory layout remains the default; OMD also
+resolve to the same trusted directory. Once that prefix passes validation, its
+existing Cellar is adopted as one managed package set; individual formula
+markers are not required. Releases also recover formulas that v0.15.1-v0.15.5
+misclassified as `legacy-preexisting`. A genuinely unknown formula discovered
+later in an already-shared prefix remains external. The ordinary directory
+layout remains the default; OMD also
 accepts a storage symlink such as `/home/linuxbrew -> /data/linuxbrew` only when
 the link and both parent chains are root-controlled. The resolved prefix is
 pinned in the shared manifest, so later retargeting is rejected. An unmarked,

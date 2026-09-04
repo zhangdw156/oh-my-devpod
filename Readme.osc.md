@@ -268,10 +268,10 @@ root-owned gateway 会透明切换到服务 UID，并用同一个主机锁串行
 第一个用户负责初始化；后续用户安装 OMD 时会自动检测共享 manifest、
 加入管理组并复用已有 Cellar，不会重复安装。旧版 OMD 的 Linuxbrew
 仅在 owner、legacy marker 与 `brew --prefix` 指向同一个可信目录时
-随首次更新自动迁移；legacy 公式 marker 可记录逻辑前缀或解析后的真实
-路径。如果旧版本曾把公式误标成 legacy external，而已登记成员仍持有
-匹配的 OMD marker，新版本会自动恢复 managed 状态；真正的外部公式
-仍保持 external。普通目录布局仍是默认行为；如果服务器使用
+随首次更新自动迁移。此前缀通过校验后，已有 Cellar 会作为一个整体接管
+为 managed，不要求每个公式另有 marker。v0.15.1-v0.15.5 曾误标为
+`legacy-preexisting` 的公式也会自动恢复；共享模式建立后才绕过 gateway
+出现的真正未知公式仍保持 external。普通目录布局仍是默认行为；如果服务器使用
 `/home/linuxbrew -> /data/linuxbrew` 一类存储软链接，只有软链接及其
 两侧父目录链均由 root 控制时才允许迁移，并在共享 manifest 中固定
 真实前缀，后续改指会被拒绝。任何未标记、不可信或不匹配的前缀都会
