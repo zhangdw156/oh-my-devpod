@@ -150,8 +150,30 @@ run_bootstrap() {
   OHMYDEVPOD_TEST_CHECKSUM="${checksum_file}" \
   OHMYDEVPOD_TEST_CURL_LOG="${log}" \
   OHMYDEVPOD_TEST_FAIL_GITHUB="${fail_github}" \
+  OHMYDEVPOD_SHARED_BREW_TEST_MODE="${OHMYDEVPOD_SHARED_BREW_TEST_MODE:-0}" \
+  OHMYDEVPOD_SHARED_BREW_PREFIX="${OHMYDEVPOD_SHARED_BREW_PREFIX:-}" \
+  OHMYDEVPOD_SHARED_BREW_STATE_DIR="${OHMYDEVPOD_SHARED_BREW_STATE_DIR:-}" \
+  OHMYDEVPOD_SHARED_BREW_LIBEXEC_DIR="${OHMYDEVPOD_SHARED_BREW_LIBEXEC_DIR:-}" \
     bash "${bootstrap}"
 }
+
+external_home="${tmp_dir}/external-brew-home"
+external_log="${tmp_dir}/external-brew-curl.log"
+external_prefix="${tmp_dir}/external-brew-prefix"
+external_state="${tmp_dir}/external-brew-state"
+external_libexec="${tmp_dir}/external-brew-libexec"
+mkdir -p "${external_prefix}/bin"
+printf '#!/usr/bin/env bash\nexit 0\n' > "${external_prefix}/bin/brew"
+chmod +x "${external_prefix}/bin/brew"
+OHMYDEVPOD_SHARED_BREW_TEST_MODE=1 \
+OHMYDEVPOD_SHARED_BREW_PREFIX="${external_prefix}" \
+OHMYDEVPOD_SHARED_BREW_STATE_DIR="${external_state}" \
+OHMYDEVPOD_SHARED_BREW_LIBEXEC_DIR="${external_libexec}" \
+  run_bootstrap github "${external_home}" "${external_log}"
+[[ ! -e "${external_state}/manifest" ]] ||
+  fail "bootstrap must not take over an external Linuxbrew installation"
+[[ ! -e "${external_libexec}/brew-provisioner" ]] ||
+  fail "bootstrap must not install shared Brew controllers for external Linuxbrew"
 
 github_home="${tmp_dir}/github-home"
 github_log="${tmp_dir}/github-curl.log"

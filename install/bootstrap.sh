@@ -421,16 +421,8 @@ omd_source_brew_core_remote() {
 }
 
 omd_activate_shared_linuxbrew_profile_if_present() {
-  local release_root="$1" profile="$2" helper prefix state_dir
+  local release_root="$1" profile="$2" helper
   helper="${release_root}/modules/lib/shared-linuxbrew.sh"
-  if [[ "${OHMYDEVPOD_SHARED_BREW_TEST_MODE:-0}" == "1" ]]; then
-    prefix="${OHMYDEVPOD_SHARED_BREW_PREFIX:-/home/linuxbrew/.linuxbrew}"
-    state_dir="${OHMYDEVPOD_SHARED_BREW_STATE_DIR:-/var/lib/oh-my-devpod/linuxbrew}"
-  else
-    prefix="/home/linuxbrew/.linuxbrew"
-    state_dir="/var/lib/oh-my-devpod/linuxbrew"
-  fi
-  [[ -e "${prefix}" || -L "${prefix}" || -e "${state_dir}/manifest" || -L "${state_dir}/manifest" ]] || return 0
   [[ -f "${helper}" && ! -L "${helper}" ]] || {
     omd_warn "Installed release cannot activate the existing shared Linuxbrew installation"
     return 1

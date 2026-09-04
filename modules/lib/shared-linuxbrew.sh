@@ -43,6 +43,38 @@ omd_shared_linuxbrew_state_claim_present() {
   [[ -e "${manifest}" || -L "${manifest}" ]]
 }
 
+omd_shared_linuxbrew_legacy_marker() {
+  local prefix owner_uid owner_home=""
+  prefix="$(omd_shared_linuxbrew_prefix)"
+  if omd_shared_linuxbrew_test_mode; then
+    owner_home="${OHMYDEVPOD_SHARED_BREW_TEST_LEGACY_HOME:-${HOME}}"
+  else
+    owner_uid="$(omd_shared_linuxbrew_stat_uid "${prefix}")" || return 1
+    if command -v getent >/dev/null 2>&1; then
+      owner_home="$(getent passwd "${owner_uid}" 2>/dev/null | awk -F: '{print $6}')"
+    elif [[ "$(id -u)" == "${owner_uid}" ]]; then
+      owner_home="${HOME}"
+    fi
+  fi
+  [[ "${owner_home}" == /* && -d "${owner_home}" && ! -L "${owner_home}" ]] || return 1
+  printf '%s/.local/state/oh-my-devpod/managed/linuxbrew\n' "${owner_home}"
+}
+
+omd_shared_linuxbrew_activation_candidate() {
+  local prefix marker
+  if omd_shared_linuxbrew_state_claim_present; then
+    return 0
+  fi
+  prefix="$(omd_shared_linuxbrew_prefix)"
+  [[ -e "${prefix}" || -L "${prefix}" ]] || return 1
+  marker="$(omd_shared_linuxbrew_legacy_marker)"
+  [[ -f "${marker}" && ! -L "${marker}" ]] || return 1
+  grep -Fqx 'managed_by=oh-my-devpod' "${marker}" || return 1
+  grep -Fqx 'component=linuxbrew' "${marker}" || return 1
+  grep -Fqx 'kind=directory' "${marker}" || return 1
+  grep -Fqx "artifact=${prefix}" "${marker}"
+}
+
 omd_shared_linuxbrew_enabled() {
   [[ "${OHMYDEVPOD_SHARED_BREW_DISABLE:-0}" != "1" ]]
 }
@@ -233,10 +265,8 @@ omd_shared_linuxbrew_set_profile() {
 }
 
 omd_shared_linuxbrew_activate_if_present() {
-  local bundle_root="$1" mirror_profile="${2:-upstream}" prefix manifest
+  local bundle_root="$1" mirror_profile="${2:-upstream}"
   omd_shared_linuxbrew_enabled || return 0
-  prefix="$(omd_shared_linuxbrew_prefix)"
-  manifest="$(omd_shared_linuxbrew_manifest)"
-  [[ -e "${prefix}" || -L "${prefix}" || -e "${manifest}" || -L "${manifest}" ]] || return 0
+  omd_shared_linuxbrew_activation_candidate || return 0
   omd_shared_linuxbrew_provision "${bundle_root}" "${mirror_profile}"
 }
