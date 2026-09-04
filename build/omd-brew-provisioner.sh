@@ -201,6 +201,14 @@ trusted_prefix_resolved() {
   printf '%s\n' "${resolved}"
 }
 
+trusted_prefixes_equivalent() {
+  local first="$1" second="$2" first_resolved second_resolved
+  [[ "${first}" == /* && "${second}" == /* ]] || return 1
+  first_resolved="$(trusted_prefix_resolved "${first}")" || return 1
+  second_resolved="$(trusted_prefix_resolved "${second}")" || return 1
+  [[ "${first_resolved}" == "${second_resolved}" ]]
+}
+
 prepare_prefix_parent() {
   if path_has_no_symlink_components "$(dirname "${prefix}")"; then
     ensure_safe_parent "${prefix}"
@@ -502,29 +510,100 @@ write_inventory_record() {
 }
 
 legacy_formula_is_managed() {
-  local owner_home="$1" formula="$2" marker
+  local owner_home="$1" formula="$2" owner_uid="${3:-}" marker marker_prefix
   marker="${owner_home}/.local/state/oh-my-devpod/managed/${formula}"
   [[ -f "${marker}" && ! -L "${marker}" ]] || return 1
+  if [[ "${test_mode}" != "1" && -n "${owner_uid}" ]]; then
+    [[ "$(stat_uid "${marker}")" == "${owner_uid}" ]] || return 1
+  fi
   grep -qx 'managed_by=oh-my-devpod' "${marker}" || return 1
+  grep -Fqx "component=${formula}" "${marker}" || return 1
   grep -qx 'kind=brew-formula' "${marker}" || return 1
   grep -Fqx "artifact=${formula}" "${marker}" || return 1
-  grep -Fqx "brew_prefix=${prefix}" "${marker}" || return 1
+  marker_prefix="$(sed -n 's/^brew_prefix=//p' "${marker}")"
+  [[ -n "${marker_prefix}" ]] || return 1
+  trusted_prefixes_equivalent "${marker_prefix}" "${prefix}"
 }
 
 stage_legacy_inventory() {
-  local owner_home="$1" installation_id="$2" staging="$3" formula state provenance
+  local owner_home="$1" owner_uid="$2" installation_id="$3" staging="$4" formula state provenance
   mkdir -p "${staging}"
   [[ -d "${prefix}/Cellar" ]] || return 0
   while IFS= read -r formula; do
     [[ -n "${formula}" ]] || continue
     state=external
     provenance=legacy-preexisting
-    if legacy_formula_is_managed "${owner_home}" "${formula}"; then
+    if legacy_formula_is_managed "${owner_home}" "${formula}" "${owner_uid}"; then
       state=managed
       provenance=legacy-marker
     fi
     write_inventory_record "${formula}" "${installation_id}" "${state}" "${provenance}" "${staging}/${formula}"
   done < <(find "${prefix}/Cellar" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | LC_ALL=C sort -u)
+}
+
+legacy_inventory_record_is_recoverable() {
+  local record="$1" formula="$2" installation_id="$3"
+  [[ -f "${record}" && ! -L "${record}" ]] || return 1
+  grep -qx 'managed_by=oh-my-devpod' "${record}" || return 1
+  grep -Fqx "component=${formula}" "${record}" || return 1
+  grep -qx 'kind=brew-formula' "${record}" || return 1
+  grep -Fqx "artifact=${formula}" "${record}" || return 1
+  grep -Fqx "brew_prefix=${prefix}" "${record}" || return 1
+  grep -Fqx "installation_id=${installation_id}" "${record}" || return 1
+  grep -qx 'state=external' "${record}" || return 1
+  grep -qx 'provenance=legacy-preexisting' "${record}"
+}
+
+member_identity_for_recovery() {
+  local record="$1" user uid home mode current_uid current_home
+  [[ -f "${record}" && ! -L "${record}" ]] || return 1
+  user="$(basename "${record}")"
+  valid_account_name "${user}" || return 1
+  if [[ "${test_mode}" != "1" ]]; then
+    [[ "$(stat_uid "${record}")" == "0" && "$(stat_gid "${record}")" == "0" ]] || return 1
+    mode="$(stat_mode "${record}")" || return 1
+    [[ "${mode}" =~ ^[0-7]{3,4}$ ]] || return 1
+    (( (8#${mode} & 8#022) == 0 )) || return 1
+  fi
+  grep -qx 'managed_by=oh-my-devpod' "${record}" || return 1
+  grep -Fqx "user=${user}" "${record}" || return 1
+  uid="$(sed -n 's/^uid=//p' "${record}")"
+  home="$(sed -n 's/^home=//p' "${record}")"
+  [[ "${uid}" =~ ^[0-9]+$ ]] || return 1
+  [[ "${home}" == /* && -d "${home}" && ! -L "${home}" ]] || return 1
+  if [[ "${test_mode}" != "1" ]]; then
+    current_uid="$(id -u "${user}" 2>/dev/null)" || return 1
+    current_home="$(passwd_home "${user}")"
+    [[ "${uid}" == "${current_uid}" && "${home}" == "${current_home}" ]] || return 1
+  fi
+  printf '%s\t%s\n' "${uid}" "${home}"
+}
+
+recover_legacy_inventory() {
+  local installation_id service_uid service_gid record formula member identity member_uid member_home recovered
+  installation_id="$(manifest_value installation_id || true)"
+  [[ -n "${installation_id}" ]] || return 0
+  service_uid="$(account_uid "${service_user}")"
+  service_gid="$(group_gid "${manager_group}")"
+  while IFS= read -r -d '' record; do
+    formula="$(basename "${record}")"
+    valid_formula_name "${formula}" || continue
+    legacy_inventory_record_is_recoverable "${record}" "${formula}" "${installation_id}" || continue
+    while IFS= read -r -d '' member; do
+      identity="$(member_identity_for_recovery "${member}" || true)"
+      [[ -n "${identity}" ]] || continue
+      IFS=$'\t' read -r member_uid member_home <<< "${identity}"
+      legacy_formula_is_managed "${member_home}" "${formula}" "${member_uid}" || continue
+      recovered="${inventory_dir}/.${formula}.recovered.$$"
+      write_inventory_record "${formula}" "${installation_id}" managed legacy-marker-recovered "${recovered}"
+      chmod 0644 "${recovered}"
+      if [[ "${test_mode}" != "1" ]]; then
+        chown "${service_uid}:${service_gid}" "${recovered}"
+      fi
+      mv -f "${recovered}" "${record}"
+      break
+    done < <(find "${members_dir}" -mindepth 1 -maxdepth 1 -type f -print0)
+  done < <(find "${inventory_dir}" -mindepth 1 -maxdepth 1 -type f -print0)
 }
 
 write_manifest() {
@@ -593,7 +672,7 @@ initialize_shared_state() {
   if [[ -e "${prefix}" || -L "${prefix}" ]]; then
     legacy_info="$(validate_legacy_prefix)"
     IFS=$'\t' read -r legacy_owner legacy_uid legacy_gid legacy_home <<< "${legacy_info}"
-    stage_legacy_inventory "${legacy_home}" "${installation_id}" "${inventory_staging}"
+    stage_legacy_inventory "${legacy_home}" "${legacy_uid}" "${installation_id}" "${inventory_staging}"
   else
     created_prefix=1
     if ! initialize_prefix "${mirror_profile}"; then
@@ -844,6 +923,7 @@ ensure_shared_brew() {
     fi
     rm -f "${state_dir}/.legacy-owner"
   fi
+  recover_legacy_inventory
 }
 
 case "${1:-}" in

@@ -78,8 +78,11 @@ home，避免私有用户 home 阻止普通 Brew 命令。
 root 进程才可用 `SUDO_USER` 推导原始调用者。
 
 已存在的 Linuxbrew 只有在前缀 owner、owner 的 legacy OMD marker 和
-`brew --prefix` 完全一致时才能自动迁移；未标记、伪造、前缀不一致或
-包含不可信 symlink 的安装必须以 `unmanaged-prefix-conflict` 失败。
+`brew --prefix` 指向同一个可信目录时才能自动迁移；marker 中的逻辑路径
+或解析后真实路径都可接受。迁移后误标为 `legacy-preexisting` 的公式仅在
+已登记成员仍持有匹配的 legacy OMD marker 时恢复为 managed；未标记、
+伪造、前缀不一致或包含不可信 symlink 的安装必须以
+`unmanaged-prefix-conflict` 失败。
 无 symlink 的普通目录保持原行为；root 控制的存储 symlink 允许迁移，
 解析后的真实前缀写入共享 manifest，并在每次管理操作前校验未被改指。
 

@@ -237,7 +237,7 @@ legacy_sudoers="${tmp_dir}/legacy/sudoers"
 legacy_home="${tmp_dir}/legacy/home/owner"
 legacy_user_home="${tmp_dir}/legacy/home/user-b"
 legacy_markers="${legacy_home}/.local/state/oh-my-devpod/managed"
-mkdir -p "${legacy_prefix}/bin" "${legacy_prefix}/Cellar/ripgrep/1.0" "${legacy_prefix}/Cellar/jq/1.0" "${legacy_markers}" "${legacy_user_home}"
+mkdir -p "${legacy_prefix}/bin" "${legacy_prefix}/Cellar/ripgrep/1.0" "${legacy_prefix}/Cellar/jq/1.0" "${legacy_prefix}/Cellar/yq/1.0" "${legacy_markers}" "${legacy_user_home}"
 install -m 0755 "${fake_brew_source}" "${legacy_prefix}/bin/brew"
 cat > "${legacy_markers}/linuxbrew" <<EOF
 managed_by=oh-my-devpod
@@ -258,8 +258,23 @@ env PATH="${fake_bin}:${PATH}" OHMYDEVPOD_SHARED_BREW_TEST_MODE=1 OHMYDEVPOD_SHA
 assert_file_contains "${legacy_state}/inventory/ripgrep" "state=managed"
 assert_file_contains "${legacy_state}/inventory/ripgrep" "provenance=legacy-marker"
 assert_file_contains "${legacy_state}/inventory/jq" "state=external"
+assert_file_contains "${legacy_state}/inventory/yq" "state=external"
 [[ -f "${legacy_state}/members/user-b" ]] || fail "migration should enroll the invoking user"
 [[ -f "${legacy_state}/members/${service_user}" ]] || fail "migration should enroll the legacy owner"
+
+mkdir -p "${legacy_user_home}/.local/state/oh-my-devpod/managed"
+cat > "${legacy_user_home}/.local/state/oh-my-devpod/managed/jq" <<EOF
+managed_by=oh-my-devpod
+component=jq
+kind=brew-formula
+artifact=jq
+brew_prefix=${legacy_prefix}
+EOF
+run_provision "${legacy_prefix}" "${legacy_state}" "${legacy_libexec}" "${legacy_sudoers}" user-b "${legacy_user_home}"
+assert_file_contains "${legacy_state}/inventory/jq" "state=managed"
+assert_file_contains "${legacy_state}/inventory/jq" "provenance=legacy-marker-recovered"
+assert_file_contains "${legacy_state}/inventory/yq" "state=external"
+assert_file_contains "${legacy_state}/inventory/yq" "provenance=legacy-preexisting"
 
 unsafe_root="${tmp_dir}/unsafe-link"
 unsafe_prefix="${unsafe_root}/home/linuxbrew/.linuxbrew"
@@ -299,7 +314,7 @@ update_owner_home="${tmp_dir}/update-legacy/home/owner"
 update_user_home="${tmp_dir}/update-legacy/home/user"
 update_second_user_home="${tmp_dir}/update-legacy/home/user-b"
 update_brew_resolved="${tmp_dir}/update-legacy/data/linuxbrew/.linuxbrew"
-mkdir -p "${update_fixture}/bin" "${update_fixture}/install" "${update_fixture}/modules/lib" "${update_fixture}/build" "${update_fixture}/config" "${update_fixture}/vendor" "${tmp_dir}/update-legacy/home" "${update_brew_resolved}/bin" "${update_owner_home}/.local/state/oh-my-devpod/managed" "${update_user_home}" "${update_second_user_home}"
+mkdir -p "${update_fixture}/bin" "${update_fixture}/install" "${update_fixture}/modules/lib" "${update_fixture}/build" "${update_fixture}/config" "${update_fixture}/vendor" "${tmp_dir}/update-legacy/home" "${update_brew_resolved}/bin" "${update_brew_resolved}/Cellar/ripgrep/1.0" "${update_owner_home}/.local/state/oh-my-devpod/managed" "${update_user_home}" "${update_second_user_home}"
 chmod 0775 "${tmp_dir}/update-legacy/data" "${tmp_dir}/update-legacy/data/linuxbrew"
 ln -s "${tmp_dir}/update-legacy/data/linuxbrew" "${tmp_dir}/update-legacy/home/linuxbrew"
 printf '#!/usr/bin/env bash\nprintf "updated omd\\n"\n' > "${update_fixture}/bin/omd"
@@ -319,12 +334,21 @@ component=linuxbrew
 kind=directory
 artifact=${update_brew_prefix}
 EOF
+cat > "${update_owner_home}/.local/state/oh-my-devpod/managed/ripgrep" <<EOF
+managed_by=oh-my-devpod
+component=ripgrep
+kind=brew-formula
+artifact=ripgrep
+brew_prefix=${update_brew_resolved}
+EOF
 tar -czf "${update_archive}" -C "${tmp_dir}/update-fixture" oh-my-devpod
 installed_version="$(env PATH="${fake_bin}:${PATH}" OHMYDEVPOD_BOOTSTRAP_LIB_ONLY=1 OHMYDEVPOD_SHARED_BREW_TEST_MODE=1 OHMYDEVPOD_SHARED_BREW_PREFIX="${update_brew_prefix}" OHMYDEVPOD_SHARED_BREW_STATE_DIR="${update_brew_state}" OHMYDEVPOD_SHARED_BREW_LIBEXEC_DIR="${update_brew_libexec}" OHMYDEVPOD_SHARED_BREW_SUDOERS_FILE="${update_brew_sudoers}" OHMYDEVPOD_SHARED_BREW_SERVICE_USER="${service_user}" OHMYDEVPOD_SHARED_BREW_MANAGER_GROUP="${manager_group}" OHMYDEVPOD_SHARED_BREW_TEST_SERVICE_UID="${service_uid}" OHMYDEVPOD_SHARED_BREW_TEST_SERVICE_GID="${service_gid}" OHMYDEVPOD_SHARED_BREW_TEST_TRUSTED_STORAGE_ROOT="${tmp_dir}" OHMYDEVPOD_SHARED_BREW_TEST_TRUSTED_STORAGE_UID="${service_uid}" OHMYDEVPOD_SHARED_BREW_TEST_TRUSTED_STORAGE_GID="${service_gid}" OHMYDEVPOD_SHARED_BREW_TEST_TARGET_USER=update-user OHMYDEVPOD_SHARED_BREW_TEST_TARGET_HOME="${update_user_home}" OHMYDEVPOD_SHARED_BREW_TEST_LEGACY_OWNER="${service_user}" OHMYDEVPOD_SHARED_BREW_TEST_LEGACY_HOME="${update_owner_home}" OHMYDEVPOD_SHARED_BREW_TEST_REAL_BIN="${fake_brew_source}" OMD_TEST_BREW_LOG="${brew_log}" bash -c 'set -euo pipefail; source "$1/install/bootstrap.sh"; omd_install_archive "$2" "$3" "$4"' _ "${repo_root}" "${update_archive}" "${update_prefix}" "${update_bin}")"
 [[ "${installed_version}" == "9.9.0" ]] || fail "candidate release activation should preserve the installed version output"
 [[ -f "${update_brew_state}/manifest" ]] || fail "candidate release installation should migrate legacy Linuxbrew before success"
 assert_file_contains "${update_brew_state}/manifest" "prefix=${update_brew_prefix}"
 assert_file_contains "${update_brew_state}/manifest" "resolved_prefix=${update_brew_resolved}"
+assert_file_contains "${update_brew_state}/inventory/ripgrep" "state=managed"
+assert_file_contains "${update_brew_state}/inventory/ripgrep" "provenance=legacy-marker"
 [[ -L "${update_bin}/omd" ]] || fail "candidate release should activate omd after shared Brew migration"
 
 run_provision "${update_brew_prefix}" "${update_brew_state}" "${update_brew_libexec}" "${update_brew_sudoers}" user-b "${update_second_user_home}"
