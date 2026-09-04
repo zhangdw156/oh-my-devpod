@@ -108,12 +108,14 @@ omd_shared_linuxbrew_stat_mode() {
 }
 
 omd_shared_linuxbrew_validate() {
-  local manifest prefix recorded_prefix service_user manager_group installation_id
+  local manifest prefix recorded_prefix resolved_prefix recorded_resolved_prefix schema
+  local service_user manager_group installation_id
   local expected_uid expected_gid actual_uid actual_gid
   omd_shared_linuxbrew_enabled || return 1
   manifest="$(omd_shared_linuxbrew_manifest)"
   [[ -f "${manifest}" && ! -L "${manifest}" ]] || return 1
-  [[ "$(omd_shared_linuxbrew_manifest_value schema_version || true)" == "1" ]] || return 1
+  schema="$(omd_shared_linuxbrew_manifest_value schema_version || true)"
+  case "${schema}" in 1|2) ;; *) return 1 ;; esac
   [[ "$(omd_shared_linuxbrew_manifest_value managed_by || true)" == "oh-my-devpod" ]] || return 1
   [[ "$(omd_shared_linuxbrew_manifest_value mode || true)" == "shared-service-account" ]] || return 1
 
@@ -121,8 +123,13 @@ omd_shared_linuxbrew_validate() {
   recorded_prefix="$(omd_shared_linuxbrew_manifest_value prefix || true)"
   [[ "${recorded_prefix}" == "${prefix}" && "${prefix}" == /* && ! -L "${prefix}" ]] || return 1
   [[ -d "${prefix}" && -x "${prefix}/bin/brew" ]] || return 1
-  prefix="$(cd "${prefix}" 2>/dev/null && pwd -P)" || return 1
-  [[ "${prefix}" == "${recorded_prefix}" ]] || return 1
+  resolved_prefix="$(cd "${prefix}" 2>/dev/null && pwd -P)" || return 1
+  if [[ "${schema}" == "1" ]]; then
+    recorded_resolved_prefix="${recorded_prefix}"
+  else
+    recorded_resolved_prefix="$(omd_shared_linuxbrew_manifest_value resolved_prefix || true)"
+  fi
+  [[ "${resolved_prefix}" == "${recorded_resolved_prefix}" ]] || return 1
 
   service_user="$(omd_shared_linuxbrew_manifest_value service_user || true)"
   manager_group="$(omd_shared_linuxbrew_manifest_value manager_group || true)"
@@ -140,8 +147,8 @@ omd_shared_linuxbrew_validate() {
     actual_gid="$(omd_shared_linuxbrew_group_gid "${manager_group}" 2>/dev/null || true)"
   fi
   [[ "${actual_uid}" == "${expected_uid}" && "${actual_gid}" == "${expected_gid}" ]] || return 1
-  [[ "$(omd_shared_linuxbrew_stat_uid "${prefix}")" == "${expected_uid}" ]] || return 1
-  [[ "$(omd_shared_linuxbrew_stat_gid "${prefix}")" == "${expected_gid}" ]] || return 1
+  [[ "$(omd_shared_linuxbrew_stat_uid "${resolved_prefix}")" == "${expected_uid}" ]] || return 1
+  [[ "$(omd_shared_linuxbrew_stat_gid "${resolved_prefix}")" == "${expected_gid}" ]] || return 1
   if ! omd_shared_linuxbrew_test_mode; then
     [[ "$(omd_shared_linuxbrew_stat_uid "${manifest}")" == "0" ]] || return 1
     [[ "$(omd_shared_linuxbrew_stat_gid "${manifest}")" == "0" ]] || return 1

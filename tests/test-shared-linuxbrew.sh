@@ -70,7 +70,7 @@ chmod +x "${fake_brew_source}"
 
 run_provision() {
   local prefix="$1" state_dir="$2" libexec_dir="$3" sudoers_file="$4" target_user="$5" target_home="$6"
-  env PATH="${fake_bin}:${PATH}" OHMYDEVPOD_SHARED_BREW_TEST_MODE=1 OHMYDEVPOD_SHARED_BREW_PREFIX="${prefix}" OHMYDEVPOD_SHARED_BREW_STATE_DIR="${state_dir}" OHMYDEVPOD_SHARED_BREW_LIBEXEC_DIR="${libexec_dir}" OHMYDEVPOD_SHARED_BREW_SUDOERS_FILE="${sudoers_file}" OHMYDEVPOD_SHARED_BREW_SERVICE_USER="${service_user}" OHMYDEVPOD_SHARED_BREW_MANAGER_GROUP="${manager_group}" OHMYDEVPOD_SHARED_BREW_TEST_SERVICE_UID="${service_uid}" OHMYDEVPOD_SHARED_BREW_TEST_SERVICE_GID="${service_gid}" OHMYDEVPOD_SHARED_BREW_TEST_TARGET_USER="${target_user}" OHMYDEVPOD_SHARED_BREW_TEST_TARGET_HOME="${target_home}" OHMYDEVPOD_SHARED_BREW_TEST_REAL_BIN="${fake_brew_source}" OMD_TEST_BREW_LOG="${brew_log}" bash -c 'set -euo pipefail; source "$1/modules/lib/shared-linuxbrew.sh"; omd_shared_linuxbrew_provision "$1" upstream' _ "${repo_root}"
+  env PATH="${fake_bin}:${PATH}" OHMYDEVPOD_SHARED_BREW_TEST_MODE=1 OHMYDEVPOD_SHARED_BREW_PREFIX="${prefix}" OHMYDEVPOD_SHARED_BREW_STATE_DIR="${state_dir}" OHMYDEVPOD_SHARED_BREW_LIBEXEC_DIR="${libexec_dir}" OHMYDEVPOD_SHARED_BREW_SUDOERS_FILE="${sudoers_file}" OHMYDEVPOD_SHARED_BREW_SERVICE_USER="${service_user}" OHMYDEVPOD_SHARED_BREW_MANAGER_GROUP="${manager_group}" OHMYDEVPOD_SHARED_BREW_TEST_SERVICE_UID="${service_uid}" OHMYDEVPOD_SHARED_BREW_TEST_SERVICE_GID="${service_gid}" OHMYDEVPOD_SHARED_BREW_TEST_TRUSTED_STORAGE_ROOT="${tmp_dir}" OHMYDEVPOD_SHARED_BREW_TEST_TRUSTED_STORAGE_UID="${service_uid}" OHMYDEVPOD_SHARED_BREW_TEST_TRUSTED_STORAGE_GID="${service_gid}" OHMYDEVPOD_SHARED_BREW_TEST_TARGET_USER="${target_user}" OHMYDEVPOD_SHARED_BREW_TEST_TARGET_HOME="${target_home}" OHMYDEVPOD_SHARED_BREW_TEST_REAL_BIN="${fake_brew_source}" OMD_TEST_BREW_LOG="${brew_log}" bash -c 'set -euo pipefail; source "$1/modules/lib/shared-linuxbrew.sh"; omd_shared_linuxbrew_provision "$1" upstream' _ "${repo_root}"
 }
 
 run_gateway() {
@@ -100,6 +100,8 @@ gateway="${libexec_dir}/bin/brew"
 [[ -f "${state_dir}/profile.d/oh-my-devpod-brew.sh" ]] || fail "provisioner should install login-shell gateway activation"
 [[ -x "${prefix}/bin/brew" ]] || fail "provisioner should install the real Brew backend"
 assert_file_contains "${state_dir}/manifest" "prefix=${prefix}"
+assert_file_contains "${state_dir}/manifest" "schema_version=2"
+assert_file_contains "${state_dir}/manifest" "resolved_prefix=${prefix}"
 assert_file_contains "${state_dir}/manifest" "service_user=${service_user}"
 assert_file_contains "${state_dir}/manifest" "service_uid=${service_uid}"
 assert_file_contains "${state_dir}/manifest" "service_gid=${service_gid}"
@@ -170,6 +172,12 @@ if run_gateway "${prefix}" "${state_dir}" "${libexec_dir}" "${user_a_home}" info
 fi
 cp "${tmp_dir}/manifest" "${state_dir}/manifest"
 
+sed -e 's/^schema_version=2$/schema_version=1/' -e '/^resolved_prefix=/d' \
+  "${state_dir}/manifest" > "${tmp_dir}/schema-1-manifest"
+cp "${tmp_dir}/schema-1-manifest" "${state_dir}/manifest"
+run_gateway "${prefix}" "${state_dir}" "${libexec_dir}" "${user_a_home}" info preexisting >/dev/null
+cp "${tmp_dir}/manifest" "${state_dir}/manifest"
+
 conflict_prefix="${tmp_dir}/conflict/home/linuxbrew/.linuxbrew"
 conflict_state="${tmp_dir}/conflict/state"
 conflict_libexec="${tmp_dir}/conflict/libexec"
@@ -214,6 +222,32 @@ assert_file_contains "${legacy_state}/inventory/jq" "state=external"
 [[ -f "${legacy_state}/members/user-b" ]] || fail "migration should enroll the invoking user"
 [[ -f "${legacy_state}/members/${service_user}" ]] || fail "migration should enroll the legacy owner"
 
+unsafe_root="${tmp_dir}/unsafe-link"
+unsafe_prefix="${unsafe_root}/home/linuxbrew/.linuxbrew"
+unsafe_resolved="${unsafe_root}/storage/linuxbrew/.linuxbrew"
+unsafe_state="${unsafe_root}/state"
+unsafe_libexec="${unsafe_root}/libexec"
+unsafe_sudoers="${unsafe_root}/sudoers"
+unsafe_owner_home="${unsafe_root}/owner"
+unsafe_user_home="${unsafe_root}/user"
+mkdir -p "${unsafe_root}/home" "${unsafe_resolved}/bin" "${unsafe_owner_home}/.local/state/oh-my-devpod/managed" "${unsafe_user_home}"
+chmod 0777 "${unsafe_root}/storage"
+ln -s "${unsafe_root}/storage/linuxbrew" "${unsafe_root}/home/linuxbrew"
+install -m 0755 "${fake_brew_source}" "${unsafe_resolved}/bin/brew"
+cat > "${unsafe_owner_home}/.local/state/oh-my-devpod/managed/linuxbrew" <<EOF
+managed_by=oh-my-devpod
+component=linuxbrew
+kind=directory
+artifact=${unsafe_prefix}
+EOF
+if OHMYDEVPOD_SHARED_BREW_TEST_LEGACY_OWNER="${service_user}" \
+  OHMYDEVPOD_SHARED_BREW_TEST_LEGACY_HOME="${unsafe_owner_home}" \
+  run_provision "${unsafe_prefix}" "${unsafe_state}" "${unsafe_libexec}" "${unsafe_sudoers}" user "${unsafe_user_home}" >"${tmp_dir}/unsafe-link.out" 2>&1; then
+  fail "a symlink through user-writable storage must not be adopted"
+fi
+grep -Fq 'unmanaged-prefix-conflict' "${tmp_dir}/unsafe-link.out" || fail "unsafe storage symlink refusal should be explicit"
+[[ ! -e "${unsafe_state}/manifest" ]] || fail "unsafe storage symlink must not publish a manifest"
+
 update_fixture="${tmp_dir}/update-fixture/oh-my-devpod"
 update_archive="${tmp_dir}/update-fixture.tar.gz"
 update_prefix="${tmp_dir}/update-prefix"
@@ -224,7 +258,11 @@ update_brew_libexec="${tmp_dir}/update-legacy/libexec"
 update_brew_sudoers="${tmp_dir}/update-legacy/sudoers"
 update_owner_home="${tmp_dir}/update-legacy/home/owner"
 update_user_home="${tmp_dir}/update-legacy/home/user"
-mkdir -p "${update_fixture}/bin" "${update_fixture}/install" "${update_fixture}/modules/lib" "${update_fixture}/build" "${update_fixture}/config" "${update_fixture}/vendor" "${update_brew_prefix}/bin" "${update_owner_home}/.local/state/oh-my-devpod/managed" "${update_user_home}"
+update_second_user_home="${tmp_dir}/update-legacy/home/user-b"
+update_brew_resolved="${tmp_dir}/update-legacy/data/linuxbrew/.linuxbrew"
+mkdir -p "${update_fixture}/bin" "${update_fixture}/install" "${update_fixture}/modules/lib" "${update_fixture}/build" "${update_fixture}/config" "${update_fixture}/vendor" "${tmp_dir}/update-legacy/home" "${update_brew_resolved}/bin" "${update_owner_home}/.local/state/oh-my-devpod/managed" "${update_user_home}" "${update_second_user_home}"
+chmod 0775 "${tmp_dir}/update-legacy/data" "${tmp_dir}/update-legacy/data/linuxbrew"
+ln -s "${tmp_dir}/update-legacy/data/linuxbrew" "${tmp_dir}/update-legacy/home/linuxbrew"
 printf '#!/usr/bin/env bash\nprintf "updated omd\\n"\n' > "${update_fixture}/bin/omd"
 chmod +x "${update_fixture}/bin/omd"
 cp "${repo_root}/install/bootstrap.sh" "${update_fixture}/install/bootstrap.sh"
@@ -243,9 +281,25 @@ kind=directory
 artifact=${update_brew_prefix}
 EOF
 tar -czf "${update_archive}" -C "${tmp_dir}/update-fixture" oh-my-devpod
-installed_version="$(env PATH="${fake_bin}:${PATH}" OHMYDEVPOD_BOOTSTRAP_LIB_ONLY=1 OHMYDEVPOD_SHARED_BREW_TEST_MODE=1 OHMYDEVPOD_SHARED_BREW_PREFIX="${update_brew_prefix}" OHMYDEVPOD_SHARED_BREW_STATE_DIR="${update_brew_state}" OHMYDEVPOD_SHARED_BREW_LIBEXEC_DIR="${update_brew_libexec}" OHMYDEVPOD_SHARED_BREW_SUDOERS_FILE="${update_brew_sudoers}" OHMYDEVPOD_SHARED_BREW_SERVICE_USER="${service_user}" OHMYDEVPOD_SHARED_BREW_MANAGER_GROUP="${manager_group}" OHMYDEVPOD_SHARED_BREW_TEST_SERVICE_UID="${service_uid}" OHMYDEVPOD_SHARED_BREW_TEST_SERVICE_GID="${service_gid}" OHMYDEVPOD_SHARED_BREW_TEST_TARGET_USER=update-user OHMYDEVPOD_SHARED_BREW_TEST_TARGET_HOME="${update_user_home}" OHMYDEVPOD_SHARED_BREW_TEST_LEGACY_OWNER="${service_user}" OHMYDEVPOD_SHARED_BREW_TEST_LEGACY_HOME="${update_owner_home}" OHMYDEVPOD_SHARED_BREW_TEST_REAL_BIN="${fake_brew_source}" OMD_TEST_BREW_LOG="${brew_log}" bash -c 'set -euo pipefail; source "$1/install/bootstrap.sh"; omd_install_archive "$2" "$3" "$4"' _ "${repo_root}" "${update_archive}" "${update_prefix}" "${update_bin}")"
+installed_version="$(env PATH="${fake_bin}:${PATH}" OHMYDEVPOD_BOOTSTRAP_LIB_ONLY=1 OHMYDEVPOD_SHARED_BREW_TEST_MODE=1 OHMYDEVPOD_SHARED_BREW_PREFIX="${update_brew_prefix}" OHMYDEVPOD_SHARED_BREW_STATE_DIR="${update_brew_state}" OHMYDEVPOD_SHARED_BREW_LIBEXEC_DIR="${update_brew_libexec}" OHMYDEVPOD_SHARED_BREW_SUDOERS_FILE="${update_brew_sudoers}" OHMYDEVPOD_SHARED_BREW_SERVICE_USER="${service_user}" OHMYDEVPOD_SHARED_BREW_MANAGER_GROUP="${manager_group}" OHMYDEVPOD_SHARED_BREW_TEST_SERVICE_UID="${service_uid}" OHMYDEVPOD_SHARED_BREW_TEST_SERVICE_GID="${service_gid}" OHMYDEVPOD_SHARED_BREW_TEST_TRUSTED_STORAGE_ROOT="${tmp_dir}" OHMYDEVPOD_SHARED_BREW_TEST_TRUSTED_STORAGE_UID="${service_uid}" OHMYDEVPOD_SHARED_BREW_TEST_TRUSTED_STORAGE_GID="${service_gid}" OHMYDEVPOD_SHARED_BREW_TEST_TARGET_USER=update-user OHMYDEVPOD_SHARED_BREW_TEST_TARGET_HOME="${update_user_home}" OHMYDEVPOD_SHARED_BREW_TEST_LEGACY_OWNER="${service_user}" OHMYDEVPOD_SHARED_BREW_TEST_LEGACY_HOME="${update_owner_home}" OHMYDEVPOD_SHARED_BREW_TEST_REAL_BIN="${fake_brew_source}" OMD_TEST_BREW_LOG="${brew_log}" bash -c 'set -euo pipefail; source "$1/install/bootstrap.sh"; omd_install_archive "$2" "$3" "$4"' _ "${repo_root}" "${update_archive}" "${update_prefix}" "${update_bin}")"
 [[ "${installed_version}" == "9.9.0" ]] || fail "candidate release activation should preserve the installed version output"
 [[ -f "${update_brew_state}/manifest" ]] || fail "candidate release installation should migrate legacy Linuxbrew before success"
+assert_file_contains "${update_brew_state}/manifest" "prefix=${update_brew_prefix}"
+assert_file_contains "${update_brew_state}/manifest" "resolved_prefix=${update_brew_resolved}"
 [[ -L "${update_bin}/omd" ]] || fail "candidate release should activate omd after shared Brew migration"
+
+run_provision "${update_brew_prefix}" "${update_brew_state}" "${update_brew_libexec}" "${update_brew_sudoers}" user-b "${update_second_user_home}"
+[[ -f "${update_brew_state}/members/user-b" ]] || fail "a second user should join Linuxbrew through the trusted storage symlink"
+run_gateway "${update_brew_prefix}" "${update_brew_state}" "${update_brew_libexec}" "${update_second_user_home}" info ripgrep >/dev/null
+
+alternate_brew_resolved="${tmp_dir}/update-legacy/data/alternate/.linuxbrew"
+mkdir -p "${alternate_brew_resolved}/bin"
+install -m 0755 "${fake_brew_source}" "${alternate_brew_resolved}/bin/brew"
+rm -- "${tmp_dir}/update-legacy/home/linuxbrew"
+ln -s "${tmp_dir}/update-legacy/data/alternate" "${tmp_dir}/update-legacy/home/linuxbrew"
+if run_gateway "${update_brew_prefix}" "${update_brew_state}" "${update_brew_libexec}" "${update_user_home}" info ripgrep >"${tmp_dir}/retarget.out" 2>&1; then
+  fail "the gateway must reject a trusted symlink retargeted after migration"
+fi
+grep -Fq 'shared resolved prefix mismatch' "${tmp_dir}/retarget.out" || fail "symlink retarget refusal should identify the resolved-prefix mismatch"
 
 printf 'shared Linuxbrew tests passed\n'

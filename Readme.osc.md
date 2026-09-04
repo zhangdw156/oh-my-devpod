@@ -265,8 +265,11 @@ root-owned gateway 会透明切换到服务 UID，并用同一个主机锁串行
 第一个用户负责初始化；后续用户安装 OMD 时会自动检测共享 manifest、
 加入管理组并复用已有 Cellar，不会重复安装。旧版 OMD 的 Linuxbrew
 仅在 owner、legacy marker 与 `brew --prefix` 完全一致时随首次更新
-自动迁移；任何未标记或不匹配的前缀都会以
-`unmanaged-prefix-conflict` 拒绝接管。
+自动迁移。普通目录布局仍是默认行为；如果服务器使用
+`/home/linuxbrew -> /data/linuxbrew` 一类存储软链接，只有软链接及其
+两侧父目录链均由 root 控制时才允许迁移，并在共享 manifest 中固定
+真实前缀，后续改指会被拒绝。任何未标记、不可信或不匹配的前缀都会
+以 `unmanaged-prefix-conflict` 拒绝接管。
 
 软件集合是全局的：安装、升级、卸载和换源都会影响所有用户，因此
 `omd-brew` 组成员必须互相信任。自动入组需要 sudo；没有 sudo 权限时

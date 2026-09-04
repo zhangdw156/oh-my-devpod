@@ -95,6 +95,121 @@ path_has_no_symlink_components() {
   done
 }
 
+trusted_storage_root() {
+  if [[ "${test_mode}" == "1" ]]; then
+    printf '%s\n' "${OHMYDEVPOD_SHARED_BREW_TEST_TRUSTED_STORAGE_ROOT:-/}"
+  else
+    printf '/\n'
+  fi
+}
+
+trusted_storage_uid() {
+  if [[ "${test_mode}" == "1" ]]; then
+    printf '%s\n' "${OHMYDEVPOD_SHARED_BREW_TEST_TRUSTED_STORAGE_UID:-$(id -u)}"
+  else
+    printf '0\n'
+  fi
+}
+
+trusted_storage_gid() {
+  if [[ "${test_mode}" == "1" ]]; then
+    printf '%s\n' "${OHMYDEVPOD_SHARED_BREW_TEST_TRUSTED_STORAGE_GID:-$(id -g)}"
+  else
+    printf '0\n'
+  fi
+}
+
+path_is_within() {
+  local path="$1" root="$2"
+  [[ "${path}" == "${root}" || "${path}" == "${root%/}"/* ]]
+}
+
+trusted_storage_directory() {
+  local path="$1" expected_uid="$2" expected_gid="$3" mode
+  [[ -d "${path}" && ! -L "${path}" ]] || return 1
+  [[ "$(stat_uid "${path}")" == "${expected_uid}" ]] || return 1
+  mode="$(stat_mode "${path}")" || return 1
+  [[ "${mode}" =~ ^[0-7]{3,4}$ ]] || return 1
+  (( (8#${mode} & 8#002) == 0 )) || return 1
+  if (( (8#${mode} & 8#020) != 0 )); then
+    [[ "$(stat_gid "${path}")" == "${expected_gid}" ]] || return 1
+  fi
+}
+
+trusted_storage_parent_chain() {
+  local path="$1" root="$2" expected_uid="$3" expected_gid="$4"
+  local parent relative current part
+  parent="$(dirname "${path}")"
+  path_is_within "${parent}" "${root}" || return 1
+  trusted_storage_directory "${root}" "${expected_uid}" "${expected_gid}" || return 1
+  if [[ "${root}" == "/" ]]; then
+    relative="${parent#/}"
+    current="/"
+  elif [[ "${parent}" == "${root}" ]]; then
+    relative=""
+    current="${root}"
+  else
+    relative="${parent#"${root%/}/"}"
+    current="${root%/}"
+  fi
+  while IFS= read -r part; do
+    [[ -n "${part}" ]] || continue
+    if [[ "${current}" == "/" ]]; then
+      current="/${part}"
+    else
+      current="${current}/${part}"
+    fi
+    if [[ -L "${current}" ]]; then
+      [[ "$(stat_uid "${current}")" == "${expected_uid}" ]] || return 1
+    else
+      trusted_storage_directory "${current}" "${expected_uid}" "${expected_gid}" || return 1
+    fi
+  done < <(tr '/' '\n' <<< "${relative}")
+}
+
+trusted_prefix_parent_resolved() {
+  local candidate="$1" root expected_uid expected_gid parent resolved_parent resolved_candidate
+  [[ "${candidate}" == /* ]] || return 1
+  parent="$(dirname "${candidate}")"
+  [[ -d "${parent}" ]] || return 1
+  root="$(trusted_storage_root)"
+  root="$(cd "${root}" 2>/dev/null && pwd -P)" || return 1
+  expected_uid="$(trusted_storage_uid)"
+  expected_gid="$(trusted_storage_gid)"
+  [[ "${expected_uid}" =~ ^[0-9]+$ && "${expected_gid}" =~ ^[0-9]+$ ]] || return 1
+  trusted_storage_parent_chain \
+    "${candidate}" "${root}" "${expected_uid}" "${expected_gid}" || return 1
+  resolved_parent="$(cd "${parent}" 2>/dev/null && pwd -P)" || return 1
+  resolved_candidate="${resolved_parent%/}/$(basename "${candidate}")"
+  trusted_storage_parent_chain \
+    "${resolved_candidate}" "${root}" "${expected_uid}" "${expected_gid}" || return 1
+  printf '%s\n' "${resolved_candidate}"
+}
+
+trusted_prefix_resolved() {
+  local candidate="$1" resolved expected_resolved
+  [[ "${candidate}" == /* && -d "${candidate}" && ! -L "${candidate}" ]] || return 1
+  resolved="$(cd "${candidate}" 2>/dev/null && pwd -P)" || return 1
+  [[ "${resolved}" == /* && -d "${resolved}" && ! -L "${resolved}" ]] || return 1
+  if path_has_no_symlink_components "${candidate}"; then
+    [[ "${resolved}" == "${candidate}" ]] || return 1
+    printf '%s\n' "${resolved}"
+    return 0
+  fi
+  expected_resolved="$(trusted_prefix_parent_resolved "${candidate}")" || return 1
+  [[ "${resolved}" == "${expected_resolved}" ]] || return 1
+  printf '%s\n' "${resolved}"
+}
+
+prepare_prefix_parent() {
+  if path_has_no_symlink_components "$(dirname "${prefix}")"; then
+    ensure_safe_parent "${prefix}"
+    return 0
+  fi
+  trusted_prefix_parent_resolved "${prefix}" >/dev/null ||
+    fail "shared Brew prefix parent is not controlled by the trusted storage root"
+}
+
 ensure_safe_parent() {
   local path="$1" parent
   parent="$(dirname "${path}")"
@@ -198,7 +313,7 @@ ensure_accounts() {
 prepare_state_layout() {
   local service_uid service_gid
   ensure_safe_parent "${state_dir}"
-  ensure_safe_parent "${prefix}"
+  prepare_prefix_parent
   path_has_no_symlink_components "${libexec_dir}" || fail "unsafe libexec path"
   [[ ! -e "${state_dir}" || -d "${state_dir}" ]] || fail "shared state path is not a directory"
   [[ ! -L "${state_dir}" ]] || fail "shared state path is a symlink"
@@ -341,7 +456,7 @@ legacy_home_for_user() {
 validate_legacy_prefix() {
   local owner_uid owner_gid owner owner_home marker marker_uid reported
   [[ -d "${prefix}" && ! -L "${prefix}" && -x "${prefix}/bin/brew" ]] || fail "unmanaged-prefix-conflict: prefix is missing or unsafe"
-  path_has_no_symlink_components "${prefix}" || fail "unmanaged-prefix-conflict: prefix path contains a symlink"
+  trusted_prefix_resolved "${prefix}" >/dev/null || fail "unmanaged-prefix-conflict: prefix path is not controlled by the trusted storage root"
   owner_uid="$(stat_uid "${prefix}")"
   owner_gid="$(stat_gid "${prefix}")"
   owner="$(user_for_uid "${owner_uid}")"
@@ -409,12 +524,14 @@ stage_legacy_inventory() {
 }
 
 write_manifest() {
-  local mirror_profile="$1" installation_id="$2" service_uid="$3" service_gid="$4" destination="$5"
+  local mirror_profile="$1" installation_id="$2" service_uid="$3" service_gid="$4" destination="$5" resolved_prefix
+  resolved_prefix="$(trusted_prefix_resolved "${prefix}")" || fail "shared Brew prefix path is not trusted"
   {
-    printf 'schema_version=1\n'
+    printf 'schema_version=2\n'
     printf 'managed_by=oh-my-devpod\n'
     printf 'mode=shared-service-account\n'
     printf 'prefix=%s\n' "${prefix}"
+    printf 'resolved_prefix=%s\n' "${resolved_prefix}"
     printf 'service_user=%s\n' "${service_user}"
     printf 'service_uid=%s\n' "${service_uid}"
     printf 'manager_group=%s\n' "${manager_group}"
@@ -426,10 +543,11 @@ write_manifest() {
 }
 
 validate_existing_manifest() {
-  local expected_uid expected_gid
+  local expected_uid expected_gid schema resolved_prefix recorded_resolved_prefix
   [[ -f "${manifest}" && ! -L "${manifest}" ]] || fail "shared manifest is missing or unsafe"
   path_has_no_symlink_components "${state_dir}" || fail "shared state path contains a symlink"
-  [[ "$(manifest_value schema_version || true)" == "1" ]] || fail "unsupported shared manifest schema"
+  schema="$(manifest_value schema_version || true)"
+  case "${schema}" in 1|2) ;; *) fail "unsupported shared manifest schema" ;; esac
   [[ "$(manifest_value managed_by || true)" == "oh-my-devpod" ]] || fail "shared manifest ownership mismatch"
   [[ "$(manifest_value mode || true)" == "shared-service-account" ]] || fail "shared manifest mode mismatch"
   [[ "$(manifest_value prefix || true)" == "${prefix}" ]] || fail "shared manifest prefix mismatch"
@@ -441,9 +559,15 @@ validate_existing_manifest() {
   [[ "$(manifest_value service_gid || true)" == "${expected_gid}" ]] || fail "shared manifest service GID mismatch"
   [[ "$(manifest_value installation_id || true)" =~ ^[[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12}$ ]] || fail "shared manifest installation ID is invalid"
   [[ -x "${prefix}/bin/brew" && ! -L "${prefix}" ]] || fail "shared Brew backend is missing or unsafe"
-  path_has_no_symlink_components "${prefix}" || fail "shared Brew prefix contains a symlink"
-  [[ "${test_mode}" == "1" || "$(stat_uid "${prefix}")" == "${expected_uid}" ]] || fail "shared Brew prefix owner mismatch"
-  [[ "${test_mode}" == "1" || "$(stat_gid "${prefix}")" == "${expected_gid}" ]] || fail "shared Brew prefix group mismatch"
+  resolved_prefix="$(trusted_prefix_resolved "${prefix}")" || fail "shared Brew prefix path is not trusted"
+  if [[ "${schema}" == "1" ]]; then
+    recorded_resolved_prefix="${prefix}"
+  else
+    recorded_resolved_prefix="$(manifest_value resolved_prefix || true)"
+  fi
+  [[ "${resolved_prefix}" == "${recorded_resolved_prefix}" ]] || fail "shared Brew resolved prefix mismatch"
+  [[ "${test_mode}" == "1" || "$(stat_uid "${resolved_prefix}")" == "${expected_uid}" ]] || fail "shared Brew prefix owner mismatch"
+  [[ "${test_mode}" == "1" || "$(stat_gid "${resolved_prefix}")" == "${expected_gid}" ]] || fail "shared Brew prefix group mismatch"
   if [[ "${test_mode}" != "1" ]]; then
     [[ "$(stat_uid "${manifest}")" == "0" && "$(stat_gid "${manifest}")" == "0" ]] || fail "shared manifest is not root-owned"
     (( (8#$(stat_mode "${manifest}") & 8#022) == 0 )) || fail "shared manifest is writable by non-root users"

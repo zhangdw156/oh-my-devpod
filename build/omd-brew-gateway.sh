@@ -63,13 +63,21 @@ stat_mode() {
 
 validate_manifest() {
   local service_user manager_group expected_uid expected_gid actual_uid actual_gid installation_id
+  local schema resolved_prefix recorded_resolved_prefix
   [[ -f "${manifest}" && ! -L "${manifest}" ]] || fail "missing or unsafe shared manifest"
-  [[ "$(manifest_value schema_version || true)" == "1" ]] || fail "unsupported shared manifest schema"
+  schema="$(manifest_value schema_version || true)"
+  case "${schema}" in 1|2) ;; *) fail "unsupported shared manifest schema" ;; esac
   [[ "$(manifest_value managed_by || true)" == "oh-my-devpod" ]] || fail "shared manifest ownership mismatch"
   [[ "$(manifest_value mode || true)" == "shared-service-account" ]] || fail "shared manifest mode mismatch"
   [[ "$(manifest_value prefix || true)" == "${prefix}" ]] || fail "shared prefix mismatch"
   [[ -d "${prefix}" && ! -L "${prefix}" && -x "${real_brew}" ]] || fail "real Brew backend is unavailable"
-  [[ "$(cd "${prefix}" 2>/dev/null && pwd -P)" == "${prefix}" ]] || fail "shared prefix resolves outside its fixed path"
+  resolved_prefix="$(cd "${prefix}" 2>/dev/null && pwd -P)" || fail "shared prefix cannot be resolved"
+  if [[ "${schema}" == "1" ]]; then
+    recorded_resolved_prefix="${prefix}"
+  else
+    recorded_resolved_prefix="$(manifest_value resolved_prefix || true)"
+  fi
+  [[ "${resolved_prefix}" == "${recorded_resolved_prefix}" ]] || fail "shared resolved prefix mismatch"
   [[ "$(cd "${state_dir}" 2>/dev/null && pwd -P)" == "${state_dir}" ]] || fail "shared state resolves outside its fixed path"
   [[ -d "${inventory_dir}" && ! -L "${inventory_dir}" ]] || fail "shared inventory is unavailable"
   [[ -f "${lock_file}" && ! -L "${lock_file}" ]] || fail "shared mutation lock is unavailable"

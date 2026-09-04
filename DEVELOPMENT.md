@@ -74,7 +74,9 @@ Linuxbrew 是裸机上的 host-scoped 组件，固定前缀为
 
 已存在的 Linuxbrew 只有在前缀 owner、owner 的 legacy OMD marker 和
 `brew --prefix` 完全一致时才能自动迁移；未标记、伪造、前缀不一致或
-包含 symlink 的安装必须以 `unmanaged-prefix-conflict` 失败。
+包含不可信 symlink 的安装必须以 `unmanaged-prefix-conflict` 失败。
+无 symlink 的普通目录保持原行为；root 控制的存储 symlink 允许迁移，
+解析后的真实前缀写入共享 manifest，并在每次管理操作前校验未被改指。
 
 所有权状态默认位于：
 

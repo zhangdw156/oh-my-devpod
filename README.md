@@ -279,8 +279,12 @@ The first OMD user initializes the prefix. A later user's bootstrap detects the
 shared manifest, enrolls that user, and reuses the existing Cellar without
 reinstalling Brew. An old OMD-owned prefix is migrated during the first update
 to a shared-aware release only when its owner, marker, and reported Brew prefix
-all match exactly. An unmarked or mismatched prefix is rejected as
-`unmanaged-prefix-conflict` and is never adopted.
+all match exactly. The ordinary directory layout remains the default; OMD also
+accepts a storage symlink such as `/home/linuxbrew -> /data/linuxbrew` only when
+the link and both parent chains are root-controlled. The resolved prefix is
+pinned in the shared manifest, so later retargeting is rejected. An unmarked,
+untrusted, or mismatched prefix is rejected as `unmanaged-prefix-conflict` and
+is never adopted.
 
 The package set is global: a direct Brew or OMD install is visible to every
 user, and an upgrade, uninstall, or source switch affects every user. Members
