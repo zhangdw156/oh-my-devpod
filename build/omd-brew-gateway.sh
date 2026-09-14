@@ -28,7 +28,15 @@ real_brew="${prefix}/bin/brew"
 stable_gateway="${libexec_dir}/brew-gateway"
 lock_file="${state_dir}/locks/mutation.lock"
 brew_noninteractive=0
+inventory_snapshot=""
 declare -a forwarded_env=()
+
+cleanup() {
+  [[ -z "${inventory_snapshot}" ]] || rm -f "${inventory_snapshot}"
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 fail() {
   printf 'brew: shared Linuxbrew gateway: %s\n' "$*" >&2
@@ -291,9 +299,11 @@ run_backend() {
   validate_inventory_records
   home="$(service_home "$(service_user)")"
   prepare_backend_working_directory "${home}"
-  before="${state_dir}/.inventory-before.$$"
   if is_inventory_mutation "${1:-}"; then
     mutates=1
+    before="$(mktemp "${inventory_dir}/.inventory-before.XXXXXX")" ||
+      fail "cannot create shared inventory snapshot"
+    inventory_snapshot="${before}"
     snapshot_formulae "${before}"
   fi
 
@@ -307,6 +317,7 @@ run_backend() {
   if [[ "${mutates}" == "1" ]]; then
     reconcile_inventory "${before}"
     rm -f "${before}"
+    inventory_snapshot=""
   fi
   return "${status}"
 }
