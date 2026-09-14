@@ -20,7 +20,7 @@ managed() {
 }
 
 install_or_update() {
-  local action="$1" repo_root
+  local action="$1" repo_root overlay_dir plugin_archive=""
   shift
   omd_module_reject_unknown_flags "$@" || return
   if status && ! managed; then
@@ -32,8 +32,14 @@ install_or_update() {
     return 0
   fi
   repo_root="$(omd_module_repo_root)"
+  overlay_dir="${repo_root}/config/nvim"
+  if [[ "${OHMYDEVPOD_MIRROR_PROFILE:-upstream}" == "cn" ]]; then
+    overlay_dir="${repo_root}/config/nvim-cn"
+    plugin_archive="${repo_root}/vendor/nvim/plugins.tar.gz"
+  fi
   OHMYDEVPOD_LAZYVIM_SOURCE_DIR="${repo_root}/vendor/nvim/lazyvim-starter" \
-    OHMYDEVPOD_NVM_OVERLAY_DIR="${repo_root}/config/nvim" \
+    OHMYDEVPOD_NVM_OVERLAY_DIR="${overlay_dir}" \
+    OHMYDEVPOD_LAZYVIM_PLUGIN_ARCHIVE="${plugin_archive}" \
     OHMYDEVPOD_NVM_CONFIG_DIR="${config_dir}" \
     OHMYDEVPOD_NVM_DATA_DIR="${data_dir}" \
     OHMYDEVPOD_NVM_STATE_DIR="${state_dir}" \

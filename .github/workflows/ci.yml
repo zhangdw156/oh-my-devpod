@@ -35,6 +35,15 @@ jobs:
           echo "${RUNNER_TEMP}/ripgrep/usr/bin" >> "${GITHUB_PATH}"
       - name: Run regression suite
         run: bash tests/run.sh
+      - name: Verify LazyVim without network access
+        run: |
+          set -euo pipefail
+          source versions.env
+          asset_dir="${PWD}/vendor/releases/neovim/${NEOVIM_VERSION}"
+          (cd "${asset_dir}" && sha256sum -c SHA256SUMS)
+          tar -xzf "${asset_dir}/nvim-linux-x86_64.tar.gz" -C "${RUNNER_TEMP}"
+          sudo env OMD_TEST_NVIM_BIN="${RUNNER_TEMP}/nvim-linux-x86_64/bin/nvim" \
+            unshare --net bash tests/test-lazyvim-offline.sh
       - name: Smoke test npm package with the release binary
         run: |
           set -euo pipefail

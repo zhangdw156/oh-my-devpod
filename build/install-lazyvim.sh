@@ -3,6 +3,7 @@ set -euo pipefail
 
 source_dir="${OHMYDEVPOD_LAZYVIM_SOURCE_DIR:-/opt/vendor/nvim/lazyvim-starter}"
 overlay_dir="${OHMYDEVPOD_NVM_OVERLAY_DIR:-}"
+plugin_archive="${OHMYDEVPOD_LAZYVIM_PLUGIN_ARCHIVE:-}"
 config_dir="${OHMYDEVPOD_NVM_CONFIG_DIR:-${XDG_CONFIG_HOME:-${HOME}/.config}/nvim}"
 data_dir="${OHMYDEVPOD_NVM_DATA_DIR:-${XDG_DATA_HOME:-${HOME}/.local/share}/nvim}"
 state_dir="${OHMYDEVPOD_NVM_STATE_DIR:-${XDG_STATE_HOME:-${HOME}/.local/state}/nvim}"
@@ -16,6 +17,19 @@ timestamp="$(date -u +%Y%m%d%H%M%SZ)"
 if [[ ! -d "${source_dir}" ]]; then
   echo "LazyVim source directory not found: ${source_dir}" >&2
   exit 1
+fi
+
+if [[ -n "${plugin_archive}" ]]; then
+  plugin_dir="$(dirname "${plugin_archive}")"
+  [[ "$(basename "${plugin_archive}")" == "plugins.tar.gz" &&
+    -f "${plugin_dir}/plugins.lock.json" ]] || {
+    echo "Missing or invalid LazyVim plugin bundle" >&2
+    exit 1
+  }
+  (cd "${plugin_dir}" && sha256sum -c SHA256SUMS) || {
+    echo "LazyVim plugin archive verification failed" >&2
+    exit 1
+  }
 fi
 
 if [[ -z "${starter_commit}" && -f "${source_dir}/.oh-my-devpod-source-commit" ]]; then
@@ -51,6 +65,11 @@ mkdir -p "$(dirname "${config_dir}")"
 cp -R "${source_dir}" "${config_dir}"
 if [[ -n "${overlay_dir}" && -d "${overlay_dir}" ]]; then
   cp -R "${overlay_dir}/." "${config_dir}"
+fi
+if [[ -n "${plugin_archive}" ]]; then
+  mkdir -p "${config_dir}/.omd-plugins"
+  tar -xzf "${plugin_archive}" -C "${config_dir}/.omd-plugins"
+  cp "${plugin_dir}/plugins.lock.json" "${config_dir}/.omd-plugins/plugins.lock.json"
 fi
 rm -rf "${config_dir}/.git"
 rm -f "${config_dir}/.oh-my-devpod-source-commit"
