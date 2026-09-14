@@ -110,7 +110,13 @@
       "commit": "803bc181d7c0d6d5eeba9274d9be49b287294d99",
       "local_path": "vendor/nvim/lazyvim-starter",
       "source_url": "https://codeload.github.com/LazyVim/starter/tar.gz/803bc181d7c0d6d5eeba9274d9be49b287294d99",
-      "notes": "Vendored as a pinned starter snapshot because LazyVim/starter does not publish installable release artifacts. First nvim launch still bootstraps lazy.nvim and plugins from upstream."
+      "notes": "Pinned upstream starter; the China profile overlays a configuration that uses the bundled plugin snapshots without first-start downloads."
+    },
+    "offline_plugins": {
+      "local_path": "vendor/nvim/plugins.tar.gz",
+      "lockfile": "vendor/nvim/plugins.lock.json",
+      "sha256": "830475fc6ccae8ec0833d6d154d9c309b16f997b6713ebda5b4cfe0fdb766f63",
+      "notes": "30 pinned plugins for the China profile. No Git metadata or native binaries. Source repositories and commits are recorded in the lockfile; upstream licenses are included in each snapshot."
     }
   },
   "zsh_plugins": {

@@ -8,7 +8,7 @@ Shared vendored assets include:
 
 - release archives for `antidote`, `atuin`, `btop`, `neovim`, `zellij`, `yazi`, and `witr`
 - Zsh plugin snapshots
-- the LazyVim starter snapshot
+- the LazyVim starter snapshot and 30 pinned plugins for offline China-profile startup
 
 The machine-readable inventory lives in [`vendor/manifest.lock.json`](../vendor/manifest.lock.json).
 
@@ -18,7 +18,10 @@ The machine-readable inventory lives in [`vendor/manifest.lock.json`](../vendor/
 vendor/
 ├── manifest.lock.json
 ├── nvim/
-│   └── lazyvim-starter/
+│   ├── lazyvim-starter/
+│   ├── plugins.lock.json
+│   ├── plugins.tar.gz
+│   └── SHA256SUMS
 ├── releases/
 │   ├── antidote/
 │   ├── atuin/
@@ -72,3 +75,32 @@ After running it:
 - This project intentionally avoids Git submodules.
 - Host installation still needs access to the selected package-manager mirrors for non-vendored formula operations.
 - Gitee CLI is not vendored; its installer fetches the official release and requires a matching SHA256 entry before activation.
+
+## LazyVim in the China profile
+
+Gitee / `cn` installs verify and unpack `vendor/nvim/plugins.tar.gz` into the
+managed Neovim configuration. `lazy.nvim`, LazyVim, themes, navigation, and Lua
+completion load from these local snapshots. First startup does not fetch GitHub
+repositories, Mason registries/tools, Treesitter parsers, or native completion
+libraries. Neovim's built-in syntax support remains available.
+
+Language servers, formatters, and additional Treesitter parsers are optional
+external tools. Install them explicitly from an accessible source and configure
+them in `lua/plugins/`; Mason is disabled in this profile. Bundled plugins are
+updated with `omd --execute update lazyvim`. This backs up the existing managed
+configuration, including user edits; custom plugin changes can be copied back
+from that backup. GitHub/upstream installs retain the upstream starter behavior.
+
+To refresh just the offline payload, edit the repository/commit entries in
+`vendor/nvim/plugins.lock.json`, then run:
+
+```bash
+python3 build/update-nvim-plugins.py
+bash tests/test-lazyvim-offline.sh
+```
+
+Review the refreshed `SHA256SUMS` and archive checksum in `vendor/manifest.lock.json`.
+The archive retains upstream license files and excludes Git history, CI files,
+and upstream test fixtures. CI tests
+Neovim 0.12 startup, file editing, and completion in a network namespace with no
+external connectivity.

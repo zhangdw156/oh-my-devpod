@@ -479,7 +479,6 @@ impl Runner {
                         "HOMEBREW_API_DOMAIN",
                         "https://mirrors.ustc.edu.cn/homebrew-bottles/api",
                     )
-                    .env("UV_CONFIG_FILE", self.config_dir.join("uv.toml"))
                     .env(
                         "PIP_INDEX_URL",
                         "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple",

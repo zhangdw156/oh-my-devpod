@@ -52,6 +52,7 @@ case "${1:-}" in
     ;;
   install)
     mkdir -p "${prefix}/Cellar/${2}/1.0"
+    [[ "${2}" != "partial-failure" ]] || exit 42
     ;;
   upgrade)
     [[ -d "${prefix}/Cellar/${2}" ]]
@@ -119,7 +120,18 @@ case ":${login_path}:" in
   *) fail "login activation should expose shared formulae behind the Brew gateway: ${login_path}" ;;
 esac
 
-run_gateway "${prefix}" "${state_dir}" "${libexec_dir}" "${user_a_home}" install ripgrep
+(
+  # The production state root is root-owned; only inventory is service-writable.
+  chmod 0555 "${state_dir}"
+  trap 'chmod 0755 "${state_dir}"' EXIT
+  run_gateway "${prefix}" "${state_dir}" "${libexec_dir}" "${user_a_home}" install ripgrep
+  gateway_status=0
+  run_gateway "${prefix}" "${state_dir}" "${libexec_dir}" "${user_a_home}" install partial-failure || gateway_status=$?
+  [[ "${gateway_status}" == 42 ]] || fail "gateway should preserve the Brew failure status"
+  assert_file_contains "${state_dir}/inventory/partial-failure" "state=managed"
+  [[ -z "$(find "${state_dir}" -name '.inventory-before.*' -print)" ]] ||
+    fail "gateway should clean up snapshots after successful and failed mutations"
+)
 [[ -d "${prefix}/Cellar/ripgrep/1.0" ]] || fail "direct brew install should mutate the shared prefix"
 assert_file_contains "${state_dir}/inventory/ripgrep" "state=managed"
 assert_file_contains "${state_dir}/inventory/ripgrep" "artifact=ripgrep"

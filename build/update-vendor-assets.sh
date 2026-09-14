@@ -150,5 +150,6 @@ download_plugin_snapshot "zsh-users/zsh-history-substring-search" "${history_sub
 download_plugin_snapshot "zsh-users/zsh-syntax-highlighting" "${syntax_highlighting_commit}" "${vendor_dir}/zsh/zsh-syntax-highlighting"
 download_plugin_snapshot "LazyVim/starter" "${lazyvim_starter_commit}" "${vendor_dir}/nvim/lazyvim-starter"
 printf '%s\n' "${lazyvim_starter_commit}" > "${vendor_dir}/nvim/lazyvim-starter/.oh-my-devpod-source-commit"
+python3 "${repo_root}/build/update-nvim-plugins.py"
 
 echo "Vendored assets updated under ${vendor_dir}"

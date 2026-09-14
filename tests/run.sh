@@ -12,6 +12,7 @@ bash "${repo_root}/tests/test-module-ownership.sh"
 bash "${repo_root}/tests/test-shared-linuxbrew.sh"
 bash "${repo_root}/tests/test-gitee-cli.sh"
 bash "${repo_root}/tests/test-source-config.sh"
+bash "${repo_root}/tests/test-uv-config-discovery.sh"
 bash "${repo_root}/tests/test-shell-activation.sh"
 if command -v cargo >/dev/null 2>&1; then
   (cd "${repo_root}" && cargo test -p omd)
@@ -21,6 +22,7 @@ fi
 
 bash "${repo_root}/tests/test-install-neovim.sh"
 bash "${repo_root}/tests/test-install-lazyvim.sh"
+bash "${repo_root}/tests/test-lazyvim-offline.sh"
 bash "${repo_root}/tests/test-host-installer-layout.sh"
 bash "${repo_root}/tests/test-vendor-assets-layout.sh"
 bash "${repo_root}/tests/test-omd-release-workflow.sh"
