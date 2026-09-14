@@ -511,7 +511,8 @@ assert_equal \
   "source switching must not run component actions"
 assert_source_profile "${switch_home}" gitee cn
 assert_contains 'mirrors.ustc.edu.cn' "${switch_home}/.config/oh-my-devpod/env"
-assert_contains 'mirrors.tuna.tsinghua.edu.cn' "${switch_home}/.config/oh-my-devpod/uv.toml"
+[[ ! -e "${switch_home}/.config/oh-my-devpod/uv.toml" ]] ||
+  fail "Gitee source switch must not create a uv config override"
 assert_contains 'PIP_INDEX_URL' "${switch_home}/.config/oh-my-devpod/env"
 assert_contains 'CONDA_CHANNELS="conda-forge"' "${switch_home}/.config/oh-my-devpod/env"
 assert_contains 'MAMBA_CHANNEL_ALIAS' "${switch_home}/.config/oh-my-devpod/env"
@@ -536,7 +537,7 @@ PATH="${fake_bin}:/usr/bin:/bin:/usr/sbin:/sbin" \
 assert_contains 'profile=cn' "${component_log}"
 assert_contains 'mirrors.ustc.edu.cn' "${component_log}"
 assert_contains 'brew_core=https://mirrors.ustc.edu.cn/homebrew-core.git' "${component_log}"
-assert_contains 'uv_config=' "${component_log}"
+grep -Fxq 'uv_config=' "${component_log}" || fail "component execution must not override uv config discovery"
 assert_contains 'pip_index=https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple' "${component_log}"
 assert_contains 'conda_channels=conda-forge' "${component_log}"
 assert_contains \

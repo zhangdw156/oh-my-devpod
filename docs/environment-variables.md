@@ -44,7 +44,6 @@ HOMEBREW_BREW_GIT_REMOTE=https://mirrors.ustc.edu.cn/brew.git
 HOMEBREW_CORE_GIT_REMOTE=https://mirrors.ustc.edu.cn/homebrew-core.git
 HOMEBREW_BOTTLE_DOMAIN=https://mirrors.ustc.edu.cn/homebrew-bottles
 HOMEBREW_API_DOMAIN=https://mirrors.ustc.edu.cn/homebrew-bottles/api
-UV_CONFIG_FILE=~/.config/oh-my-devpod/uv.toml
 PIP_INDEX_URL=https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
 CONDA_CHANNELS=conda-forge
 MAMBA_CHANNEL_ALIAS=https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
@@ -84,3 +83,9 @@ execution supplies controlled values for the managed prefix, binary directory,
 state directory, asset root, and component-specific installation paths.
 
 Vendored tool versions remain centralized in `versions.env`.
+
+The China profile uses the normal user-level `uv/uv.toml` for managed uv.
+It does not export `UV_CONFIG_FILE`, so project `[tool.uv]` settings (including
+`find-links` and custom indexes) retain precedence. Refreshing the source profile
+removes the old unmodified OMD `uv.toml` override and clears its inherited
+environment variable; edited legacy files are preserved.
