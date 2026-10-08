@@ -3,10 +3,10 @@
 This package contains the complete `oh-my-devpod` runtime bundle and exposes
 the `omd` command.
 
-Supported host:
+Supported hosts:
 
-- Ubuntu 24.04
-- Linux x64
+- Ubuntu 22.04, 24.04, and 26.04
+- Linux x64 (x86_64)
 - glibc
 - Node.js 18 or newer
 

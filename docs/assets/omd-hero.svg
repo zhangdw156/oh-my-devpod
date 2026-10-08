@@ -55,7 +55,7 @@
     <path d="m20 22 16-7M20 27l16 6" stroke="#dce7f4" stroke-opacity=".68" stroke-width="2"/>
   </g>
   <text x="144" y="88" fill="#f6f1e8" font-size="22" font-weight="700" letter-spacing="4" font-family="'IBM Plex Mono','Cascadia Code',monospace">OH—MY—DEVPOD</text>
-  <text x="1360" y="86" fill="#91a0b7" font-size="14" text-anchor="end" letter-spacing="2" font-family="'IBM Plex Mono','Cascadia Code',monospace">UBUNTU 24.04  /  x86_64</text>
+  <text x="1360" y="86" fill="#91a0b7" font-size="14" text-anchor="end" letter-spacing="2" font-family="'IBM Plex Mono','Cascadia Code',monospace">UBUNTU 22.04 / 24.04 / 26.04  ·  x86_64</text>
 
   <g>
     <text x="72" y="194" fill="#91a0b7" font-size="15" font-weight="600" letter-spacing="3" font-family="'IBM Plex Mono','Cascadia Code',monospace">WORKSTATION CONTROL PLANE</text>

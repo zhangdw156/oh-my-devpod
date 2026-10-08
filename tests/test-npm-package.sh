@@ -59,10 +59,16 @@ const supported = {
   glibcVersion: "2.39",
   osRelease: { ID: "ubuntu", VERSION_ID: "24.04" },
 };
-platform.validatePlatform(supported);
+for (const version of ["22.04", "24.04", "26.04"]) {
+  platform.validatePlatform({
+    ...supported,
+    glibcVersion: version === "22.04" ? "2.35" : "2.39",
+    osRelease: { ID: "ubuntu", VERSION_ID: version },
+  });
+}
 assert.throws(
   () => platform.validatePlatform({ ...supported, platform: "darwin" }),
-  /requires Ubuntu 24\.04 on Linux x64\/glibc/,
+  /requires Ubuntu 22\.04, 24\.04, and 26\.04 on Linux x64\/glibc/,
 );
 assert.throws(
   () => platform.validatePlatform({ ...supported, arch: "arm64" }),
@@ -72,14 +78,20 @@ assert.throws(
   () => platform.validatePlatform({ ...supported, glibcVersion: null }),
   /glibc \(musl is not supported\)/,
 );
-assert.throws(
-  () =>
-    platform.validatePlatform({
-      ...supported,
-      osRelease: { ID: "ubuntu", VERSION_ID: "22.04" },
-    }),
-  /requires Ubuntu 24\.04/,
-);
+for (const osRelease of [
+  ...["20.04", "24.10", "26.10", "28.04"].map((version) => ({
+    ID: "ubuntu", VERSION_ID: version,
+  })),
+  { ID: "debian", VERSION_ID: "12" },
+  { ID: "linuxmint", ID_LIKE: "ubuntu", VERSION_ID: "22" },
+  { ID: "ubuntu" },
+  {},
+]) {
+  assert.throws(
+    () => platform.validatePlatform({ ...supported, osRelease }),
+    /requires Ubuntu 22\.04, 24\.04, and 26\.04/,
+  );
+}
 
 assert.equal(source.selectSource(undefined), "github");
 assert.equal(source.selectSource("github"), "github");
@@ -94,16 +106,22 @@ assert.equal(
   "/tmp/custom-omd-config/npm-source",
 );
 
-for (const [requested, expected] of [
-  [undefined, "github"],
-  ["github", "github"],
-  ["gitee", "gitee"],
+for (const [version, requested, expected] of [
+  ["22.04", undefined, "github"],
+  ["22.04", "gitee", "gitee"],
+  ["24.04", "github", "github"],
+  ["24.04", "gitee", "gitee"],
+  ["26.04", "github", "github"],
+  ["26.04", "gitee", "gitee"],
 ]) {
   const packageRoot = fs.mkdtempSync(path.join(tmp, "postinstall-"));
   const stateFile = path.join(packageRoot, "state", "npm-source");
   const env = requested === undefined ? {} : { OHMYDEVPOD_SOURCE: requested };
   assert.equal(
-    postinstall.main({ env, packageRoot, platformInfo: supported, stateFile }),
+    postinstall.main({
+      env, packageRoot, stateFile,
+      platformInfo: { ...supported, osRelease: { ID: "ubuntu", VERSION_ID: version } },
+    }),
     expected,
   );
   assert.equal(
@@ -308,7 +326,7 @@ tar -xzf "${package_path}" -C "${unpacked}"
 
 if [[ "$(uname -s)" == "Linux" ]] &&
   grep -Eq '^ID="?ubuntu"?$' /etc/os-release &&
-  grep -Eq '^VERSION_ID="?24\.04"?$' /etc/os-release; then
+  grep -Eq '^VERSION_ID="?(22|24|26)\.04"?$' /etc/os-release; then
   npm_prefix="${tmp_dir}/npm-prefix"
   npm_config_home="${tmp_dir}/npm-config"
   install_output="${tmp_dir}/npm-install.out"

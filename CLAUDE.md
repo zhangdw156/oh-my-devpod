@@ -4,7 +4,7 @@ This file provides repository guidance for automated coding sessions.
 
 ## Repository purpose
 
-`oh-my-devpod` provides a host installer for Ubuntu 24.04. The public entrypoint is `install/bootstrap.sh`, which installs and launches the Rust TUI command `omd`.
+`oh-my-devpod` provides a host installer for Ubuntu 22.04, 24.04, and 26.04 on x86_64. The public entrypoint is `install/bootstrap.sh`, which installs and launches the Rust TUI command `omd`.
 
 `omd` manages selectable Linux development and terminal productivity tools through dependency-aware shell lifecycle modules.
 
@@ -30,13 +30,15 @@ bash build/update-vendor-assets.sh
 - The single source of truth for tool versions such as atuin, btop, neovim, and zellij is `versions.env`.
 - Build scripts source `versions.env`; install scripts use matching environment-variable fallbacks. Run `bash tests/test-versions-env.sh` to verify consistency.
 - `.github/workflows/release-omd.yml` builds the complete runtime bundle and uploads it plus its checksum to GitHub Releases, with optional Gitee synchronization.
+- Build the release on Ubuntu 22.04 x86_64 with a Python 3.12 toolchain. Python 3.12 is a maintainer build/test requirement, not a host runtime prerequisite.
+- Before publication, run `bash tests/test-ubuntu-compatibility.sh <release.tar.gz> <package.tgz>` to test the same release archive and npm package on Ubuntu 22.04, 24.04, and 26.04. Optional trailing versions select local checks; all three versions must pass for publication.
 - Release flow details live in `DEVELOPMENT.md`.
 
 ## High-level architecture
 
 ### 1. Bootstrap entrypoint
 
-`install/bootstrap.sh` is the curl entrypoint. It checks Ubuntu 24.04, selects GitHub or Gitee, verifies the release checksum, installs a versioned runtime bundle, activates `~/.local/bin/omd`, persists the mirror profile, and starts the TUI through `/dev/tty`.
+`install/bootstrap.sh` is the curl entrypoint. It checks for Ubuntu 22.04, 24.04, or 26.04 on x86_64, selects GitHub or Gitee, verifies the release checksum, installs a versioned runtime bundle, activates `~/.local/bin/omd`, persists the mirror profile, and starts the TUI through `/dev/tty`.
 
 ### 2. Rust TUI
 
