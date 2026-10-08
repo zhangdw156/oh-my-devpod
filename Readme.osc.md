@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://gitee.com/zhangdw156/oh-my-devpod/releases"><img src="https://img.shields.io/github/v/release/zhangdw156/oh-my-devpod?style=flat-square&label=release&color=ea6847" alt="最新版本" /></a>
-  <img src="https://img.shields.io/badge/Ubuntu-24.04-e95420?style=flat-square&logo=ubuntu&logoColor=white" alt="Ubuntu 24.04" />
+  <img src="https://img.shields.io/badge/Ubuntu-22.04%20%7C%2024.04%20%7C%2026.04-e95420?style=flat-square&logo=ubuntu&logoColor=white" alt="Ubuntu 22.04、24.04 和 26.04" />
   <img src="https://img.shields.io/badge/architecture-x86__64-172033?style=flat-square" alt="x86_64" />
   <img src="https://img.shields.io/badge/interface-Ratatui-58d6b0?style=flat-square" alt="Ratatui TUI" />
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-f2c14e?style=flat-square" alt="MIT License" /></a>
@@ -37,7 +37,7 @@
 | --- | --- | --- |
 | 选择工具、审查解析后的依赖计划，再明确执行。 | 已有安装保持为外部组件，`omd` 不接管、也不删除。 | GitHub 使用上游源；Gitee 自动启用中科大 Homebrew 与清华 TUNA Python 镜像。 |
 
-oh-my-devpod 是面向 **Ubuntu 24.04 x86_64** 的开发生产力工具管理器。
+oh-my-devpod 是面向 **Ubuntu 22.04、24.04 和 26.04 x86_64** 的开发生产力工具管理器。
 它将 Rust + Ratatui 交互界面与小型 Shell 生命周期模块结合：界面响应快速，
 安装、更新和卸载过程则保持明确、可检查。
 
@@ -57,7 +57,7 @@ npm install --global oh-my-devpod
 OHMYDEVPOD_SOURCE=gitee npm install --global oh-my-devpod
 ```
 
-两种方式安装后的命令均为 `omd`。npm 包目前仅支持 Ubuntu 24.04 x86_64。
+两种方式安装后的命令均为 `omd`。npm 包支持 Ubuntu 22.04、24.04 和 26.04 x86_64。
 
 安装后可以随时切换组件下载源，无需重新安装 npm 包：
 
@@ -323,12 +323,21 @@ cargo run -p omd -- --plan install micromamba lazyvim
 git diff --check
 ```
 
-构建 release bundle：
+维护者使用 Ubuntu 22.04 x86_64 与 Python 3.12 工具链构建 release bundle：
 
 ```bash
 bash build/package-omd.sh
 bash build/package-npm.sh dist/omd-x86_64-unknown-linux-gnu.tar.gz
 ```
+
+发布前，使用同一份 release archive 与 npm 包验证全部三个受支持的 Ubuntu 版本：
+
+```bash
+bash tests/test-ubuntu-compatibility.sh <release.tar.gz> <package.tgz>
+```
+
+命令末尾可追加版本号来缩小本地验证范围；正式发布要求 Ubuntu 22.04、24.04
+和 26.04 全部通过。
 
 模块边界、所有权规则、镜像行为和 release 维护说明见
 [`DEVELOPMENT.md`](./DEVELOPMENT.md)；npm 首次发布流程见

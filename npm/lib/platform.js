@@ -1,6 +1,8 @@
 "use strict";
 
 const fs = require("node:fs");
+const ubuntuVersions = ["22.04", "24.04", "26.04"];
+const supportedUbuntu = "Ubuntu 22.04, 24.04, and 26.04";
 
 function parseOsRelease(contents) {
   const values = {};
@@ -50,7 +52,7 @@ function currentPlatform() {
 function validatePlatform(info) {
   if (info.platform !== "linux") {
     throw new Error(
-      `unsupported platform ${info.platform}; oh-my-devpod requires Ubuntu 24.04 on Linux x64/glibc`,
+      `unsupported platform ${info.platform}; oh-my-devpod requires ${supportedUbuntu} on Linux x64/glibc`,
     );
   }
   if (info.arch !== "x64") {
@@ -66,9 +68,9 @@ function validatePlatform(info) {
 
   const id = info.osRelease.ID || "unknown";
   const version = info.osRelease.VERSION_ID || "unknown";
-  if (id !== "ubuntu" || version !== "24.04") {
+  if (id !== "ubuntu" || !ubuntuVersions.includes(version)) {
     throw new Error(
-      `unsupported Linux distribution ${id} ${version}; oh-my-devpod requires Ubuntu 24.04`,
+      `unsupported Linux distribution ${id} ${version}; oh-my-devpod requires ${supportedUbuntu}`,
     );
   }
 }

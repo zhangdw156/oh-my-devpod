@@ -2,7 +2,8 @@
 
 ## 架构边界
 
-oh-my-devpod 是 Ubuntu 24.04 开发生产力工具管理器。`omd` 负责交互、
+oh-my-devpod 是面向 Ubuntu 22.04、24.04 和 26.04 x86_64 的开发生产力工具管理器。
+`omd` 负责交互、
 依赖规划和模块编排；Shell 模块负责单个工具的状态探测与生命周期操作。
 
 ```text
@@ -148,6 +149,10 @@ runtime；npm 渠道不得执行内建 `omd --update`，必须提示使用
 
 ## Release bundle
 
+维护者的构建基线是 Ubuntu 22.04 x86_64，并显式使用 Python 3.12 工具链。
+构建得到的同一份 Linux x86_64 二进制必须兼容 Ubuntu 22.04、24.04 和 26.04。
+Python 3.12 是维护者构建与测试的工具链要求，不要求安装用户替换系统 Python。
+
 release archive 必须包含：
 
 ```text
@@ -166,6 +171,18 @@ oh-my-devpod/
 GitHub 和 Gitee 必须发布相同 archive 与 checksum，不能分别构建。
 npm 包必须从同一个 release archive 组装，不得重新构建另一份二进制或在
 `postinstall` 阶段联网下载 release。
+
+发布前必须使用同一份 release archive 和由它组装的 npm tarball，验证
+Ubuntu 22.04、24.04 和 26.04。测试需要运行中的 Docker，以及下载 Ubuntu
+镜像、Node.js 和容器测试依赖的网络连接：
+
+```bash
+bash tests/test-ubuntu-compatibility.sh <release.tar.gz> <package.tgz>
+```
+
+默认验证全部三个版本。命令末尾可追加版本号，例如 `22.04 26.04`，用于
+本地定向检查；发布门禁必须包含三个版本且全部通过，之后才能向 GitHub、
+Gitee 或 npm 发布已验证的产物。
 
 npm 首次发布和后续 trusted publishing 配置见
 [`docs/npm-release.md`](./docs/npm-release.md)。

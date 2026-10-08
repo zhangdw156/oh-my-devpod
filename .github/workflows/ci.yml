@@ -11,11 +11,15 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-24.04
+    # Build against the oldest supported glibc. Reuse this binary on every LTS.
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
@@ -72,6 +76,11 @@ jobs:
             exit 1
           fi
           grep -Fq 'npm update -g oh-my-devpod' "${RUNNER_TEMP}/npm-update.out"
+      - name: Verify release artifacts on supported Ubuntu versions
+        run: |
+          bash tests/test-ubuntu-compatibility.sh \
+            "${RUNNER_TEMP}/release/omd-x86_64-unknown-linux-gnu.tar.gz" \
+            "${RUNNER_TEMP}/npm-dist/oh-my-devpod-$(cat VERSION).tgz"
       - name: Check Rust formatting
         run: cargo fmt --all -- --check
       - name: Run Clippy

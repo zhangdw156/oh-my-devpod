@@ -32,6 +32,30 @@ assert_contains '/dev/tty' "${bootstrap}"
 assert_contains '/releases/' "${bootstrap}"
 assert_contains 'previous_dir=""' "${bootstrap}"
 
+# Platform checks must agree with the npm distribution.
+for version in 22.04 24.04 26.04; do
+  os_release="${tmp_dir}/ubuntu-${version}"
+  printf 'ID=ubuntu\nVERSION_ID="%s"\n' "${version}" > "${os_release}"
+  detected="$(OHMYDEVPOD_BOOTSTRAP_LIB_ONLY=1 bash -c '
+    source "$1"
+    omd_detect_os_release "$2"
+  ' _ "${bootstrap}" "${os_release}")"
+  [[ "${detected}" == "ubuntu-${version}" ]] || fail "Ubuntu ${version} should be supported"
+done
+
+for distribution in ubuntu:20.04 ubuntu:24.10 ubuntu:26.10 ubuntu:28.04 debian:12 linuxmint:22 ubuntu:; do
+  os_release="${tmp_dir}/unsupported-os-release"
+  printf 'ID=%s\nVERSION_ID="%s"\nID_LIKE=ubuntu\n' \
+    "${distribution%%:*}" "${distribution#*:}" > "${os_release}"
+  if OHMYDEVPOD_BOOTSTRAP_LIB_ONLY=1 bash -c '
+    source "$1"
+    omd_detect_os_release "$2"
+  ' _ "${bootstrap}" "${os_release}" >"${tmp_dir}/platform.out" 2>&1; then
+    fail "${distribution} should be rejected"
+  fi
+  assert_contains 'Ubuntu 22.04, 24.04, and 26.04' "${tmp_dir}/platform.out"
+done
+
 payload_root="${tmp_dir}/payload/oh-my-devpod"
 mkdir -p \
   "${payload_root}/bin" \
@@ -137,11 +161,12 @@ chmod +x "${fake_bin}/curl"
 run_bootstrap() {
   local source="$1" home="$2" log="$3" checksum_file="${4:-${checksum}}"
   local fail_github="${5:-0}" config_dir="${6:-}"
+  local os_release="${7:-${ubuntu_release}}"
   mkdir -p "${home}"
   PATH="${fake_bin}:/usr/bin:/bin:/usr/sbin:/sbin" \
     HOME="${home}" \
     OHMYDEVPOD_CONFIG_DIR="${config_dir}" \
-    OHMYDEVPOD_OS_RELEASE="${ubuntu_release}" \
+    OHMYDEVPOD_OS_RELEASE="${os_release}" \
   OHMYDEVPOD_SOURCE="${source}" \
   OHMYDEVPOD_VERSION="1.2.3" \
   OHMYDEVPOD_SKIP_SUDO_CHECK=1 \
@@ -156,6 +181,28 @@ run_bootstrap() {
   OHMYDEVPOD_SHARED_BREW_LIBEXEC_DIR="${OHMYDEVPOD_SHARED_BREW_LIBEXEC_DIR:-}" \
     bash "${bootstrap}"
 }
+
+for version in 22.04 26.04; do
+  for source in github gitee; do
+    platform_home="${tmp_dir}/${source}-${version}-home"
+    platform_log="${tmp_dir}/${source}-${version}-curl.log"
+    run_bootstrap "${source}" "${platform_home}" "${platform_log}" \
+      "${checksum}" 0 "" "${tmp_dir}/ubuntu-${version}"
+    assert_executable "${platform_home}/.local/bin/omd"
+    [[ "$("${platform_home}/.local/bin/omd" --version)" == "omd-test" ]] ||
+      fail "Ubuntu ${version} should launch the installed omd"
+    assert_contains "${source}" "${platform_home}/.config/oh-my-devpod/source"
+  done
+done
+
+rejected_home="${tmp_dir}/unsupported-home"
+rejected_log="${tmp_dir}/unsupported-curl.log"
+if run_bootstrap github "${rejected_home}" "${rejected_log}" \
+  "${checksum}" 0 "" "${tmp_dir}/unsupported-os-release" >"${tmp_dir}/unsupported.out" 2>&1; then
+  fail "unsupported platforms should fail before installation"
+fi
+[[ ! -e "${rejected_log}" && ! -e "${rejected_home}/.local/bin/omd" ]] ||
+  fail "unsupported platforms must not download or install omd"
 
 external_home="${tmp_dir}/external-brew-home"
 external_log="${tmp_dir}/external-brew-curl.log"

@@ -23,12 +23,14 @@ omd_detect_os_release() {
   # shellcheck disable=SC1090
   source "${os_release}"
 
-  if [[ "${ID}" == "ubuntu" && "${VERSION_ID}" == "24.04" ]]; then
-    printf 'ubuntu-24.04\n'
-    return 0
-  fi
+  case "${ID}:${VERSION_ID}" in
+    ubuntu:22.04|ubuntu:24.04|ubuntu:26.04)
+      printf 'ubuntu-%s\n' "${VERSION_ID}"
+      return 0
+      ;;
+  esac
 
-  printf 'Unsupported Linux distribution: ID=%s VERSION_ID=%s. oh-my-devpod supports Ubuntu 24.04 only.\n' \
+  printf 'Unsupported Linux distribution: ID=%s VERSION_ID=%s. oh-my-devpod supports Ubuntu 22.04, 24.04, and 26.04.\n' \
     "${ID:-unknown}" "${VERSION_ID:-unknown}" >&2
   return 1
 }

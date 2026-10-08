@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/zhangdw156/oh-my-devpod/releases"><img src="https://img.shields.io/github/v/release/zhangdw156/oh-my-devpod?style=flat-square&label=release&color=ea6847" alt="Latest release" /></a>
-  <img src="https://img.shields.io/badge/Ubuntu-24.04-e95420?style=flat-square&logo=ubuntu&logoColor=white" alt="Ubuntu 24.04" />
+  <img src="https://img.shields.io/badge/Ubuntu-22.04%20%7C%2024.04%20%7C%2026.04-e95420?style=flat-square&logo=ubuntu&logoColor=white" alt="Ubuntu 22.04, 24.04, and 26.04" />
   <img src="https://img.shields.io/badge/architecture-x86__64-172033?style=flat-square" alt="x86_64" />
   <img src="https://img.shields.io/badge/interface-Ratatui-58d6b0?style=flat-square" alt="Ratatui TUI" />
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-f2c14e?style=flat-square" alt="MIT License" /></a>
@@ -37,7 +37,7 @@
 | --- | --- | --- |
 | Select tools, inspect the resolved dependency plan, then execute it. | Existing installations remain external: `omd` does not claim or remove them. | GitHub uses upstream sources; Gitee activates USTC Homebrew and TUNA Python mirrors. |
 
-oh-my-devpod is a focused productivity-tool manager for **Ubuntu 24.04 x86_64**.
+oh-my-devpod is a focused productivity-tool manager for **Ubuntu 22.04, 24.04, and 26.04 x86_64**.
 It combines a Rust + Ratatui interface with small shell lifecycle modules, so the
 interactive experience stays fast while every install, update, and uninstall
 remains explicit and inspectable.
@@ -58,8 +58,8 @@ Or select the China mirror profile during installation:
 OHMYDEVPOD_SOURCE=gitee npm install --global oh-my-devpod
 ```
 
-Both commands install the `omd` executable. The npm package currently supports
-Ubuntu 24.04 x86_64 only.
+Both commands install the `omd` executable. The npm package supports
+Ubuntu 22.04, 24.04, and 26.04 on x86_64.
 
 Switch the component download profile at any time without reinstalling:
 
@@ -356,12 +356,23 @@ cargo run -p omd -- --plan install micromamba lazyvim
 git diff --check
 ```
 
-Release bundles are built with:
+Maintainers build release bundles on Ubuntu 22.04 x86_64 with a Python 3.12
+toolchain:
 
 ```bash
 bash build/package-omd.sh
 bash build/package-npm.sh dist/omd-x86_64-unknown-linux-gnu.tar.gz
 ```
+
+Before publication, test the same release archive and npm package across all
+three supported Ubuntu versions:
+
+```bash
+bash tests/test-ubuntu-compatibility.sh <release.tar.gz> <package.tgz>
+```
+
+Optional trailing versions select a subset for local checks; publication
+requires Ubuntu 22.04, 24.04, and 26.04 to pass.
 
 See [`DEVELOPMENT.md`](./DEVELOPMENT.md) for module boundaries, ownership rules,
 mirror behavior, and release maintenance. npm release bootstrapping is

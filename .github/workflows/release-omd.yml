@@ -17,7 +17,8 @@ permissions:
 
 jobs:
   build-linux-x86_64:
-    runs-on: ubuntu-24.04
+    # Ubuntu 22.04 supplies the glibc baseline for every supported LTS.
+    runs-on: ubuntu-22.04
     permissions:
       contents: write
     env:
@@ -25,6 +26,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Install Python for release tooling
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
       - name: Validate release versions
         env:
@@ -77,6 +83,20 @@ jobs:
             dist \
             x86_64-unknown-linux-gnu
 
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Package npm distribution
+        run: bash build/package-npm.sh "dist/${ARCHIVE}" dist/npm
+
+      - name: Verify release artifacts on supported Ubuntu versions
+        run: |
+          bash tests/test-ubuntu-compatibility.sh \
+            "dist/${ARCHIVE}" \
+            "dist/npm/oh-my-devpod-$(cat VERSION).tgz"
+
       - name: Upload workflow artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -92,14 +112,6 @@ jobs:
           files: |
             dist/${{ env.ARCHIVE }}
             dist/${{ env.ARCHIVE }}.sha256
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-
-      - name: Package npm distribution
-        run: bash build/package-npm.sh "dist/${ARCHIVE}" dist/npm
 
       - name: Upload npm package artifact
         uses: actions/upload-artifact@v4

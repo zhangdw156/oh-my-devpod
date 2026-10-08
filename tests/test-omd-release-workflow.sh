@@ -45,6 +45,31 @@ assert_contains 'is already published; skipping.'
 assert_not_contains 'docker/build-push-action'
 assert_not_contains 'ghcr.io'
 
+# A version allowlist cannot compensate for a binary linked on a newer host.
+python3 - "${repo_root}" <<'PY'
+import pathlib
+import re
+import sys
+
+root = pathlib.Path(sys.argv[1])
+for filename, job in [("ci.yml", "test"), ("release-omd.yml", "build-linux-x86_64")]:
+    workflow = (root / ".github/workflows" / filename).read_text()
+    match = re.search(rf"^  {job}:\n(.*?)(?=^  \S|\Z)", workflow, re.M | re.S)
+    assert match, f"missing build job in {filename}"
+    build = match[1]
+    assert "runs-on: ubuntu-22.04" in build, f"{filename} must build on the oldest supported LTS"
+    assert "actions/setup-python@" in build and "python-version: '3.12'" in build, (
+        f"{filename} needs Python with tomllib for tests and packaging"
+    )
+    check = build.index("bash tests/test-ubuntu-compatibility.sh")
+    assert build.index("bash build/package-omd.sh") < check
+    assert build.index("bash build/package-npm.sh") < check
+    if filename == "release-omd.yml":
+        for publish in ["Upload workflow artifacts", "Upload GitHub release assets",
+                        "Upload npm package artifact", "Publish matching Gitee release assets"]:
+            assert check < build.index(publish), f"compatibility must pass before {publish}"
+PY
+
 package_script="${tmp_dir}/package.sh"
 awk '
   /- name: Package omd/ { in_step = 1 }
