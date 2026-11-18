@@ -41,7 +41,7 @@ fi
 case "$1" in
   update)
     if [[ -n "${OMD_TEST_RUBY_SHA:-}" ]]; then
-      git -C "${prefix}" checkout --quiet --detach FETCH_HEAD
+      git -C "${prefix}" checkout --quiet --detach 1.0.1
       [[ "${OMD_TEST_UPDATE_FAILURE:-}" != 1 ]] || exit 1
     fi
     touch "${prefix}/updated"
@@ -119,6 +119,7 @@ commit_ruby() {
 }
 old_revision="$(commit_ruby "${old_sha}")"
 new_revision="$(commit_ruby "${new_sha}")"
+git -C "${source_brew}" tag 1.0.1 "${new_revision}"
 run_mirror_brew() {
   local checksum="$1"
   shift
@@ -128,6 +129,7 @@ run_mirror_brew() {
 mirror_prefix="${mirror_user}/.linuxbrew"
 run_mirror_brew "${old_sha}" "${linuxbrew}" install
 [[ "$(git -C "${mirror_prefix}" rev-parse HEAD)" == "${old_revision}" ]]
+commit_ruby "${old_sha}" >/dev/null
 run_mirror_brew "${old_sha}" "${linuxbrew}" update
 [[ ! -e "${mirror_prefix}/updated" ]]
 if run_mirror_brew "${new_sha}" env OMD_TEST_UPDATE_FAILURE=1 "${linuxbrew}" update; then

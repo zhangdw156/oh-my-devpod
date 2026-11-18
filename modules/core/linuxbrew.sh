@@ -74,10 +74,13 @@ update_personal_brew() {
     return
   fi
 
-  local installed checksum
+  local installed release_ref checksum
   installed="$(git -C "${brew_prefix}" rev-parse HEAD)" || return
-  git -C "${brew_prefix}" fetch --quiet --depth 1 origin HEAD </dev/null || return
-  checksum="$(portable_ruby_sha FETCH_HEAD)" || return
+  # brew update selects the latest stable tag, which can differ from origin/HEAD.
+  git -C "${brew_prefix}" fetch --quiet --force --tags origin </dev/null || return
+  release_ref="$(git -C "${brew_prefix}" tag --list --sort=-version:refname |
+    awk '/^[0-9]+\.[0-9]+\.[0-9]+$/ && !found { print "refs/tags/" $0; found=1 }')" || return
+  checksum="$(portable_ruby_sha "${release_ref:-origin/HEAD}")" || return
   if ! mirror_has_ruby "${checksum}"; then
     omd_module_info notice "keeping the installed Linuxbrew until the mirror has its updated portable Ruby"
     return 0
