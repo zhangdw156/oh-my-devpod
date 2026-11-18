@@ -81,6 +81,7 @@ HOMEBREW_CORE_GIT_REMOTE=https://mirrors.ustc.edu.cn/homebrew-core.git
 HOMEBREW_API_DOMAIN=https://mirrors.ustc.edu.cn/homebrew-bottles/api
 HOMEBREW_ARTIFACT_DOMAIN=https://mirrors.ustc.edu.cn/homebrew-bottles
 HOMEBREW_ARTIFACT_DOMAIN_NO_FALLBACK=1
+HOMEBREW_NO_AUTO_UPDATE=1
 HOMEBREW_NO_ANALYTICS=1
 HOMEBREW_NO_GITHUB_API=1
 EOF
