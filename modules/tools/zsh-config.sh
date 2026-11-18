@@ -9,6 +9,9 @@ zsh_dir="${OHMYDEVPOD_ZSH_DIR:-$(omd_module_prefix)/zsh}"
 zshrc="${OHMYDEVPOD_ZSHRC:-${HOME}/.zshrc}"
 p10k="${OHMYDEVPOD_P10K_CONFIG:-${HOME}/.p10k.zsh}"
 managed_header="# oh-my-devpod managed zsh config"
+zshenv="${zshrc%/*}/.zshenv"
+# Ubuntu's global zshrc reads this opt-out before the managed .zshrc runs.
+zshenv_line='if [[ -o interactive ]]; then skip_global_compinit=1; fi # oh-my-devpod: completion is initialized in .zshrc'
 
 status() {
   [[ -f "${zshrc}" ]] && grep -Fqx "${managed_header}" "${zshrc}"
@@ -39,6 +42,40 @@ preserve_modified_file() {
   omd_module_info notice "preserved modified ${path} at ${destination}"
 }
 
+configure_zshenv() (
+  local action="$1" created="$2" temporary line_number
+  [[ "${zshrc##*/}" == .zshrc ]] || return 0
+  if [[ -L "${zshenv}" || ( -e "${zshenv}" && ( ! -f "${zshenv}" || ! -O "${zshenv}" ) ) ]]; then
+    omd_module_info notice "leaving ${zshenv} untouched; Ubuntu users can set skip_global_compinit=1 there if global compinit prompts"
+    return 0
+  fi
+  if [[ ! -e "${zshenv}" ]]; then
+    [[ "${action}" != uninstall ]] || return 0
+    (umask 077; set -C; printf '%s\n' "${zshenv_line}" > "${zshenv}")
+    return
+  fi
+  line_number="$(grep -nm1 -Fx -- "${zshenv_line}" "${zshenv}" | cut -d: -f1)" || line_number=""
+  if [[ "${action}" == uninstall && -z "${line_number}" ]] ||
+     [[ "${action}" != uninstall && -n "${line_number}" ]]; then
+    return 0
+  fi
+  if [[ "${action}" == uninstall && "${created}" == 1 ]] &&
+     cmp -s "${zshenv}" <(printf '%s\n' "${zshenv_line}"); then
+    rm -- "${zshenv}"
+    return
+  fi
+  temporary="$(mktemp "${zshenv}.XXXXXXXX")" || return
+  trap 'rm -f -- "${temporary}"' EXIT
+  cp -p -- "${zshenv}" "${temporary}" || return
+  if [[ "${action}" == uninstall ]]; then
+    sed "${line_number}d" "${zshenv}" > "${temporary}" || return
+  else
+    printf '%s\n' "${zshenv_line}" > "${temporary}" || return
+    cat "${zshenv}" >> "${temporary}" || return
+  fi
+  mv -- "${temporary}" "${zshenv}"
+)
+
 write_zshrc() {
   local source_file="${repo_root}/config/.zshrc" source_config_dir line
   source_config_dir="${OHMYDEVPOD_CONFIG_DIR:-${XDG_CONFIG_HOME:-${HOME}/.config}/oh-my-devpod}"
@@ -55,15 +92,6 @@ if [[ -x "$HOME/.linuxbrew/bin/brew" && ! -L "$HOME/.linuxbrew" ]]; then
   export PATH="$HOME/.linuxbrew/bin:$HOME/.linuxbrew/sbin:$PATH"
 fi
 export PATH="$HOME/.local/bin:$PATH"
-omd_mamba_hook=""
-if command -v mamba >/dev/null 2>&1; then
-  omd_mamba_hook="$(mamba shell hook --shell zsh 2>/dev/null)" || omd_mamba_hook=""
-fi
-if [[ -z "${omd_mamba_hook}" ]] && command -v micromamba >/dev/null 2>&1; then
-  omd_mamba_hook="$(micromamba shell hook --shell zsh 2>/dev/null)" || omd_mamba_hook=""
-fi
-[[ -z "${omd_mamba_hook}" ]] || eval "${omd_mamba_hook}"
-unset omd_mamba_hook
 EOF
     while IFS= read -r line || [[ -n "${line}" ]]; do
       printf '%s\n' "${line//\/opt\/vendor\/zsh/${zsh_dir}}"
@@ -72,7 +100,7 @@ EOF
 }
 
 install_or_update() {
-  local action="$1" backup_dir="" backup_parent
+  local action="$1" backup_dir="" backup_parent created_zshenv=0
   shift
   omd_module_reject_unknown_flags "$@" || return
   if status && ! managed; then
@@ -107,11 +135,18 @@ install_or_update() {
     bash "${repo_root}/build/install-antidote.sh"
   cp "${repo_root}/config/.p10k.zsh" "${p10k}"
   write_zshrc
+  if [[ ! -e "${zshenv}" && ! -L "${zshenv}" ]]; then
+    created_zshenv=1
+  else
+    created_zshenv="$(omd_module_marker_value "${component}" created_zshenv || true)"
+  fi
+  configure_zshenv "${action}" "${created_zshenv}"
   omd_module_mark_managed \
     "${component}" \
     configuration \
     "${zshrc}" \
     "backup_dir=${backup_dir}" \
+    "created_zshenv=${created_zshenv:-0}" \
     "zshrc_sha256=$(omd_module_sha256_file "${zshrc}")" \
     "p10k_sha256=$(omd_module_sha256_file "${p10k}")"
 }
@@ -131,6 +166,7 @@ uninstall() {
   preserve_modified_file "${zshrc}" zshrc
   preserve_modified_file "${p10k}" p10k
 
+  configure_zshenv uninstall "$(omd_module_marker_value "${component}" created_zshenv || true)"
   rm -f "${zshrc}" "${p10k}"
   rm -rf "${zsh_dir}"
   if [[ -n "${backup_dir}" ]]; then

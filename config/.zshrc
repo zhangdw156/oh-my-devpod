@@ -6,12 +6,24 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
 fi
 
 export ZSH=/opt/vendor/zsh/ohmyzsh
-export ZSH_DISABLE_COMPFIX=true
+ZSH_DISABLE_COMPFIX=false
 export DISABLE_AUTO_UPDATE=true
 ZSH_THEME=""
 plugins=(git extract z)
 
 source "${ZSH}/oh-my-zsh.sh"
+
+# Micromamba registers completions with the audited compinit loaded by Oh My Zsh.
+omd_mamba_hook=""
+if command -v mamba >/dev/null 2>&1; then
+  omd_mamba_hook="$(mamba shell hook --shell zsh 2>/dev/null)" || omd_mamba_hook=""
+fi
+if [[ -z "${omd_mamba_hook}" ]] && command -v micromamba >/dev/null 2>&1; then
+  omd_mamba_hook="$(micromamba shell hook --shell zsh 2>/dev/null)" || omd_mamba_hook=""
+fi
+[[ -z "${omd_mamba_hook}" ]] || eval "${omd_mamba_hook}"
+unset omd_mamba_hook
+
 [[ -f /opt/vendor/zsh/zsh-autosuggestions/zsh-autosuggestions.zsh ]] && \
   source /opt/vendor/zsh/zsh-autosuggestions/zsh-autosuggestions.zsh
 [[ -f /opt/vendor/zsh/zsh-history-substring-search/zsh-history-substring-search.zsh ]] && \
