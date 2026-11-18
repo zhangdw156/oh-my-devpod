@@ -4,41 +4,32 @@ set -euo pipefail
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/common.sh"
 
 component="linuxbrew"
-if omd_shared_linuxbrew_enabled; then
-  brew_prefix="$(omd_shared_linuxbrew_prefix)"
-else
-  brew_prefix="${HOMEBREW_PREFIX:-/home/linuxbrew/.linuxbrew}"
-fi
+brew_prefix="${HOME}/.linuxbrew"
 
 status() {
-  if omd_shared_linuxbrew_enabled; then
-    if omd_shared_linuxbrew_managed && omd_shared_linuxbrew_current_user_enrolled; then
-      return 0
-    fi
-    if omd_shared_linuxbrew_state_claim_present; then
-      return 1
-    fi
-    if omd_module_marker_matches "${component}" "${brew_prefix}"; then
-      [[ -x "${brew_prefix}/bin/brew" ]]
-      return
-    fi
-    return 1
-  fi
-  if managed; then
-    [[ -x "${brew_prefix}/bin/brew" ]]
-    return
-  fi
-  [[ -x "${brew_prefix}/bin/brew" ]] || command -v brew >/dev/null 2>&1
+  omd_module_brew_cmd >/dev/null
 }
 
 managed() {
-  if omd_shared_linuxbrew_managed && omd_shared_linuxbrew_current_user_enrolled; then
-    return 0
-  fi
-  if omd_shared_linuxbrew_state_claim_present; then
-    return 1
-  fi
   omd_module_marker_matches "${component}" "${brew_prefix}"
+}
+
+activate_personal_brew() {
+  local profile bash_profile="${HOME}/.profile" activation
+  for profile in "${HOME}/.bash_profile" "${HOME}/.bash_login"; do
+    if [[ -e "${profile}" || -L "${profile}" ]]; then
+      bash_profile="${profile}"
+      break
+    fi
+  done
+  activation='case ":$PATH:" in *":$HOME/.linuxbrew/bin:"*) ;; *) export PATH="$HOME/.linuxbrew/bin:$HOME/.linuxbrew/sbin:$PATH" ;; esac # oh-my-devpod Linuxbrew'
+  for profile in "${bash_profile}" "${HOME}/.bashrc" "${HOME}/.zprofile"; do
+    if [[ -L "${profile}" || ( -e "${profile}" && ( ! -f "${profile}" || ! -O "${profile}" ) ) ]]; then
+      omd_module_info notice "skipping shell activation in ${profile}; add ${brew_prefix}/bin to PATH there"
+    elif ! grep -Fqx -- "${activation}" "${profile}" 2>/dev/null; then
+      printf '\n%s\n' "${activation}" >> "${profile}" || return 1
+    fi
+  done
 }
 
 install_or_update() {
@@ -46,78 +37,54 @@ install_or_update() {
   shift
   omd_module_reject_unknown_flags "$@" || return
 
-  if omd_shared_linuxbrew_enabled; then
-    if omd_module_dry_run "$@"; then
-      omd_module_info plan "${action} host-shared Linuxbrew under ${brew_prefix}"
-      return 0
-    fi
-    omd_shared_linuxbrew_provision "$(omd_module_repo_root)" "${OHMYDEVPOD_MIRROR_PROFILE:-upstream}"
-    if [[ "${action}" == "update" ]]; then
-      omd_module_brew_exec "$(omd_shared_linuxbrew_gateway)" update
-    fi
-    return 0
-  fi
-
   if status && ! managed; then
     omd_module_external_installation "${component}"
     return 0
   fi
-  if omd_module_dry_run "$@"; then
-    if [[ "${OHMYDEVPOD_MIRROR_PROFILE:-upstream}" == "cn" ]]; then
-      brew_remote="${HOMEBREW_BREW_GIT_REMOTE:-https://mirrors.ustc.edu.cn/brew.git}"
-    else
-      brew_remote="${HOMEBREW_BREW_GIT_REMOTE:-https://github.com/Homebrew/brew.git}"
-    fi
-    omd_module_info plan "${action} Linuxbrew from ${brew_remote} under ${brew_prefix}"
-    return 0
-  fi
-
-  if managed && [[ -x "${brew_prefix}/bin/brew" ]]; then
-    omd_module_brew_exec "${brew_prefix}/bin/brew" update
-    return 0
-  fi
-
-  if managed; then
-    omd_module_info notice "repairing damaged managed Linuxbrew prefix: ${brew_prefix}"
-    omd_module_remove_tree "${brew_prefix}"
-  elif [[ -d "${brew_prefix}" ]] && [[ -n "$(find "${brew_prefix}" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null)" ]]; then
-    omd_module_info error "refusing to overwrite non-empty unmanaged prefix: ${brew_prefix}"
-    return 1
-  fi
-
-  if command -v apt-get >/dev/null 2>&1; then
-    if [[ "$(id -u)" -eq 0 ]]; then
-      apt-get update
-      apt-get install -y build-essential procps curl file git ca-certificates
-    else
-      omd_module_require_command sudo
-      sudo apt-get update
-      sudo apt-get install -y build-essential procps curl file git ca-certificates
-    fi
-  fi
-
-  if ! mkdir -p "${brew_prefix}" 2>/dev/null; then
-    if [[ "$(id -u)" -eq 0 ]]; then
-      mkdir -p "${brew_prefix}"
-    else
-      omd_module_require_command sudo
-      sudo mkdir -p "${brew_prefix}"
-      sudo chown -R "$(id -u):$(id -g)" "${brew_prefix}"
-    fi
-  fi
-
   if [[ "${OHMYDEVPOD_MIRROR_PROFILE:-upstream}" == "cn" ]]; then
     brew_remote="${HOMEBREW_BREW_GIT_REMOTE:-https://mirrors.ustc.edu.cn/brew.git}"
   else
     brew_remote="${HOMEBREW_BREW_GIT_REMOTE:-https://github.com/Homebrew/brew.git}"
   fi
-  omd_module_require_command git
-  git clone --depth 1 "${brew_remote}" "${brew_prefix}"
-  [[ -x "${brew_prefix}/bin/brew" ]] || {
-    omd_module_info error "Linuxbrew installation did not create ${brew_prefix}/bin/brew"
+  if omd_module_dry_run "$@"; then
+    omd_module_info plan "${action} personal Linuxbrew from ${brew_remote} under ${brew_prefix}"
+    return 0
+  fi
+
+  if [[ "$(id -u)" -eq 0 ]]; then
+    omd_module_info error "run Linuxbrew installation from your own account, without sudo"
     return 1
-  }
-  omd_module_mark_managed "${component}" directory "${brew_prefix}"
+  fi
+  if managed && status; then
+    if [[ "${action}" == "update" ]]; then
+      omd_module_brew_exec "${brew_prefix}/bin/brew" update || return
+    fi
+    activate_personal_brew
+    return
+  fi
+  if omd_module_path_exists "${brew_prefix}"; then
+    omd_module_info error "refusing to overwrite the existing Linuxbrew directory: ${brew_prefix}"
+    return 1
+  fi
+
+  local dependency attempt
+  for dependency in gcc g++ make ps curl file git; do
+    omd_module_require_command "${dependency}" || return
+  done
+  for attempt in 1 2 3; do
+    mkdir -m 0700 -- "${brew_prefix}" || return
+    if git clone --depth 1 "${brew_remote}" "${brew_prefix}" && status; then
+      omd_module_mark_managed "${component}" directory "${brew_prefix}" &&
+        activate_personal_brew
+      return
+    fi
+    rm -rf -- "${brew_prefix}"
+    if [[ "${attempt}" -lt 3 ]]; then
+      omd_module_info notice "retrying Linuxbrew download"
+    fi
+  done
+  omd_module_info error "Linuxbrew installation did not create ${brew_prefix}/bin/brew"
+  return 1
 }
 
 case "${1:-}" in

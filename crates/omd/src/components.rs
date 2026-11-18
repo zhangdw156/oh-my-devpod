@@ -47,16 +47,7 @@ pub struct Component {
 
 impl Component {
     pub fn scope(&self) -> &'static str {
-        if self.id == "linuxbrew"
-            || self
-                .install_requires
-                .iter()
-                .any(|dependency| dependency == "linuxbrew")
-        {
-            "host"
-        } else {
-            "user"
-        }
+        "user"
     }
 
     pub fn provider(&self) -> Option<&str> {

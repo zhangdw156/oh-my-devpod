@@ -2,7 +2,7 @@
 
 ## 架构边界
 
-oh-my-devpod 是面向 Ubuntu 22.04、24.04 和 26.04 x86_64 的开发生产力工具管理器。
+oh-my-devpod 是面向 Ubuntu 20.04、22.04、24.04 和 26.04 x86_64 的开发生产力工具管理器。
 `omd` 负责交互、
 依赖规划和模块编排；Shell 模块负责单个工具的状态探测与生命周期操作。
 
@@ -65,35 +65,10 @@ uninstall [--dry-run]
 - 所有卸载路径只能删除所有权标记中记录且位于允许目录内的对象。
 - Linuxbrew 不支持普通卸载。
 
-Linuxbrew 是裸机上的 host-scoped 组件，固定前缀为
-`/home/linuxbrew/.linuxbrew`。真实前缀只由非 root 的 `omd-brew`
-服务账号写入；`omd-brew` 组成员通过 root-owned gateway 使用标准
-`brew` 命令。任意 Brew 变更都必须经过
-`/var/lib/oh-my-devpod/linuxbrew/locks/mutation.lock`，共享公式记录位于
-`/var/lib/oh-my-devpod/linuxbrew/inventory/`。legacy owner 的 Linuxbrew
-marker 只用于严格校验旧前缀迁移；逐公式的用户本地 marker 不能作为
-共享状态的第二份真相。
-gateway 必须保留 service user 可读的 cwd；不可读时回退到 service
-home，避免私有用户 home 阻止普通 Brew 命令。
-共享登录 profile 必须保持 gateway 位于 PATH 最前，同时加入共享前缀
-的 `bin` 和 `sbin`。非 root 进程配置登录 shell 时使用有效用户；只有
-root 进程才可用 `SUDO_USER` 推导原始调用者。
-
-已存在的 Linuxbrew 只有在前缀 owner、owner 的 legacy OMD marker 和
-`brew --prefix` 指向同一个可信目录时才能自动迁移。此前缀一旦通过校验，
-其现有 Cellar 整体迁移为 managed，不要求逐公式 marker。v0.15.1-v0.15.5
-误标为 `legacy-preexisting` 且属于同一有效 installation ID 的记录自动恢复
-为 managed；未标记、伪造、前缀不一致或包含不可信 symlink 的安装必须以
-`unmanaged-prefix-conflict` 失败。
-无 symlink 的普通目录保持原行为；root 控制的存储 symlink 允许迁移，
-解析后的真实前缀写入共享 manifest，并在每次管理操作前校验未被改指。
-
-所有权状态默认位于：
-
-```text
-~/.local/state/oh-my-devpod/managed/
-/var/lib/oh-my-devpod/linuxbrew/
-```
+Linuxbrew 固定在当前用户的 `~/.linuxbrew`。模块仅从此处定位 Brew，
+公式的所有权记录仍位于用户的 OMD state 目录，安装、更新、卸载与换源
+均使用自己的前缀。安装所需的系统工具由主机管理员预先提供。Zsh 模块
+写入用户配置，用户可自行启动 Zsh。
 
 ## 镜像配置
 
@@ -149,8 +124,8 @@ runtime；npm 渠道不得执行内建 `omd --update`，必须提示使用
 
 ## Release bundle
 
-维护者的构建基线是 Ubuntu 22.04 x86_64，并显式使用 Python 3.12 工具链。
-构建得到的同一份 Linux x86_64 二进制必须兼容 Ubuntu 22.04、24.04 和 26.04。
+维护者的构建基线是 Ubuntu 20.04 x86_64，并显式使用 Python 3.12 工具链。
+构建得到的同一份 Linux x86_64 二进制必须兼容 Ubuntu 20.04、22.04、24.04 和 26.04。
 Python 3.12 是维护者构建与测试的工具链要求，不要求安装用户替换系统 Python。
 
 release archive 必须包含：
@@ -173,15 +148,15 @@ npm 包必须从同一个 release archive 组装，不得重新构建另一份�
 `postinstall` 阶段联网下载 release。
 
 发布前必须使用同一份 release archive 和由它组装的 npm tarball，验证
-Ubuntu 22.04、24.04 和 26.04。测试需要运行中的 Docker，以及下载 Ubuntu
+Ubuntu 20.04、22.04、24.04 和 26.04。测试需要运行中的 Docker，以及下载 Ubuntu
 镜像、Node.js 和容器测试依赖的网络连接：
 
 ```bash
 bash tests/test-ubuntu-compatibility.sh <release.tar.gz> <package.tgz>
 ```
 
-默认验证全部三个版本。命令末尾可追加版本号，例如 `22.04 26.04`，用于
-本地定向检查；发布门禁必须包含三个版本且全部通过，之后才能向 GitHub、
+默认验证全部四个版本。命令末尾可追加版本号，例如 `22.04 26.04`，用于
+本地定向检查；发布门禁必须包含四个版本且全部通过，之后才能向 GitHub、
 Gitee 或 npm 发布已验证的产物。
 
 npm 首次发布和后续 trusted publishing 配置见

@@ -1,8 +1,8 @@
 "use strict";
 
 const fs = require("node:fs");
-const ubuntuVersions = ["22.04", "24.04", "26.04"];
-const supportedUbuntu = "Ubuntu 22.04, 24.04, and 26.04";
+const ubuntuVersions = ["20.04", "22.04", "24.04", "26.04"];
+const supportedUbuntu = "Ubuntu 20.04, 22.04, 24.04, and 26.04";
 
 function parseOsRelease(contents) {
   const values = {};

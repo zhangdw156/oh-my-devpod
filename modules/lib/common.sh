@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 # Shared helpers for oh-my-devpod component modules.
 
-# shellcheck source=shared-linuxbrew.sh
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/shared-linuxbrew.sh"
-
 omd_module_repo_root() {
   local script_dir
   script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -37,10 +34,6 @@ omd_module_marker_path() {
 
 omd_module_is_managed() {
   local component="$1" marker
-  if [[ "${component}" == "linuxbrew" ]] && omd_shared_linuxbrew_state_claim_present; then
-    omd_shared_linuxbrew_managed && omd_shared_linuxbrew_current_user_enrolled
-    return
-  fi
   marker="$(omd_module_marker_path "${component}")" || return
   [[ -f "${marker}" ]] && grep -qx 'managed_by=oh-my-devpod' "${marker}"
 }
@@ -67,15 +60,6 @@ omd_module_mark_managed() {
 
 omd_module_marker_value() {
   local component="$1" key="$2" marker
-  if [[ "${component}" == "linuxbrew" ]] && omd_shared_linuxbrew_state_claim_present; then
-    omd_shared_linuxbrew_managed && omd_shared_linuxbrew_current_user_enrolled || return 1
-    case "${key}" in
-      artifact) omd_shared_linuxbrew_prefix ;;
-      kind) printf 'directory\n' ;;
-      *) omd_shared_linuxbrew_manifest_value "${key}" ;;
-    esac
-    return
-  fi
   marker="$(omd_module_marker_path "${component}")" || return
   [[ -f "${marker}" ]] || return 1
   sed -n "s/^${key}=//p" "${marker}" | head -n 1
@@ -181,33 +165,22 @@ omd_module_remove_tree() {
   rm -rf -- "${path}"
 }
 
+omd_module_brew_prefix_is_personal() {
+  local prefix="$1" home resolved
+  [[ -d "${prefix}" && ! -L "${prefix}" && -O "${prefix}" ]] || return 1
+  home="$(cd "${HOME}" && pwd -P)" || return 1
+  resolved="$(cd "${prefix}" && pwd -P)" || return 1
+  [[ "${resolved}" == "${home}"/* ]]
+}
+
 omd_module_brew_cmd() {
-  local candidate
-  if [[ -n "${OHMYDEVPOD_BREW_BIN:-}" && -x "${OHMYDEVPOD_BREW_BIN}" ]]; then
-    printf '%s\n' "${OHMYDEVPOD_BREW_BIN}"
-    return 0
-  fi
-  if omd_shared_linuxbrew_managed; then
-    candidate="$(omd_shared_linuxbrew_gateway)"
-    [[ -x "${candidate}" ]] || return 1
-    printf '%s\n' "${candidate}"
-    return 0
-  fi
-  if command -v brew >/dev/null 2>&1; then
-    command -v brew
-    return 0
-  fi
-  for candidate in \
-    "${HOMEBREW_PREFIX:-}/bin/brew" \
-    /home/linuxbrew/.linuxbrew/bin/brew \
-    "${HOME}/.linuxbrew/bin/brew"; do
-    [[ "${candidate}" == "/bin/brew" ]] && continue
-    if [[ -x "${candidate}" ]]; then
-      printf '%s\n' "${candidate}"
-      return 0
-    fi
-  done
-  return 1
+  local prefix="${HOME}/.linuxbrew" brew resolved
+  brew="${prefix}/bin/brew"
+  omd_module_brew_prefix_is_personal "${prefix}" || return 1
+  [[ -f "${brew}" && -O "${brew}" && -x "${brew}" ]] || return 1
+  resolved="$(readlink -f "${brew}")" || return 1
+  [[ "${resolved}" == "$(cd "${prefix}" && pwd -P)"/* ]] || return 1
+  printf '%s\n' "${brew}"
 }
 
 omd_module_brew_formula_installed_at() {
@@ -227,47 +200,16 @@ omd_module_brew_formula_installed() {
   omd_module_brew_formula_installed_at "${prefix}" "${formula}"
 }
 
-omd_module_brew_prefix_for_cmd() {
-  local brew="$1" prefix
-  prefix="$(omd_module_brew_exec "${brew}" --prefix 2>/dev/null || true)"
-  if [[ "${prefix}" == /* && -d "${prefix}" ]]; then
-    cd "${prefix}" 2>/dev/null && pwd -P
-    return
-  fi
-  [[ "${brew}" == */bin/brew ]] || return 1
-  cd "$(dirname "${brew}")/.." 2>/dev/null && pwd -P
-}
-
-omd_module_brew_cmd_matches_prefix() {
-  local brew="$1" expected_prefix="$2" resolved_brew reported_prefix
-  expected_prefix="$(cd "${expected_prefix}" 2>/dev/null && pwd -P)" || return 1
-  if [[ -L "${brew}" ]]; then
-    command -v readlink >/dev/null 2>&1 || return 1
-    resolved_brew="$(readlink -f "${brew}" 2>/dev/null || true)"
-    [[ "${resolved_brew}" == "${expected_prefix}"/* ]] || return 1
-  fi
-  reported_prefix="$(omd_module_brew_prefix_for_cmd "${brew}")" || return 1
-  [[ "${reported_prefix}" == "${expected_prefix}" ]]
-}
-
 omd_module_brew_prefix() {
-  local brew
-  brew="$(omd_module_brew_cmd)" || return 1
-  if omd_module_brew_prefix_for_cmd "${brew}"; then
-    return 0
-  fi
-  if [[ -n "${HOMEBREW_PREFIX:-}" && -d "${HOMEBREW_PREFIX}" ]]; then
-    printf '%s\n' "${HOMEBREW_PREFIX}"
-    return 0
-  fi
-  return 1
+  omd_module_brew_cmd >/dev/null &&
+    (cd "${HOME}/.linuxbrew" && pwd -P)
 }
 
 omd_module_brew_exec() {
   local brew="$1"
   shift
-  env -u HOMEBREW_ASK \
-    OHMYDEVPOD_BREW_NONINTERACTIVE=1 \
+  env -u HOMEBREW_ASK -u HOMEBREW_PREFIX -u HOMEBREW_CELLAR -u HOMEBREW_REPOSITORY \
+    -u HOMEBREW_CACHE -u HOMEBREW_LOGS -u HOMEBREW_TEMP \
     NONINTERACTIVE=1 \
     HOMEBREW_NO_ASK=1 \
     HOMEBREW_NO_AUTO_UPDATE=1 \
@@ -283,53 +225,23 @@ omd_module_formula_status() {
     omd_module_brew_formula_installed_at "${prefix}" "${formula}"
     return
   fi
-  command -v "${command_name}" >/dev/null 2>&1 ||
-    omd_module_brew_formula_installed "${formula}"
+  omd_module_brew_formula_installed "${formula}"
 }
 
 omd_module_formula_managed() {
-  local component="$1" formula="$2" kind
-  if omd_shared_linuxbrew_state_claim_present; then
-    omd_shared_linuxbrew_formula_managed "${component}" "${formula}"
-    return
-  fi
-  omd_module_marker_matches "${component}" "${formula}" || return 1
-  kind="$(omd_module_marker_value "${component}" kind || true)"
-  [[ "${kind}" == "brew-formula" ]]
+  local component="$1" formula="$2" prefix="${HOME}/.linuxbrew"
+  omd_module_marker_matches "${component}" "${formula}" &&
+    [[ "$(omd_module_marker_value "${component}" kind)" == "brew-formula" ]] &&
+    [[ "$(omd_module_marker_value "${component}" brew_prefix)" == "$(cd "${prefix}" 2>/dev/null && pwd -P)" ]] &&
+    omd_module_brew_prefix_is_personal "${prefix}"
 }
 
 omd_module_formula_marker_prefix() {
-  local component="$1" formula="$2" prefix linuxbrew_kind
-  if omd_shared_linuxbrew_state_claim_present; then
-    omd_shared_linuxbrew_formula_prefix "${component}" "${formula}"
-    return
-  fi
-  omd_module_formula_managed "${component}" "${formula}" || return 1
-  prefix="$(omd_module_marker_value "${component}" brew_prefix || true)"
-  if [[ -z "${prefix}" ]] && omd_module_is_managed linuxbrew; then
-    linuxbrew_kind="$(omd_module_marker_value linuxbrew kind || true)"
-    if [[ "${linuxbrew_kind}" == "directory" ]]; then
-      prefix="$(omd_module_marker_value linuxbrew artifact || true)"
-      if ! omd_module_brew_formula_installed_at "${prefix}" "${formula}"; then
-        prefix=""
-      fi
-    fi
-  fi
-  [[ -n "${prefix}" && "${prefix}" == /* && ! -L "${prefix}" && -x "${prefix}/bin/brew" ]] ||
-    return 1
-  prefix="$(cd "${prefix}" 2>/dev/null && pwd -P)" || return 1
-  omd_module_brew_cmd_matches_prefix "${prefix}/bin/brew" "${prefix}" || return 1
-  printf '%s\n' "${prefix}"
+  omd_module_formula_managed "$@" && omd_module_brew_prefix
 }
 
 omd_module_formula_brew_cmd() {
-  local component="$1" formula="$2" prefix
-  if omd_shared_linuxbrew_formula_managed "${component}" "${formula}"; then
-    omd_shared_linuxbrew_gateway
-    return
-  fi
-  prefix="$(omd_module_formula_marker_prefix "${component}" "${formula}")" || return 1
-  printf '%s/bin/brew\n' "${prefix}"
+  omd_module_formula_managed "$@" && omd_module_brew_cmd
 }
 
 omd_module_formula_install_or_update() {
@@ -344,7 +256,7 @@ omd_module_formula_install_or_update() {
   fi
 
   if omd_module_dry_run "$@"; then
-    omd_module_info plan "${action} host-shared Homebrew formula ${formula}"
+    omd_module_info plan "${action} Homebrew formula ${formula}"
     return 0
   fi
 
@@ -359,7 +271,7 @@ omd_module_formula_install_or_update() {
       return 1
     }
   fi
-  brew_prefix="$(omd_module_brew_prefix_for_cmd "${brew}")" || {
+  brew_prefix="$(omd_module_brew_prefix)" || {
     omd_module_info error "could not determine Homebrew prefix for ${component}"
     return 1
   }
@@ -370,18 +282,11 @@ omd_module_formula_install_or_update() {
   else
     omd_module_brew_exec "${brew}" install "${formula}"
   fi
-  if omd_shared_linuxbrew_managed; then
-    omd_shared_linuxbrew_formula_managed "${component}" "${formula}" || {
-      omd_module_info error "shared Brew inventory did not record ${formula}"
-      return 1
-    }
-  else
-    omd_module_mark_managed \
-      "${component}" \
-      brew-formula \
-      "${formula}" \
-      "brew_prefix=${brew_prefix}"
-  fi
+  omd_module_mark_managed \
+    "${component}" \
+    brew-formula \
+    "${formula}" \
+    "brew_prefix=${brew_prefix}"
 }
 
 omd_module_formula_uninstall_impl() {
@@ -390,7 +295,7 @@ omd_module_formula_uninstall_impl() {
   omd_module_reject_unknown_flags "$@" || return
 
   if omd_module_dry_run "$@"; then
-    omd_module_info plan "uninstall host-shared Homebrew formula ${formula} for all users"
+    omd_module_info plan "uninstall Homebrew formula ${formula}"
     return 0
   fi
 
@@ -402,7 +307,7 @@ omd_module_formula_uninstall_impl() {
     omd_module_info error "managed ${component} has no valid owning Homebrew prefix"
     return 1
   }
-  brew_prefix="$(omd_module_brew_prefix_for_cmd "${brew}")" || return 1
+  brew_prefix="$(omd_module_brew_prefix)" || return 1
   if ! omd_module_brew_formula_installed_at "${brew_prefix}" "${formula}"; then
     if [[ "${remove_marker}" == "1" ]]; then
       omd_module_unmark_managed "${component}"
@@ -418,7 +323,7 @@ omd_module_formula_uninstall_impl() {
     return 1
   fi
   omd_module_brew_exec "${brew}" uninstall "${formula}"
-  if [[ "${remove_marker}" == "1" ]] && ! omd_shared_linuxbrew_managed; then
+  if [[ "${remove_marker}" == "1" ]]; then
     omd_module_unmark_managed "${component}"
   fi
 }
@@ -433,67 +338,6 @@ omd_module_formula_uninstall_keep_marker() {
   local component="$1" formula="$2"
   shift 2
   omd_module_formula_uninstall_impl "${component}" "${formula}" 0 "$@"
-}
-
-omd_module_zsh_path() {
-  local brew prefix candidate
-  if brew="$(omd_module_brew_cmd)"; then
-    prefix="$(omd_module_brew_exec "${brew}" --prefix zsh 2>/dev/null || true)"
-    candidate="${prefix}/bin/zsh"
-    if [[ -n "${prefix}" && -x "${candidate}" ]]; then
-      printf '%s\n' "${candidate}"
-      return 0
-    fi
-  fi
-  command -v zsh
-}
-
-omd_module_target_user() {
-  if [[ -n "${OHMYDEVPOD_TARGET_USER:-}" ]]; then
-    printf '%s\n' "${OHMYDEVPOD_TARGET_USER}"
-  elif [[ "$(id -u)" -eq 0 && -n "${SUDO_USER:-}" ]]; then
-    printf '%s\n' "${SUDO_USER}"
-  else
-    id -un
-  fi
-}
-
-omd_module_set_login_shell() {
-  local zsh_path="$1" target_user current_shell shells_file sudo_bin
-  [[ -x "${zsh_path}" ]] || {
-    omd_module_info error "cannot set login shell; Zsh is not executable: ${zsh_path}"
-    return 1
-  }
-
-  target_user="$(omd_module_target_user)"
-  shells_file="${OHMYDEVPOD_SHELLS_FILE:-/etc/shells}"
-  sudo_bin="${OHMYDEVPOD_SUDO_BIN:-sudo}"
-  if [[ -n "${OHMYDEVPOD_CURRENT_SHELL:-}" ]]; then
-    current_shell="${OHMYDEVPOD_CURRENT_SHELL}"
-  elif command -v getent >/dev/null 2>&1; then
-    current_shell="$(getent passwd "${target_user}" 2>/dev/null | awk -F: '{print $7}')"
-  else
-    current_shell="${SHELL:-}"
-  fi
-
-  if ! grep -Fqx "${zsh_path}" "${shells_file}" 2>/dev/null; then
-    if [[ "$(id -u)" -eq 0 ]]; then
-      printf '%s\n' "${zsh_path}" >> "${shells_file}"
-    else
-      omd_module_require_command "${sudo_bin}"
-      printf '%s\n' "${zsh_path}" | "${sudo_bin}" tee -a "${shells_file}" >/dev/null
-    fi
-  fi
-
-  if [[ "${current_shell}" != "${zsh_path}" ]]; then
-    if [[ "$(id -u)" -eq 0 ]]; then
-      chsh -s "${zsh_path}" "${target_user}"
-    else
-      omd_module_require_command "${sudo_bin}"
-      "${sudo_bin}" chsh -s "${zsh_path}" "${target_user}"
-    fi
-    omd_module_info notice "login shell for ${target_user} set to ${zsh_path}; it takes effect on next login"
-  fi
 }
 
 omd_module_external_installation() {

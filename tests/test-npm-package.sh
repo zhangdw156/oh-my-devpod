@@ -24,7 +24,7 @@ const manifest = require(path.join(root, "npm/package.json"));
 const version = fs.readFileSync(path.join(root, "VERSION"), "utf8").trim();
 
 assert.equal(manifest.name, "oh-my-devpod");
-assert.equal(manifest.version, "0.16.0");
+assert.equal(manifest.version, "0.17.0");
 assert.equal(manifest.version, version);
 assert.equal(manifest.bin.omd, "bin/omd");
 assert.equal(manifest.engines.node, ">=18");
@@ -59,16 +59,16 @@ const supported = {
   glibcVersion: "2.39",
   osRelease: { ID: "ubuntu", VERSION_ID: "24.04" },
 };
-for (const version of ["22.04", "24.04", "26.04"]) {
+for (const version of ["20.04", "22.04", "24.04", "26.04"]) {
   platform.validatePlatform({
     ...supported,
-    glibcVersion: version === "22.04" ? "2.35" : "2.39",
+    glibcVersion: ({ "20.04": "2.31", "22.04": "2.35" })[version] ?? "2.39",
     osRelease: { ID: "ubuntu", VERSION_ID: version },
   });
 }
 assert.throws(
   () => platform.validatePlatform({ ...supported, platform: "darwin" }),
-  /requires Ubuntu 22\.04, 24\.04, and 26\.04 on Linux x64\/glibc/,
+  /requires Ubuntu 20\.04, 22\.04, 24\.04, and 26\.04 on Linux x64\/glibc/,
 );
 assert.throws(
   () => platform.validatePlatform({ ...supported, arch: "arm64" }),
@@ -79,7 +79,7 @@ assert.throws(
   /glibc \(musl is not supported\)/,
 );
 for (const osRelease of [
-  ...["20.04", "24.10", "26.10", "28.04"].map((version) => ({
+  ...["18.04", "24.10", "26.10", "28.04"].map((version) => ({
     ID: "ubuntu", VERSION_ID: version,
   })),
   { ID: "debian", VERSION_ID: "12" },
@@ -89,7 +89,7 @@ for (const osRelease of [
 ]) {
   assert.throws(
     () => platform.validatePlatform({ ...supported, osRelease }),
-    /requires Ubuntu 22\.04, 24\.04, and 26\.04/,
+    /requires Ubuntu 20\.04, 22\.04, 24\.04, and 26\.04/,
   );
 }
 
@@ -107,6 +107,8 @@ assert.equal(
 );
 
 for (const [version, requested, expected] of [
+  ["20.04", "github", "github"],
+  ["20.04", "gitee", "gitee"],
   ["22.04", undefined, "github"],
   ["22.04", "gitee", "gitee"],
   ["24.04", "github", "github"],
@@ -261,16 +263,13 @@ fi
 exit 0
 MOCK
 chmod +x "${release_root}/bin/omd"
-printf '0.16.0\n' > "${release_root}/VERSION"
+printf '0.17.0\n' > "${release_root}/VERSION"
 printf 'fixture components\n' > "${release_root}/components.toml"
 printf 'fixture versions\n' > "${release_root}/versions.env"
 printf 'fixture bootstrap\n' > "${release_root}/install/bootstrap.sh"
 printf 'fixture update\n' > "${release_root}/install/update.sh"
 printf 'fixture module\n' > "${release_root}/modules/lib/common.sh"
 printf 'fixture source config\n' > "${release_root}/modules/lib/source-config.sh"
-printf 'fixture shared brew\n' > "${release_root}/modules/lib/shared-linuxbrew.sh"
-printf 'fixture brew gateway\n' > "${release_root}/build/omd-brew-gateway.sh"
-printf 'fixture brew provisioner\n' > "${release_root}/build/omd-brew-provisioner.sh"
 printf 'fixture build\n' > "${release_root}/build/helper.sh"
 printf 'fixture config\n' > "${release_root}/config/example"
 printf 'fixture hidden config\n' > "${release_root}/config/.hidden-example"
@@ -282,7 +281,7 @@ tar -czf "${release_archive}" -C "${tmp_dir}/release" oh-my-devpod
 npm_dist="${tmp_dir}/dist"
 package_path="$("${repo_root}/build/package-npm.sh" "${release_archive}" "${npm_dist}")"
 [[ -f "${package_path}" ]] || fail "package script did not create npm archive"
-[[ "$(basename "${package_path}")" == "oh-my-devpod-0.16.0.tgz" ]] ||
+[[ "$(basename "${package_path}")" == "oh-my-devpod-0.17.0.tgz" ]] ||
   fail "unexpected npm archive name: ${package_path}"
 
 packed_listing="${tmp_dir}/packed.list"
@@ -300,9 +299,6 @@ for expected in \
   package/runtime/install/update.sh \
   package/runtime/modules/lib/common.sh \
   package/runtime/modules/lib/source-config.sh \
-  package/runtime/modules/lib/shared-linuxbrew.sh \
-  package/runtime/build/omd-brew-gateway.sh \
-  package/runtime/build/omd-brew-provisioner.sh \
   package/runtime/build/helper.sh \
   package/runtime/config/example \
   package/runtime/config/.hidden-example \
@@ -353,11 +349,11 @@ if "${repo_root}/build/package-npm.sh" \
   "${tmp_dir}/wrong-version-dist" >"${tmp_dir}/wrong-version.out" 2>&1; then
   fail "package script should reject a mismatched bundle version"
 fi
-grep -Fq 'bundle version (0.14.1) does not match npm package version (0.16.0)' \
+grep -Fq 'bundle version (0.14.1) does not match npm package version (0.17.0)' \
   "${tmp_dir}/wrong-version.out" ||
   fail "version mismatch should produce a clear error"
 
-printf '0.16.0\n' > "${release_root}/VERSION"
+printf '0.17.0\n' > "${release_root}/VERSION"
 rm "${release_root}/install/update.sh"
 tar -czf "${tmp_dir}/incomplete.tar.gz" -C "${tmp_dir}/release" oh-my-devpod
 if "${repo_root}/build/package-npm.sh" \

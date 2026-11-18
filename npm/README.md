@@ -5,7 +5,7 @@ the `omd` command.
 
 Supported hosts:
 
-- Ubuntu 22.04, 24.04, and 26.04
+- Ubuntu 20.04, 22.04, 24.04, and 26.04
 - Linux x64 (x86_64)
 - glibc
 - Node.js 18 or newer

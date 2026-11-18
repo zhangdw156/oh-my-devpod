@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://gitee.com/zhangdw156/oh-my-devpod/releases"><img src="https://img.shields.io/github/v/release/zhangdw156/oh-my-devpod?style=flat-square&label=release&color=ea6847" alt="最新版本" /></a>
-  <img src="https://img.shields.io/badge/Ubuntu-22.04%20%7C%2024.04%20%7C%2026.04-e95420?style=flat-square&logo=ubuntu&logoColor=white" alt="Ubuntu 22.04、24.04 和 26.04" />
+  <img src="https://img.shields.io/badge/Ubuntu-20.04%20%7C%2022.04%20%7C%2024.04%20%7C%2026.04-e95420?style=flat-square&logo=ubuntu&logoColor=white" alt="Ubuntu 20.04、22.04、24.04 和 26.04" />
   <img src="https://img.shields.io/badge/architecture-x86__64-172033?style=flat-square" alt="x86_64" />
   <img src="https://img.shields.io/badge/interface-Ratatui-58d6b0?style=flat-square" alt="Ratatui TUI" />
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-f2c14e?style=flat-square" alt="MIT License" /></a>
@@ -37,7 +37,7 @@
 | --- | --- | --- |
 | 选择工具、审查解析后的依赖计划，再明确执行。 | 已有安装保持为外部组件，`omd` 不接管、也不删除。 | GitHub 使用上游源；Gitee 自动启用中科大 Homebrew 与清华 TUNA Python 镜像。 |
 
-oh-my-devpod 是面向 **Ubuntu 22.04、24.04 和 26.04 x86_64** 的开发生产力工具管理器。
+oh-my-devpod 是面向 **Ubuntu 20.04、22.04、24.04 和 26.04 x86_64** 的开发生产力工具管理器。
 它将 Rust + Ratatui 交互界面与小型 Shell 生命周期模块结合：界面响应快速，
 安装、更新和卸载过程则保持明确、可检查。
 
@@ -57,7 +57,7 @@ npm install --global oh-my-devpod
 OHMYDEVPOD_SOURCE=gitee npm install --global oh-my-devpod
 ```
 
-两种方式安装后的命令均为 `omd`。npm 包支持 Ubuntu 22.04、24.04 和 26.04 x86_64。
+两种方式安装后的命令均为 `omd`。npm 包支持 Ubuntu 20.04、22.04、24.04 和 26.04 x86_64。
 
 安装后可以随时切换组件下载源，无需重新安装 npm 包：
 
@@ -156,7 +156,7 @@ omd --dry-run
 omd --execute install ripgrep fzf
 ```
 
-### 自更新与全局源切换
+### 自更新与换源
 
 ```bash
 omd --update           # 使用已保存的来源更新
@@ -252,40 +252,26 @@ install/bootstrap.sh
 | `build/`、`vendor/`、`config/` | release 组装与固定版本资产 |
 | `VERSION` | `omd` release 版本真源 |
 
-## 裸机多用户共享 Linuxbrew
+## 多用户各自管理 Linuxbrew
 
-Linuxbrew 默认是主机级组件：全机只使用
-`/home/linuxbrew/.linuxbrew`。真实前缀由非 root 的 `omd-brew`
-服务账号独占写入；加入 `omd-brew` 组的用户仍直接使用标准
-`brew install`、`brew upgrade` 和 `brew uninstall`。OMD 安装的
-root-owned gateway 会透明切换到服务 UID，并用同一个主机锁串行化
-所有变更。首次入组后请启动一个新 shell，让 OMD 安装的
-`/usr/local/bin/brew` shim 位于真实前缀之前。登录激活还会加入共享
-前缀的 `bin` 和 `sbin`，因此 Bash 与托管 Zsh 都能直接找到公式命令。
-可读的当前目录会继续保留，以支持相对路径参数；如果用户私有目录对
-`omd-brew` 不可访问，gateway 会自动从 service home 运行后端。
+每位用户用自己的账号安装和运行 OMD。Linuxbrew 安装到 `~/.linuxbrew`，
+Brew、Cellar、工具版本、安装记录和镜像按账号管理。OMD 本体、Shell、
+编辑器配置及 Python 环境数据也使用各自的用户目录。
 
-第一个用户负责初始化；后续用户安装 OMD 时会自动检测共享 manifest、
-加入管理组并复用已有 Cellar，不会重复安装。旧版 OMD 的 Linuxbrew
-仅在 owner、legacy marker 与 `brew --prefix` 指向同一个可信目录时
-随首次更新自动迁移。此前缀通过校验后，已有 Cellar 会作为一个整体接管
-为 managed，不要求每个公式另有 marker。v0.15.1-v0.15.5 曾误标为
-`legacy-preexisting` 的公式也会自动恢复；共享模式建立后才绕过 gateway
-出现的真正未知公式仍保持 external。普通目录布局仍是默认行为；如果服务器使用
-`/home/linuxbrew -> /data/linuxbrew` 一类存储软链接，只有软链接及其
-两侧父目录链均由 root 控制时才允许迁移，并在共享 manifest 中固定
-真实前缀，后续改指会被拒绝。任何未标记、不可信或不匹配的前缀都会
-以 `unmanaged-prefix-conflict` 拒绝接管。
-
-软件集合是全局的：安装、升级、卸载和换源都会影响所有用户，因此
-`omd-brew` 组成员必须互相信任。非 root 用户通过 `sudo -iu` 登录后
-运行 OMD 时，用户级 shell 配置以当前有效账号为目标，不会误用继承的
-`SUDO_USER`。自动入组需要 sudo；没有 sudo 权限时
-由管理员在该用户的登录上下文中执行固定 provisioner：
+新 Ubuntu 服务器缺少系统依赖时，由管理员安装一次：
 
 ```bash
-sudo env SUDO_USER=user-b /usr/local/libexec/oh-my-devpod/brew-provisioner ensure upstream
+sudo apt-get update
+sudo apt-get install -y build-essential procps curl file git ca-certificates
 ```
+
+之后每个用户各自安装 OMD，在 TUI 选择 Linuxbrew，或运行
+`omd --execute install linuxbrew`。重新登录后，Bash 和 Zsh 会从自己的
+Brew 路径查找工具。OMD 安装 Zsh 和个人配置后，运行 `zsh` 即可使用。
+
+依赖 Homebrew 标准 Linux 前缀的二进制包在 `~/.linuxbrew` 下会改从源码构建。
+现有的全机 Brew 由原管理员负责。如果旧版 OMD 拒绝新归档，用本账号重新执行
+当前安装脚本，再安装自己的 Linuxbrew。
 
 ## 内建安全边界
 
@@ -306,6 +292,7 @@ sudo env SUDO_USER=user-b /usr/local/libexec/oh-my-devpod/brew-provisioner ensur
 ~/.local/share/oh-my-devpod/opt/
 ~/.local/state/oh-my-devpod/
 ~/.config/oh-my-devpod/
+~/.linuxbrew/
 ```
 
 ## 开发
@@ -323,20 +310,21 @@ cargo run -p omd -- --plan install micromamba lazyvim
 git diff --check
 ```
 
-维护者使用 Ubuntu 22.04 x86_64 与 Python 3.12 工具链构建 release bundle：
+维护者使用 Ubuntu 20.04 x86_64 与 Python 3.12 工具链构建 release bundle：
 
 ```bash
+bash build/build-omd-linux.sh
 bash build/package-omd.sh
 bash build/package-npm.sh dist/omd-x86_64-unknown-linux-gnu.tar.gz
 ```
 
-发布前，使用同一份 release archive 与 npm 包验证全部三个受支持的 Ubuntu 版本：
+发布前，使用同一份 release archive 与 npm 包验证全部四个受支持的 Ubuntu 版本：
 
 ```bash
 bash tests/test-ubuntu-compatibility.sh <release.tar.gz> <package.tgz>
 ```
 
-命令末尾可追加版本号来缩小本地验证范围；正式发布要求 Ubuntu 22.04、24.04
+命令末尾可追加版本号来缩小本地验证范围；正式发布要求 Ubuntu 20.04、22.04、24.04
 和 26.04 全部通过。
 
 模块边界、所有权规则、镜像行为和 release 维护说明见

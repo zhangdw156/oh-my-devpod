@@ -24,13 +24,13 @@ omd_detect_os_release() {
   source "${os_release}"
 
   case "${ID}:${VERSION_ID}" in
-    ubuntu:22.04|ubuntu:24.04|ubuntu:26.04)
+    ubuntu:20.04|ubuntu:22.04|ubuntu:24.04|ubuntu:26.04)
       printf 'ubuntu-%s\n' "${VERSION_ID}"
       return 0
       ;;
   esac
 
-  printf 'Unsupported Linux distribution: ID=%s VERSION_ID=%s. oh-my-devpod supports Ubuntu 22.04, 24.04, and 26.04.\n' \
+  printf 'Unsupported Linux distribution: ID=%s VERSION_ID=%s. oh-my-devpod supports Ubuntu 20.04, 22.04, 24.04, and 26.04.\n' \
     "${ID:-unknown}" "${VERSION_ID:-unknown}" >&2
   return 1
 }
@@ -139,9 +139,6 @@ omd_validate_bundle() {
     components.toml \
     install/bootstrap.sh \
     install/update.sh \
-    modules/lib/shared-linuxbrew.sh \
-    build/omd-brew-gateway.sh \
-    build/omd-brew-provisioner.sh \
     modules \
     build \
     config \
@@ -159,7 +156,7 @@ omd_validate_bundle() {
 omd_install_archive() {
   local archive="$1" prefix="$2" bin_dir="${3:-${OMD_DEFAULT_BIN_DIR}}"
   local releases_dir staging_dir bundle_root version release_dir previous_dir="" link_tmp
-  local active_path previous_active_target="" mirror_profile
+  local active_path
   [[ -f "${archive}" ]] || {
     omd_warn "Missing omd archive: ${archive}"
     return 1
@@ -207,9 +204,6 @@ omd_install_archive() {
   rm -rf "${staging_dir}" || true
 
   active_path="${bin_dir}/omd"
-  if [[ -L "${active_path}" ]]; then
-    previous_active_target="$(readlink "${active_path}")"
-  fi
   link_tmp="${bin_dir}/.omd.$$.tmp"
   if ! ln -s "${release_dir}/bin/omd" "${link_tmp}"; then
     rm -rf "${release_dir}"
@@ -228,19 +222,6 @@ omd_install_archive() {
     rm -rf "${release_dir}"
     [[ -z "${previous_dir}" ]] || mv "${previous_dir}" "${release_dir}"
     return 1
-  fi
-  mirror_profile="${OHMYDEVPOD_MIRROR_PROFILE:-upstream}"
-  case "${mirror_profile}" in upstream|cn) ;; *) mirror_profile=upstream ;; esac
-  if ! omd_activate_shared_linuxbrew_profile_if_present "${release_dir}" "${mirror_profile}"; then
-    rm -f "${active_path}"
-    [[ -z "${previous_active_target}" ]] || ln -s "${previous_active_target}" "${active_path}"
-    rm -rf "${release_dir}"
-    [[ -z "${previous_dir}" ]] || mv "${previous_dir}" "${release_dir}"
-    omd_warn "Shared Linuxbrew activation failed; restored the previous omd release"
-    return 1
-  fi
-  if ! omd_repair_managed_login_shell_if_present "${release_dir}"; then
-    omd_warn "Updated omd, but could not repair the managed login shell; run omd to retry"
   fi
   [[ -z "${previous_dir}" ]] || rm -rf "${previous_dir}" || true
   printf '%s\n' "${version}"
@@ -387,14 +368,6 @@ omd_saved_source_is_valid() {
   [[ "${value}" == "github" || "${value}" == "gitee" ]]
 }
 
-omd_source_mirror_profile() {
-  case "$1" in
-    github) printf 'upstream\n' ;;
-    gitee) printf 'cn\n' ;;
-    *) return 1 ;;
-  esac
-}
-
 omd_source_brew_remote() {
   case "$1" in
     github) printf '%s\n' "${OHMYDEVPOD_GITHUB_BREW_REMOTE:-https://github.com/Homebrew/brew.git}" ;;
@@ -411,46 +384,12 @@ omd_source_brew_core_remote() {
   esac
 }
 
-omd_activate_shared_linuxbrew_profile_if_present() {
-  local release_root="$1" profile="$2" helper
-  helper="${release_root}/modules/lib/shared-linuxbrew.sh"
-  [[ -f "${helper}" && ! -L "${helper}" ]] || {
-    omd_warn "Installed release cannot activate the existing shared Linuxbrew installation"
-    return 1
-  }
-  bash -c 'set -euo pipefail; source "$1"; omd_shared_linuxbrew_activate_if_present "$2" "$3"' _ "${helper}" "${release_root}" "${profile}"
-}
-
-omd_repair_managed_login_shell_if_present() {
-  local release_root="$1" postflight managed_dir marker managed=0
-  managed_dir="${OHMYDEVPOD_MANAGED_DIR:-${OHMYDEVPOD_STATE_DIR:-${XDG_STATE_HOME:-${HOME}/.local/state}/oh-my-devpod}/managed}"
-  for marker in "${managed_dir}/zsh" "${managed_dir}/zsh-config"; do
-    if [[ -f "${marker}" && ! -L "${marker}" ]] &&
-      grep -Fqx 'managed_by=oh-my-devpod' "${marker}"; then
-      managed=1
-      break
-    fi
-  done
-  [[ "${managed}" == "1" ]] || return 0
-  postflight="${release_root}/modules/lib/postflight.sh"
-  [[ -f "${postflight}" && ! -L "${postflight}" ]] || {
-    omd_warn "Installed release cannot repair an existing managed login shell"
-    return 1
-  }
-  bash "${postflight}" repair-login-shell >&2
-}
-
-omd_activate_shared_linuxbrew_if_present() {
-  local release_root="$1" source="$2" profile
-  profile="$(omd_source_mirror_profile "${source}")" || return 1
-  omd_activate_shared_linuxbrew_profile_if_present "${release_root}" "${profile}"
-}
-
 omd_main() {
   local os_release target requested_version source bin_dir prefix cache_dir config_dir
   local archive checksum selected_source installed_version candidate
 
   omd_require_linux
+  [[ "${EUID}" -ne 0 ]] || omd_error "Install OMD from your own account, without sudo."
   omd_require_command curl
   omd_require_command tar
   omd_require_command sha256sum
@@ -500,7 +439,7 @@ omd_main() {
     selected_source="${OMD_SELECTED_SOURCE}"
   fi
 
-  installed_version="$(OHMYDEVPOD_MIRROR_PROFILE="$(omd_source_mirror_profile "${selected_source}")" omd_install_archive "${archive}" "${prefix}" "${bin_dir}")"
+  installed_version="$(omd_install_archive "${archive}" "${prefix}" "${bin_dir}")"
   omd_persist_source "${selected_source}" "${config_dir}"
   omd_persist_install_paths "${prefix}" "${bin_dir}" "${cache_dir}" "${config_dir}"
   omd_info "Installed oh-my-devpod ${installed_version} from ${selected_source}"

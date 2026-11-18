@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/zhangdw156/oh-my-devpod/releases"><img src="https://img.shields.io/github/v/release/zhangdw156/oh-my-devpod?style=flat-square&label=release&color=ea6847" alt="Latest release" /></a>
-  <img src="https://img.shields.io/badge/Ubuntu-22.04%20%7C%2024.04%20%7C%2026.04-e95420?style=flat-square&logo=ubuntu&logoColor=white" alt="Ubuntu 22.04, 24.04, and 26.04" />
+  <img src="https://img.shields.io/badge/Ubuntu-20.04%20%7C%2022.04%20%7C%2024.04%20%7C%2026.04-e95420?style=flat-square&logo=ubuntu&logoColor=white" alt="Ubuntu 20.04, 22.04, 24.04, and 26.04" />
   <img src="https://img.shields.io/badge/architecture-x86__64-172033?style=flat-square" alt="x86_64" />
   <img src="https://img.shields.io/badge/interface-Ratatui-58d6b0?style=flat-square" alt="Ratatui TUI" />
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-f2c14e?style=flat-square" alt="MIT License" /></a>
@@ -37,7 +37,7 @@
 | --- | --- | --- |
 | Select tools, inspect the resolved dependency plan, then execute it. | Existing installations remain external: `omd` does not claim or remove them. | GitHub uses upstream sources; Gitee activates USTC Homebrew and TUNA Python mirrors. |
 
-oh-my-devpod is a focused productivity-tool manager for **Ubuntu 22.04, 24.04, and 26.04 x86_64**.
+oh-my-devpod is a focused productivity-tool manager for **Ubuntu 20.04, 22.04, 24.04, and 26.04 x86_64**.
 It combines a Rust + Ratatui interface with small shell lifecycle modules, so the
 interactive experience stays fast while every install, update, and uninstall
 remains explicit and inspectable.
@@ -59,7 +59,7 @@ OHMYDEVPOD_SOURCE=gitee npm install --global oh-my-devpod
 ```
 
 Both commands install the `omd` executable. The npm package supports
-Ubuntu 22.04, 24.04, and 26.04 on x86_64.
+Ubuntu 20.04, 22.04, 24.04, and 26.04 on x86_64.
 
 Switch the component download profile at any time without reinstalling:
 
@@ -120,8 +120,7 @@ requested tools
 components.toml ── resolve dependencies ── review ordered plan ── execute modules
 ```
 
-If Git, Neovim, or another dependency is already installed outside
-oh-my-devpod, it satisfies the dependency without being adopted.
+Packages already installed in your personal Linuxbrew satisfy dependencies without being adopted.
 
 ## How the TUI works
 
@@ -268,57 +267,37 @@ install/bootstrap.sh
 | `build/`, `vendor/`, `config/` | Release assembly and pinned assets |
 | `VERSION` | Release version source of truth |
 
-## Shared Linuxbrew on multi-user hosts
+## Per-user Linuxbrew on multi-user hosts
 
-On a bare-metal host, Linuxbrew is host-scoped by default. OMD maintains one
-installation at `/home/linuxbrew/.linuxbrew`, owned by the non-login
-`omd-brew` service account. Users enrolled in the `omd-brew` group use the
-ordinary `brew install`, `brew upgrade`, and `brew uninstall` commands; a
-root-owned gateway transparently runs the real Brew process under the service
-UID and serializes mutations on one host lock. OMD installs a
-`/usr/local/bin/brew` shim and login-shell activation; start a new shell after
-first enrollment so the gateway is ahead of the real prefix. Login activation
-also exposes the shared prefix's `bin` and `sbin` directories, so formula
-commands are available from Bash as well as the managed Zsh configuration.
-Readable working directories are preserved for relative-path Brew commands;
-when a private user directory is inaccessible to `omd-brew`, the gateway runs
-the backend from its service home instead.
+Install and run OMD from each user's own login account. OMD installs Linuxbrew
+under `~/.linuxbrew` with that user's ownership. The Brew executable, Cellar,
+package metadata, and mirror configuration are private to that installation.
+Each user's OMD release, shell and editor configuration, and environment manager
+data also use that user's home directories.
 
-The first OMD user initializes the prefix. A later user's bootstrap detects the
-shared manifest, enrolls that user, and reuses the existing Cellar without
-reinstalling Brew. An old OMD-owned prefix is migrated during the first update
-to a shared-aware release only when its owner, marker, and reported Brew prefix
-resolve to the same trusted directory. Once that prefix passes validation, its
-existing Cellar is adopted as one managed package set; individual formula
-markers are not required. Releases also recover formulas that v0.15.1-v0.15.5
-misclassified as `legacy-preexisting`. A genuinely unknown formula discovered
-later in an already-shared prefix remains external. The ordinary directory
-layout remains the default; OMD also
-accepts a storage symlink such as `/home/linuxbrew -> /data/linuxbrew` only when
-the link and both parent chains are root-controlled. The resolved prefix is
-pinned in the shared manifest, so later retargeting is rejected. An unmarked,
-untrusted, or mismatched prefix is rejected as `unmanaged-prefix-conflict` and
-is never adopted.
-
-The package set is global: a direct Brew or OMD install is visible to every
-user, and an upgrade, uninstall, or source switch affects every user. Members
-of `omd-brew` must therefore be mutually trusted. Enrollment requires sudo; if
-a non-root user runs OMD from a `sudo -iu` login, per-user shell configuration
-targets that effective account rather than the inherited `SUDO_USER` account.
-If a user has no sudo authority, an administrator must run the fixed provisioner
-for that user's login context, for example:
+On a fresh Ubuntu server, an administrator installs the OS prerequisites once
+if they are missing:
 
 ```bash
-sudo env SUDO_USER=user-b /usr/local/libexec/oh-my-devpod/brew-provisioner ensure upstream
+sudo apt-get update
+sudo apt-get install -y build-essential procps curl file git ca-certificates
 ```
+
+Each user then installs OMD and selects Linuxbrew in the TUI, or runs
+`omd --execute install linuxbrew`. Bash and Zsh pick up the private Brew and its
+tools in a new login shell. OMD installs Zsh and its configuration without
+changing the account's default login shell. Run `zsh` to use it.
+
+Homebrew bottles that require the standard Linux prefix will build from source
+in `~/.linuxbrew`. An existing host-wide Brew is outside OMD's management.
+If an older OMD release rejects the new archive, rerun the current bootstrap
+from your user account, then install your private Linuxbrew.
 
 ## Safety by construction
 
 - **Ownership-gated removal** — only artifacts carrying an oh-my-devpod marker
   can be removed.
-- **External means external** — pre-existing tools are detected but never
-  adopted or deleted, except for the exact legacy OMD Linuxbrew marker
-  migration described above.
+- **External installations** — packages already present in personal Linuxbrew stay outside OMD ownership.
 - **Dependency-safe plans** — uninstall is blocked while an installed dependant
   would be broken.
 - **Protected foundation** — Linuxbrew is excluded from the normal uninstall flow.
@@ -337,8 +316,7 @@ Managed state lives under:
 ~/.local/share/oh-my-devpod/opt/
 ~/.local/state/oh-my-devpod/
 ~/.config/oh-my-devpod/
-/var/lib/oh-my-devpod/linuxbrew/       # shared manifest, inventory, and lock
-/usr/local/libexec/oh-my-devpod/bin/   # shared brew gateway
+~/.linuxbrew/                       # personal Homebrew and Cellar
 ```
 
 ## Development
@@ -356,23 +334,24 @@ cargo run -p omd -- --plan install micromamba lazyvim
 git diff --check
 ```
 
-Maintainers build release bundles on Ubuntu 22.04 x86_64 with a Python 3.12
+Maintainers build release bundles on Ubuntu 20.04 x86_64 with a Python 3.12
 toolchain:
 
 ```bash
+bash build/build-omd-linux.sh
 bash build/package-omd.sh
 bash build/package-npm.sh dist/omd-x86_64-unknown-linux-gnu.tar.gz
 ```
 
 Before publication, test the same release archive and npm package across all
-three supported Ubuntu versions:
+four supported Ubuntu versions:
 
 ```bash
 bash tests/test-ubuntu-compatibility.sh <release.tar.gz> <package.tgz>
 ```
 
 Optional trailing versions select a subset for local checks; publication
-requires Ubuntu 22.04, 24.04, and 26.04 to pass.
+requires Ubuntu 20.04, 22.04, 24.04, and 26.04 to pass.
 
 See [`DEVELOPMENT.md`](./DEVELOPMENT.md) for module boundaries, ownership rules,
 mirror behavior, and release maintenance. npm release bootstrapping is

@@ -4,7 +4,7 @@ set -euo pipefail
 archive="${1:?usage: $0 <release.tar.gz> <package.tgz> [ubuntu-version ...]}"
 package="${2:?usage: $0 <release.tar.gz> <package.tgz> [ubuntu-version ...]}"
 shift 2
-[[ $# -gt 0 ]] || set -- 22.04 24.04 26.04
+[[ $# -gt 0 ]] || set -- 20.04 22.04 24.04 26.04
 
 for path in "${archive}" "${archive}.sha256" "${package}"; do
   [[ -f "${path}" ]] || { printf 'Missing test artifact: %s\n' "${path}" >&2; exit 1; }
@@ -13,7 +13,7 @@ archive="$(cd "$(dirname "${archive}")" && pwd)/$(basename "${archive}")"
 package="$(cd "$(dirname "${package}")" && pwd)/$(basename "${package}")"
 for version in "$@"; do
   case "${version}" in
-    22.04|24.04|26.04) ;;
+    20.04|22.04|24.04|26.04) ;;
     *) printf 'Unsupported test version: %s\n' "${version}" >&2; exit 1 ;;
   esac
 done
@@ -44,17 +44,19 @@ for version in "$@"; do
 set -euo pipefail
 source /etc/os-release
 [[ "${ID}" == ubuntu && "${VERSION_ID}" == "$1" && "$(uname -m)" == x86_64 ]]
-# These are test tools, not additional omd runtime requirements.
+# Include the documented Linuxbrew prerequisites and the two-login test tools.
 apt-get update -qq
 if ! DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends \
-  ca-certificates curl git xz-utils > /tmp/test-dependencies.log 2>&1; then
+  build-essential ca-certificates curl file git procps python3 sudo xz-utils zsh > /tmp/test-dependencies.log 2>&1; then
   cat /tmp/test-dependencies.log >&2
   exit 1
 fi
 mkdir -p /opt/node /tmp/bundle
 tar -xJf /fixtures/node.tar.xz -C /opt/node --strip-components=1
 tar -xzf /fixtures/omd.tar.gz -C /tmp/bundle
-useradd --create-home --shell /bin/bash omd-smoke
+useradd --create-home --shell /bin/bash --groups sudo omd-smoke
+useradd --create-home --shell /bin/bash --groups sudo omd-peer
+chmod 0700 /home/omd-smoke /home/omd-peer
 runuser -u omd-smoke -- env PATH="/opt/node/bin:${PATH}" bash -s <<'SMOKE'
 set -euo pipefail
 expected_version="$(cat /tmp/bundle/oh-my-devpod/VERSION)"
@@ -90,6 +92,58 @@ for source in github gitee; do
   grep -Fq 'npm update -g oh-my-devpod' "${HOME}/npm-update.out"
 done
 SMOKE
-printf 'Ubuntu %s: bootstrap, npm, version, catalog, and dependency plan passed\n' "${VERSION_ID}"
+
+runuser -l omd-smoke -c '
+  set -e
+  omd --source github
+  omd --execute install jq uv
+'
+runuser -l omd-peer -c '
+  set -e
+  OHMYDEVPOD_OMD_ARCHIVE=/fixtures/omd.tar.gz OHMYDEVPOD_BOOTSTRAP_NO_RUN=1 \
+    bash /tmp/bundle/oh-my-devpod/install/bootstrap.sh
+  "$HOME/.local/bin/omd" --status | grep -Eq "^jq[[:space:]]+missing[[:space:]]"
+  "$HOME/.local/bin/omd" --execute install jq
+'
+
+runuser -l omd-smoke -c '
+  set -e
+  test "$(command -v brew)" = "$HOME/.linuxbrew/bin/brew"
+  test "$(brew --prefix)" = "$HOME/.linuxbrew"
+  test "$(stat -c %u "$HOME/.linuxbrew")" = "$(id -u)"
+  test "$(command -v jq)" = "$HOME/.linuxbrew/bin/jq"
+  jq -en "1 + 1 == 2"
+  test "$(command -v uv)" = "$HOME/.linuxbrew/bin/uv"
+  uv venv --python /usr/bin/python3 "$HOME/.venvs/omd-smoke"
+  "$HOME/.venvs/omd-smoke/bin/python" -c "import sys; assert sys.prefix != sys.base_prefix"
+  test ! -x /home/omd-peer/.linuxbrew/bin/brew
+'
+runuser -l omd-peer -c '
+  set -e
+  test "$(command -v brew)" = "$HOME/.linuxbrew/bin/brew"
+  test "$(brew --prefix)" = "$HOME/.linuxbrew"
+  test "$(stat -c %u "$HOME/.linuxbrew")" = "$(id -u)"
+  test "$(command -v jq)" = "$HOME/.linuxbrew/bin/jq"
+  jq -en "2 + 2 == 4"
+  test ! -x /home/omd-smoke/.linuxbrew/bin/brew
+  test ! -e "$HOME/.venvs/omd-smoke"
+  omd --source gitee
+  test "$(git -C "$HOME/.linuxbrew" remote get-url origin)" = https://mirrors.ustc.edu.cn/brew.git
+  grep -Fq https://mirrors.ustc.edu.cn "$HOME/.linuxbrew/etc/homebrew/brew.env"
+  omd --source github
+  omd --execute uninstall jq
+  test ! -e "$HOME/.linuxbrew/Cellar/jq"
+'
+runuser -l omd-smoke -c '
+  set -e
+  test "$(git -C "$HOME/.linuxbrew" remote get-url origin)" = https://github.com/Homebrew/brew.git
+  test ! -e "$HOME/.linuxbrew/etc/homebrew/brew.env"
+  jq -en "3 + 3 == 6"
+  "$HOME/.venvs/omd-smoke/bin/python" --version
+'
+test ! -e /usr/local/bin/brew
+test ! -e /var/lib/oh-my-devpod
+test ! -e /etc/sudoers.d/oh-my-devpod-brew
+printf 'Ubuntu %s: bootstrap, npm, two-user Brew isolation, source switching, uninstall, and uv passed\n' "${VERSION_ID}"
 CONTAINER
 done

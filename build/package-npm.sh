@@ -54,9 +54,6 @@ for required in \
   components.toml \
   install/bootstrap.sh \
   install/update.sh \
-  modules/lib/shared-linuxbrew.sh \
-  build/omd-brew-gateway.sh \
-  build/omd-brew-provisioner.sh \
   modules/lib/source-config.sh \
   modules \
   build \
