@@ -157,6 +157,15 @@ broken_plan="$(
 grep -Eq '^update[[:space:]]+lazyvim' <<<"${broken_plan}" \
   || fail "managed but missing LazyVim should be repaired with update: ${broken_plan}"
 
+# When several read-only module probes fail, report the first in catalog order.
+for module in core/linuxbrew.sh tools/yazi.sh; do
+  printf '#!/usr/bin/env bash\nexit 23\n' > "${fixture}/modules/${module}"
+done
+invalid_output="$(run_expect_failure "invalid probe result" \
+  env OHMYDEVPOD_BUNDLE_ROOT="${fixture}" "${omd}" --status)"
+[[ "${invalid_output}" == *"module linuxbrew returned invalid status code 23 for managed"* ]] \
+  || fail "unexpected inventory error: ${invalid_output}"
+
 cycle_fixture="${tmp_dir}/cycle-bundle"
 cp -R "${fixture}" "${cycle_fixture}"
 cat >> "${cycle_fixture}/components.toml" <<'TOML'

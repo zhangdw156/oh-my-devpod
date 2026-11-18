@@ -4,9 +4,10 @@ use std::{
     error::Error,
     fmt::{self, Display, Formatter},
     fs::{self, OpenOptions},
-    io::Write,
+    io::{self, Write},
     path::{Path, PathBuf},
     process::{Command, Stdio},
+    thread,
 };
 
 use crate::{
@@ -261,7 +262,7 @@ impl Runner {
         }
     }
 
-    pub fn component_state(&self, component: &Component) -> Result<ComponentState, Box<dyn Error>> {
+    fn component_state(&self, component: &Component) -> io::Result<ComponentState> {
         let managed = self.query(component, "managed")?;
         let present = self.query(component, "status")?;
         match (managed, present) {
@@ -276,14 +277,32 @@ impl Runner {
         &self,
         catalog: &Catalog,
     ) -> Result<HashMap<String, ComponentState>, Box<dyn Error>> {
-        catalog
-            .components()
-            .iter()
-            .map(|component| {
-                self.component_state(component)
-                    .map(|state| (component.id.clone(), state))
-            })
-            .collect()
+        let components = catalog.components();
+        // Only read-only probes run concurrently; execution steps retain their plan order.
+        let concurrency = thread::available_parallelism().map_or(1, |n| n.get().min(4));
+        let chunk_size = components.len().div_ceil(concurrency);
+        thread::scope(|scope| {
+            let mut workers = Vec::new();
+            for chunk in components.chunks(chunk_size) {
+                workers.push(thread::Builder::new().spawn_scoped(scope, || {
+                    chunk
+                        .iter()
+                        .map(|component| {
+                            self.component_state(component)
+                                .map(|state| (component.id.clone(), state))
+                        })
+                        .collect::<io::Result<Vec<_>>>()
+                })?);
+            }
+            let mut states = HashMap::with_capacity(components.len());
+            for worker in workers {
+                let chunk = worker
+                    .join()
+                    .map_err(|_| io::Error::other("inventory worker panicked"))??;
+                states.extend(chunk);
+            }
+            Ok(states)
+        })
     }
 
     pub fn execute_confirmed_plan(
@@ -335,7 +354,7 @@ impl Runner {
         Ok(())
     }
 
-    fn query(&self, component: &Component, action: &str) -> Result<bool, Box<dyn Error>> {
+    fn query(&self, component: &Component, action: &str) -> io::Result<bool> {
         let status = self
             .command(component, action)
             .stdout(Stdio::null())
@@ -344,16 +363,14 @@ impl Runner {
         match status.code() {
             Some(0) => Ok(true),
             Some(1) => Ok(false),
-            Some(code) => Err(RuntimeError::new(format!(
+            Some(code) => Err(io::Error::other(format!(
                 "module {} returned invalid status code {code} for {action}",
                 component.id
-            ))
-            .into()),
-            None => Err(RuntimeError::new(format!(
+            ))),
+            None => Err(io::Error::other(format!(
                 "module {} terminated by signal during {action}",
                 component.id
-            ))
-            .into()),
+            ))),
         }
     }
 
