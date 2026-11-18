@@ -2,6 +2,7 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+release_version="$(cat "${repo_root}/VERSION")"
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "${tmp_dir}"' EXIT
 
@@ -24,7 +25,6 @@ const manifest = require(path.join(root, "npm/package.json"));
 const version = fs.readFileSync(path.join(root, "VERSION"), "utf8").trim();
 
 assert.equal(manifest.name, "oh-my-devpod");
-assert.equal(manifest.version, "0.17.1");
 assert.equal(manifest.version, version);
 assert.equal(manifest.bin.omd, "bin/omd");
 assert.equal(manifest.engines.node, ">=18");
@@ -263,7 +263,7 @@ fi
 exit 0
 MOCK
 chmod +x "${release_root}/bin/omd"
-printf '0.17.1\n' > "${release_root}/VERSION"
+printf '%s\n' "${release_version}" > "${release_root}/VERSION"
 printf 'fixture components\n' > "${release_root}/components.toml"
 printf 'fixture versions\n' > "${release_root}/versions.env"
 printf 'fixture bootstrap\n' > "${release_root}/install/bootstrap.sh"
@@ -281,7 +281,7 @@ tar -czf "${release_archive}" -C "${tmp_dir}/release" oh-my-devpod
 npm_dist="${tmp_dir}/dist"
 package_path="$("${repo_root}/build/package-npm.sh" "${release_archive}" "${npm_dist}")"
 [[ -f "${package_path}" ]] || fail "package script did not create npm archive"
-[[ "$(basename "${package_path}")" == "oh-my-devpod-0.17.1.tgz" ]] ||
+[[ "$(basename "${package_path}")" == "oh-my-devpod-${release_version}.tgz" ]] ||
   fail "unexpected npm archive name: ${package_path}"
 
 packed_listing="${tmp_dir}/packed.list"
@@ -349,11 +349,11 @@ if "${repo_root}/build/package-npm.sh" \
   "${tmp_dir}/wrong-version-dist" >"${tmp_dir}/wrong-version.out" 2>&1; then
   fail "package script should reject a mismatched bundle version"
 fi
-grep -Fq 'bundle version (0.14.1) does not match npm package version (0.17.1)' \
+grep -Fq "bundle version (0.14.1) does not match npm package version (${release_version})" \
   "${tmp_dir}/wrong-version.out" ||
   fail "version mismatch should produce a clear error"
 
-printf '0.17.1\n' > "${release_root}/VERSION"
+printf '%s\n' "${release_version}" > "${release_root}/VERSION"
 rm "${release_root}/install/update.sh"
 tar -czf "${tmp_dir}/incomplete.tar.gz" -C "${tmp_dir}/release" oh-my-devpod
 if "${repo_root}/build/package-npm.sh" \
