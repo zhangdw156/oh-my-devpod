@@ -269,6 +269,9 @@ sudo apt-get install -y build-essential procps curl file git ca-certificates
 `omd --execute install linuxbrew`。重新登录后，Bash 和 Zsh 会从自己的
 Brew 路径查找工具。OMD 安装 Zsh 和个人配置后，运行 `zsh` 即可使用。
 
+在 Ubuntu 20.04 和 22.04 上，显式使用 `uv venv --python /usr/bin/python3`
+创建环境时，系统 Python 需要 `python3-distutils`。
+
 依赖 Homebrew 标准 Linux 前缀的二进制包在 `~/.linuxbrew` 下会改从源码构建。
 现有的全机 Brew 由原管理员负责。如果旧版 OMD 拒绝新归档，用本账号重新执行
 当前安装脚本，再安装自己的 Linuxbrew。

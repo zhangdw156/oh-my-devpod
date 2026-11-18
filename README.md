@@ -288,6 +288,9 @@ Each user then installs OMD and selects Linuxbrew in the TUI, or runs
 tools in a new login shell. OMD installs Zsh and its configuration without
 changing the account's default login shell. Run `zsh` to use it.
 
+On Ubuntu 20.04 and 22.04, using the system Python explicitly with `uv venv
+--python /usr/bin/python3` requires the OS package `python3-distutils`.
+
 Homebrew bottles that require the standard Linux prefix will build from source
 in `~/.linuxbrew`. An existing host-wide Brew is outside OMD's management.
 If an older OMD release rejects the new archive, rerun the current bootstrap

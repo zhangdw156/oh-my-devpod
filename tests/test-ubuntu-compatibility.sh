@@ -39,9 +39,14 @@ set -euo pipefail
 source /etc/os-release
 [[ "${ID}" == ubuntu && "${VERSION_ID}" == "$1" && "$(uname -m)" == x86_64 ]]
 # Include the documented Linuxbrew prerequisites and the two-login test tools.
+test_dependencies=(build-essential ca-certificates curl file git procps python3 sudo xz-utils zsh)
+case "${VERSION_ID}" in
+  # uv needs distutils to inspect Ubuntu's Python 3.8 and 3.10.
+  20.04|22.04) test_dependencies+=(python3-distutils) ;;
+esac
 apt-get update -qq
 if ! DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends \
-  build-essential ca-certificates curl file git procps python3 sudo xz-utils zsh > /tmp/test-dependencies.log 2>&1; then
+  "${test_dependencies[@]}" > /tmp/test-dependencies.log 2>&1; then
   cat /tmp/test-dependencies.log >&2
   exit 1
 fi
