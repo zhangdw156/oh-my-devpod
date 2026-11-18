@@ -652,7 +652,7 @@ assert_source_profile "${source_only_home}" gitee cn
   fail "source-only switching must not query or download a release"
 assert_contains 'Source configuration updated successfully.' "${source_only_output}"
 assert_contains \
-  'HOMEBREW_BOTTLE_DOMAIN=https://mirrors.ustc.edu.cn/homebrew-bottles' \
+  'HOMEBREW_ARTIFACT_DOMAIN=https://mirrors.ustc.edu.cn/homebrew-bottles' \
   "${source_only_brew}/etc/homebrew/brew.env"
 assert_contains \
   'https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple' \

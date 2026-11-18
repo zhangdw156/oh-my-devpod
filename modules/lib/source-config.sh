@@ -79,12 +79,17 @@ ${omd_source_config_header}
 HOMEBREW_BREW_GIT_REMOTE=https://mirrors.ustc.edu.cn/brew.git
 HOMEBREW_CORE_GIT_REMOTE=https://mirrors.ustc.edu.cn/homebrew-core.git
 HOMEBREW_API_DOMAIN=https://mirrors.ustc.edu.cn/homebrew-bottles/api
-HOMEBREW_BOTTLE_DOMAIN=https://mirrors.ustc.edu.cn/homebrew-bottles
+HOMEBREW_ARTIFACT_DOMAIN=https://mirrors.ustc.edu.cn/homebrew-bottles
+HOMEBREW_ARTIFACT_DOMAIN_NO_FALLBACK=1
+HOMEBREW_NO_ANALYTICS=1
+HOMEBREW_NO_GITHUB_API=1
 EOF
       ;;
     uv)
       cat <<EOF
 ${omd_source_config_header}
+python-install-mirror = "https://registry.npmmirror.com/-/binary/python-build-standalone"
+
 [[index]]
 url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
 default = true
@@ -119,6 +124,16 @@ omd_source_config_file_is_managed() {
   [[ -f "${path}" && ! -L "${path}" ]] || return 1
   actual="$(cat "${path}")" || return 1
   expected="$(omd_source_config_expected "${kind}")" || return 1
+  [[ "${actual}" != "${expected}" ]] || return 0
+  # Only accept the exact previous generated files. Local edits still require review.
+  case "${kind}" in
+    brew)
+      expected="$(printf '%s\n' "${expected}" | sed '/^HOMEBREW_ARTIFACT_DOMAIN_NO_FALLBACK=/d; /^HOMEBREW_NO_/d; s/^HOMEBREW_ARTIFACT_DOMAIN=/HOMEBREW_BOTTLE_DOMAIN=/')"
+      ;;
+    uv)
+      expected="$(printf '%s\n' "${expected}" | sed '/^python-install-mirror=/d; /^python-install-mirror = /d; /^$/d')"
+      ;;
+  esac
   [[ "${actual}" == "${expected}" ]]
 }
 

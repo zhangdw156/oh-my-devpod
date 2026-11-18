@@ -64,6 +64,9 @@ for path in "${brew_env}" "${uv_config}" "${pip_config}" "${mamba_config}"; do
   [[ -f "${path}" ]] || fail "missing managed native source config: ${path}"
 done
 assert_contains 'HOMEBREW_CORE_GIT_REMOTE=https://mirrors.ustc.edu.cn/homebrew-core.git' "${brew_env}"
+assert_contains 'HOMEBREW_ARTIFACT_DOMAIN=https://mirrors.ustc.edu.cn/homebrew-bottles' "${brew_env}"
+assert_contains 'HOMEBREW_ARTIFACT_DOMAIN_NO_FALLBACK=1' "${brew_env}"
+assert_contains 'python-install-mirror = "https://registry.npmmirror.com/-/binary/python-build-standalone"' "${uv_config}"
 assert_contains 'https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple' "${uv_config}"
 assert_contains 'index-url = https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple' "${pip_config}"
 assert_contains 'channels:' "${mamba_config}"
