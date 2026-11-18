@@ -54,7 +54,7 @@ impl App {
             expanded: catalog
                 .components()
                 .iter()
-                .filter_map(|component| component.provider().map(str::to_owned))
+                .filter_map(|component| component.display_parent().map(str::to_owned))
                 .collect(),
             search: String::new(),
             searching: false,
@@ -110,12 +110,12 @@ impl App {
             self.expanded.remove(&component.id);
             return;
         }
-        let Some(provider) = component.provider() else {
+        let Some(parent) = component.display_parent() else {
             return;
         };
         if let Some(parent_cursor) = rows
             .iter()
-            .position(|row| catalog.components()[row.component_index].id == provider)
+            .position(|row| catalog.components()[row.component_index].id == parent)
         {
             self.cursor = parent_cursor;
         }
@@ -131,12 +131,12 @@ impl App {
         let mut roots = Vec::new();
         let mut children: HashMap<usize, Vec<usize>> = HashMap::new();
         for (index, component) in catalog.components().iter().enumerate() {
-            if let Some(provider_index) = component
-                .provider()
-                .and_then(|provider| indexes.get(provider))
+            if let Some(parent_index) = component
+                .display_parent()
+                .and_then(|parent| indexes.get(parent))
                 .copied()
             {
-                children.entry(provider_index).or_default().push(index);
+                children.entry(parent_index).or_default().push(index);
             } else {
                 roots.push(index);
             }
@@ -597,6 +597,34 @@ uninstall = true
                 .collect::<Vec<_>>(),
             vec![0, 1, 1, 0]
         );
+    }
+
+    #[test]
+    fn managed_configurations_fold_with_their_tools() {
+        let catalog = Catalog::parse(include_str!("../../../components.toml")).unwrap();
+        let mut app = app(&catalog);
+        for (parent, child, sibling_config) in [
+            ("zsh", "zsh-config", "lazyvim"),
+            ("neovim", "lazyvim", "zsh-config"),
+        ] {
+            let ids = visible_ids(&app, &catalog);
+            assert_eq!(ids.iter().filter(|&&id| id == child).count(), 1);
+            let child_cursor = ids.iter().position(|&id| id == child).unwrap();
+            let rows = app.visible_rows(&catalog);
+            assert_eq!(rows[child_cursor].depth, 2);
+            assert_eq!(rows[child_cursor - 1].depth, 1);
+            assert_eq!(ids[child_cursor - 1], parent);
+
+            app.cursor = child_cursor;
+            app.collapse_or_move_to_parent(&catalog);
+            assert_eq!(app.cursor, child_cursor - 1);
+            app.collapse_or_move_to_parent(&catalog);
+            let collapsed = visible_ids(&app, &catalog);
+            assert!(!collapsed.contains(&child));
+            assert!(collapsed.contains(&sibling_config));
+            app.expand(&catalog);
+            assert_eq!(visible_ids(&app, &catalog), ids);
+        }
     }
 
     #[test]
