@@ -32,7 +32,7 @@
   emulate -L zsh -o extended_glob
 
   # Unset all configuration options.
-  unset -m '(POWERLEVEL9K_*|DEFAULT_USER)~POWERLEVEL9K_GITSTATUS_DIR'
+  unset -m '(POWERLEVEL9K_*|DEFAULT_USER)~(POWERLEVEL9K_GITSTATUS_DIR|POWERLEVEL9K_DISABLE_GITSTATUS)'
 
   # Zsh >= 5.1 is required.
   [[ $ZSH_VERSION == (5.<1->*|<6->.*) ]] || return

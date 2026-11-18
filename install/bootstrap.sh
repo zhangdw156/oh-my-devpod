@@ -310,13 +310,18 @@ omd_persist_source() {
     printf 'export OHMYDEVPOD_MIRROR_PROFILE=%q\n' "${mirror_profile}"
     printf '%s\n' \
       'unset HOMEBREW_BREW_GIT_REMOTE HOMEBREW_CORE_GIT_REMOTE HOMEBREW_BOTTLE_DOMAIN HOMEBREW_API_DOMAIN' \
-      'unset UV_CONFIG_FILE PIP_INDEX_URL' \
+      'unset UV_CONFIG_FILE UV_PYTHON_INSTALL_MIRROR PIP_INDEX_URL' \
+      'unset HOMEBREW_ARTIFACT_DOMAIN HOMEBREW_ARTIFACT_DOMAIN_NO_FALLBACK HOMEBREW_NO_AUTO_UPDATE HOMEBREW_NO_ANALYTICS HOMEBREW_NO_GITHUB_API' \
       'unset CONDA_CHANNELS MAMBA_CHANNEL_ALIAS MAMBA_DEFAULT_CHANNELS'
     if [[ "${mirror_profile}" == "cn" ]]; then
       printf '%s\n' \
         'export HOMEBREW_BREW_GIT_REMOTE="https://mirrors.ustc.edu.cn/brew.git"' \
         'export HOMEBREW_CORE_GIT_REMOTE="https://mirrors.ustc.edu.cn/homebrew-core.git"' \
-        'export HOMEBREW_BOTTLE_DOMAIN="https://mirrors.ustc.edu.cn/homebrew-bottles"' \
+        'export HOMEBREW_ARTIFACT_DOMAIN="https://mirrors.ustc.edu.cn/homebrew-bottles"' \
+        'export HOMEBREW_ARTIFACT_DOMAIN_NO_FALLBACK=1' \
+        'export HOMEBREW_NO_AUTO_UPDATE=1' \
+        'export HOMEBREW_NO_ANALYTICS=1' \
+        'export HOMEBREW_NO_GITHUB_API=1' \
         'export HOMEBREW_API_DOMAIN="https://mirrors.ustc.edu.cn/homebrew-bottles/api"' \
         'export PIP_INDEX_URL="https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"' \
         'export CONDA_CHANNELS="conda-forge"' \

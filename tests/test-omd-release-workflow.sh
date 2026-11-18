@@ -63,12 +63,13 @@ for filename, job in [("ci.yml", "test"), ("release-omd.yml", "build-linux-x86_6
         f"{filename} needs Python with tomllib for tests and packaging"
     )
     check = build.index("bash tests/test-ubuntu-compatibility.sh")
-    assert build.index("bash build/package-omd.sh") < check
+    domestic_check = build.index("bash tests/test-china-ubuntu.sh")
+    assert build.index("bash build/package-omd.sh") < min(check, domestic_check)
     assert build.index("bash build/package-npm.sh") < check
     if filename == "release-omd.yml":
         for publish in ["Upload workflow artifacts", "Upload GitHub release assets",
                         "Upload npm package artifact", "Publish matching Gitee release assets"]:
-            assert check < build.index(publish), f"compatibility must pass before {publish}"
+            assert max(check, domestic_check) < build.index(publish), f"compatibility must pass before {publish}"
 PY
 
 package_script="${tmp_dir}/package.sh"

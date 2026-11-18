@@ -5,6 +5,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/common.sh"
 
 component="linuxbrew"
 brew_prefix="${HOME}/.linuxbrew"
+ruby_metadata="Library/Homebrew/vendor/portable-ruby-x86_64-linux"
 
 status() {
   omd_module_brew_cmd >/dev/null
@@ -32,8 +33,67 @@ activate_personal_brew() {
   done
 }
 
+portable_ruby_sha() {
+  git -C "${brew_prefix}" show "${1}:${ruby_metadata}" 2>/dev/null |
+    sed -n 's/^ruby_SHA=\([[:xdigit:]]\{64\}\)$/\1/p'
+}
+
+mirror_has_ruby() {
+  local checksum="$1" mirror
+  [[ "${checksum}" =~ ^[[:xdigit:]]{64}$ ]] || return 1
+  mirror="${HOMEBREW_ARTIFACT_DOMAIN:-https://mirrors.ustc.edu.cn/homebrew-bottles}"
+  curl -fsIL --connect-timeout 8 --max-time 15 --retry 2 \
+    "${mirror%/}/v2/homebrew/core/portable-ruby/blobs/sha256:${checksum}" >/dev/null 2>&1
+}
+
+select_mirrored_revision() {
+  local revision checksum previous_checksum=""
+  while IFS= read -r revision; do
+    checksum="$(portable_ruby_sha "${revision}")" || continue
+    [[ "${checksum}" != "${previous_checksum}" ]] || continue
+    previous_checksum="${checksum}"
+    if mirror_has_ruby "${checksum}"; then
+      if [[ "${revision}" != HEAD ]]; then
+        omd_module_info notice "using an earlier Linuxbrew revision while its newest portable Ruby reaches the mirror"
+        git -C "${brew_prefix}" checkout --quiet --detach "${revision}" || return
+      fi
+      return 0
+    fi
+  done < <(
+    printf 'HEAD\n'
+    git -C "${brew_prefix}" log -4 --first-parent --format='%H' -- "${ruby_metadata}" |
+      sed 's/$/^/'
+  )
+  omd_module_info error "the Linuxbrew mirror lacks portable Ruby for the available revisions"
+  return 1
+}
+
+update_personal_brew() {
+  if [[ "${OHMYDEVPOD_MIRROR_PROFILE:-upstream}" != cn ]]; then
+    omd_module_brew_exec "${brew_prefix}/bin/brew" update
+    return
+  fi
+
+  local installed release_ref checksum
+  installed="$(git -C "${brew_prefix}" rev-parse HEAD)" || return
+  # brew update selects the latest stable tag, which can differ from origin/HEAD.
+  git -C "${brew_prefix}" fetch --quiet --force --tags origin </dev/null || return
+  release_ref="$(git -C "${brew_prefix}" tag --list --sort=-version:refname |
+    awk '/^[0-9]+\.[0-9]+\.[0-9]+$/ && !found { print "refs/tags/" $0; found=1 }')" || return
+  checksum="$(portable_ruby_sha "${release_ref:-origin/HEAD}")" || return
+  if ! mirror_has_ruby "${checksum}"; then
+    omd_module_info notice "keeping the installed Linuxbrew until the mirror has its updated portable Ruby"
+    return 0
+  fi
+  if omd_module_brew_exec "${brew_prefix}/bin/brew" update; then
+    return 0
+  fi
+  git -C "${brew_prefix}" reset --keep "${installed}" || return
+  return 1
+}
+
 install_or_update() {
-  local action="$1" brew_remote
+  local action="$1" brew_remote depth=1
   shift
   omd_module_reject_unknown_flags "$@" || return
 
@@ -43,6 +103,7 @@ install_or_update() {
   fi
   if [[ "${OHMYDEVPOD_MIRROR_PROFILE:-upstream}" == "cn" ]]; then
     brew_remote="${HOMEBREW_BREW_GIT_REMOTE:-https://mirrors.ustc.edu.cn/brew.git}"
+    depth=128
   else
     brew_remote="${HOMEBREW_BREW_GIT_REMOTE:-https://github.com/Homebrew/brew.git}"
   fi
@@ -57,7 +118,7 @@ install_or_update() {
   fi
   if managed && status; then
     if [[ "${action}" == "update" ]]; then
-      omd_module_brew_exec "${brew_prefix}/bin/brew" update || return
+      update_personal_brew || return
     fi
     activate_personal_brew
     return
@@ -73,9 +134,12 @@ install_or_update() {
   done
   for attempt in 1 2 3; do
     mkdir -m 0700 -- "${brew_prefix}" || return
-    if git clone --depth 1 "${brew_remote}" "${brew_prefix}" && status; then
-      omd_module_mark_managed "${component}" directory "${brew_prefix}" &&
-        activate_personal_brew
+    if git clone --depth "${depth}" "${brew_remote}" "${brew_prefix}" </dev/null && status; then
+      if [[ "${depth}" != 1 ]] && ! select_mirrored_revision; then
+        rm -rf -- "${brew_prefix}"
+        return 1
+      fi
+      omd_module_mark_managed "${component}" directory "${brew_prefix}" && activate_personal_brew
       return
     fi
     rm -rf -- "${brew_prefix}"

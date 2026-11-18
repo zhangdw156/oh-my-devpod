@@ -81,6 +81,13 @@ curl -fsSL https://gitee.com/zhangdw156/oh-my-devpod/raw/main/install/bootstrap.
   | OHMYDEVPOD_SOURCE=gitee bash
 ```
 
+For networks limited to domestic mirrors, allow Gitee, USTC, TUNA, and npmmirror,
+and configure APT to use a reachable Ubuntu mirror. The Gitee profile uses USTC
+for Homebrew's API and OCI downloads, TUNA for PyPI and Conda, and npmmirror
+for uv-managed Python interpreters. GitHub operations through `gh` require
+access to GitHub. User-added editor plugins and Git remotes use their own
+configured sources.
+
 The bootstrap downloads the complete release bundle, verifies its SHA256
 checksum, installs it under your user account, and opens the TUI. After
 installation:

@@ -18,6 +18,9 @@ source "${ZSH}/oh-my-zsh.sh"
   source /opt/vendor/zsh/zsh-history-substring-search/zsh-history-substring-search.zsh
 [[ -f /opt/vendor/zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]] && \
   source /opt/vendor/zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+if [[ "${OHMYDEVPOD_MIRROR_PROFILE:-}" == cn ]]; then
+  typeset -g POWERLEVEL9K_DISABLE_GITSTATUS=true
+fi
 [[ -f /opt/vendor/zsh/powerlevel10k/powerlevel10k.zsh-theme ]] && \
   source /opt/vendor/zsh/powerlevel10k/powerlevel10k.zsh-theme
 

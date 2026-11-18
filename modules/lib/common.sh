@@ -245,7 +245,7 @@ omd_module_formula_brew_cmd() {
 }
 
 omd_module_formula_install_or_update() {
-  local component="$1" formula="$2" command_name="$3" action="$4" brew brew_prefix
+  local component="$1" formula="$2" command_name="$3" action="$4" brew brew_prefix brew_action=install
   shift 4
   omd_module_reject_unknown_flags "$@" || return
 
@@ -278,9 +278,12 @@ omd_module_formula_install_or_update() {
 
   if [[ "${action}" == "update" ]] &&
     omd_module_brew_formula_installed_at "${brew_prefix}" "${formula}"; then
-    omd_module_brew_exec "${brew}" upgrade "${formula}"
-  else
-    omd_module_brew_exec "${brew}" install "${formula}"
+    brew_action=upgrade
+  fi
+  if ! omd_module_brew_exec "${brew}" "${brew_action}" "${formula}"; then
+    [[ "${OHMYDEVPOD_MIRROR_PROFILE:-upstream}" == cn ]] || return 1
+    omd_module_info notice "retrying ${brew_action} for ${formula} from the configured mirror"
+    omd_module_brew_exec "${brew}" "${brew_action}" "${formula}" || return
   fi
   omd_module_mark_managed \
     "${component}" \

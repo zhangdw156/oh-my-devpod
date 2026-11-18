@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-22.04
@@ -75,6 +79,10 @@ jobs:
             exit 1
           fi
           grep -Fq 'npm update -g oh-my-devpod' "${RUNNER_TEMP}/npm-update.out"
+      - name: Verify Gitee with domestic-only network access
+        run: |
+          bash tests/test-china-ubuntu.sh \
+            "${RUNNER_TEMP}/release/omd-x86_64-unknown-linux-gnu.tar.gz"
       - name: Verify release artifacts on supported Ubuntu versions
         run: |
           bash tests/test-ubuntu-compatibility.sh \

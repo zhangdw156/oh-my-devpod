@@ -73,6 +73,15 @@ curl -fsSL https://gitee.com/zhangdw156/oh-my-devpod/raw/main/install/bootstrap.
   | OHMYDEVPOD_SOURCE=gitee bash
 ```
 
+服务器仅开放国内网络时，安装所需镜像为 Gitee、中科大 USTC、清华 TUNA 和
+npmmirror。系统的 APT 源也需指向可访问的 Ubuntu 国内镜像。OMD 的 Gitee
+配置使用 USTC 的 Homebrew API 和 OCI 镜像，TUNA 的 PyPI 和 Conda 镜像，
+以及 npmmirror 的 uv 独立 Python 安装包。
+
+`gh` 可在本地安装并运行。登录 GitHub、访问 GitHub PR 等操作仍需要访问
+GitHub 服务。手动添加的 LazyVim 插件、Mason 下载源和外部 Git 仓库使用各自
+配置的地址。
+
 ### GitHub · 官方上游源
 
 ```bash

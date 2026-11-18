@@ -439,7 +439,12 @@ impl Runner {
             .env_remove("HOMEBREW_CORE_GIT_REMOTE")
             .env_remove("HOMEBREW_BOTTLE_DOMAIN")
             .env_remove("HOMEBREW_API_DOMAIN")
+            .env_remove("HOMEBREW_ARTIFACT_DOMAIN")
+            .env_remove("HOMEBREW_ARTIFACT_DOMAIN_NO_FALLBACK")
+            .env_remove("HOMEBREW_NO_ANALYTICS")
+            .env_remove("HOMEBREW_NO_GITHUB_API")
             .env_remove("UV_CONFIG_FILE")
+            .env_remove("UV_PYTHON_INSTALL_MIRROR")
             .env_remove("PIP_INDEX_URL")
             .env_remove("CONDA_CHANNELS")
             .env_remove("MAMBA_CHANNEL_ALIAS")
@@ -470,9 +475,12 @@ impl Runner {
                         "https://mirrors.ustc.edu.cn/homebrew-core.git",
                     )
                     .env(
-                        "HOMEBREW_BOTTLE_DOMAIN",
+                        "HOMEBREW_ARTIFACT_DOMAIN",
                         "https://mirrors.ustc.edu.cn/homebrew-bottles",
                     )
+                    .env("HOMEBREW_ARTIFACT_DOMAIN_NO_FALLBACK", "1")
+                    .env("HOMEBREW_NO_ANALYTICS", "1")
+                    .env("HOMEBREW_NO_GITHUB_API", "1")
                     .env(
                         "HOMEBREW_API_DOMAIN",
                         "https://mirrors.ustc.edu.cn/homebrew-bottles/api",
