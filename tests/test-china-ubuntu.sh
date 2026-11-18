@@ -28,6 +28,16 @@ docker run --detach --name "${proxy}" \
   --mount "type=bind,src=${repo_root}/tests/china-mirror-proxy.py,dst=/proxy.py,readonly" \
   python:3.12-alpine python /proxy.py >/dev/null
 docker network connect --alias china-proxy "${network}" "${proxy}"
+for attempt in {1..20}; do
+  if docker exec "${proxy}" python -c 'import socket; socket.create_connection(("127.0.0.1", 8080), 1).close()' >/dev/null 2>&1; then
+    break
+  fi
+  if [[ "${attempt}" == 20 ]]; then
+    printf 'The domestic HTTPS test proxy did not start.\n' >&2
+    exit 1
+  fi
+  sleep 1
+done
 docker cp "${proxy}:/etc/ssl/certs/ca-certificates.crt" "${tmp}/ca-certificates.crt"
 
 cat > "${tmp}/account.sh" <<'ACCOUNT'
