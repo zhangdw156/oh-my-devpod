@@ -98,7 +98,10 @@ cp -R \
 mkdir -p \
   "${worktree}/vendor/releases/antidote" \
   "${worktree}/vendor/nvim" \
-  "${worktree}/vendor/zsh"
+  "${worktree}/vendor/zsh/ohmyzsh/plugins/git/tests"
+touch "${worktree}/vendor/zsh/ohmyzsh/plugins/git/git.plugin.zsh" \
+  "${worktree}/vendor/zsh/ohmyzsh/LICENSE.txt" \
+  "${worktree}/vendor/zsh/ohmyzsh/plugins/git/tests/fixture"
 printf 'vendor fixture\n' > "${worktree}/vendor/marker"
 printf '#!/usr/bin/env bash\nexit 0\n' > "${worktree}/target/release/omd"
 chmod +x "${worktree}/target/release/omd"
@@ -121,11 +124,16 @@ for expected in \
   oh-my-devpod/build/install-gitee-cli.sh \
   oh-my-devpod/config/ \
   oh-my-devpod/vendor/ \
+  oh-my-devpod/vendor/zsh/ohmyzsh/plugins/git/git.plugin.zsh \
+  oh-my-devpod/vendor/zsh/ohmyzsh/LICENSE.txt \
   oh-my-devpod/VERSION \
   oh-my-devpod/versions.env; do
   grep -Fq "${expected}" "${archive_listing}" \
     || fail "release archive should contain: ${expected}"
 done
+if grep -Fq 'oh-my-devpod/vendor/zsh/ohmyzsh/plugins/git/tests/' "${archive_listing}"; then
+  fail "release archive contains upstream Zsh test fixtures"
+fi
 
 checksum="${archive}.sha256"
 [[ -f "${checksum}" ]] || fail "package step did not create checksum"
