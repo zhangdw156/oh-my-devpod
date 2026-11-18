@@ -2,7 +2,7 @@
 
 The public npm package is named `oh-my-devpod` and exposes the `omd` command.
 The npm tarball must always be assembled from the same complete release archive
-published to GitHub and Gitee. Supported hosts are Ubuntu 22.04, 24.04, and
+published to GitHub and Gitee. Supported hosts are Ubuntu 20.04, 22.04, 24.04, and
 26.04 on x86_64.
 
 ## One-time registry bootstrap
@@ -11,7 +11,7 @@ npm trusted publishing can only be configured after the package exists. The
 first release therefore requires one authenticated manual publication:
 
 1. Run the `release-omd` workflow manually on the release commit and confirm
-   that compatibility checks passed on all three supported Ubuntu versions.
+   that compatibility checks passed on all four supported Ubuntu versions.
 2. Download the `oh-my-devpod-npm` workflow artifact.
 3. Authenticate with an npm account authorized to own `oh-my-devpod`.
 4. Publish the generated tarball:
@@ -34,11 +34,10 @@ the runtime payload until `build/package-npm.sh` assembles the release tarball.
 The root `VERSION`, `crates/omd/Cargo.toml`, and `npm/package.json` versions must
 match. Push the matching `v<version>` tag. The release workflow:
 
-1. builds the Linux x86_64 release binary on Ubuntu 22.04 with a Python 3.12
-   toolchain;
+1. builds the Linux x86_64 release binary in an Ubuntu 20.04 container, with Python 3.12 on the packaging host;
 2. creates the GitHub/Gitee release archive and checksum;
 3. creates the npm package from that archive;
-4. tests that same release archive and npm package on Ubuntu 22.04, 24.04, and
+4. tests that same release archive and npm package on Ubuntu 20.04, 22.04, 24.04, and
    26.04 before publishing any release artifacts;
 5. publishes stable versions with the `latest` npm tag and prereleases with
    `next`;
@@ -49,8 +48,8 @@ exists skips the immutable version instead of failing the GitHub release.
 
 ## Local compatibility verification
 
-Build on Ubuntu 22.04 x86_64 with a Python 3.12 toolchain, then test the exact
-release archive and npm tarball that will be published.
+Build the binary in the Ubuntu 20.04 x86_64 container with `bash build/build-omd-linux.sh`.
+Use Python 3.12 on the host for packaging and test the resulting archive and npm tarball.
 
 The test requires a running Docker daemon and network access to fetch Ubuntu
 images, Node.js, and container test dependencies.
@@ -59,8 +58,8 @@ images, Node.js, and container test dependencies.
 bash tests/test-ubuntu-compatibility.sh <release.tar.gz> <package.tgz>
 ```
 
-The default run covers Ubuntu 22.04, 24.04, and 26.04. Optional trailing
-versions, such as `22.04 26.04`, select a subset for local checks. All three
+The default run covers Ubuntu 20.04, 22.04, 24.04, and 26.04. Optional trailing
+versions, such as `22.04 26.04`, select a subset for local checks. All four
 versions must pass before publication; do not rebuild either artifact between
 verification and publication. Python 3.12 is required for maintainer builds
 and tests, not as the installed host's system Python.

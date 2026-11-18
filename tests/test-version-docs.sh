@@ -20,12 +20,16 @@ check_absent() {
   fi
 }
 
-for file in README.md Readme.osc.md DEVELOPMENT.md AGENTS.md CLAUDE.md; do
+for file in DEVELOPMENT.md AGENTS.md CLAUDE.md; do
   path="${repo_root}/${file}"
   check_contains "${path}" '`VERSION`' "${file} should describe VERSION as the release source"
   check_contains "${path}" 'omd' "${file} should describe omd"
   check_contains "${path}" 'install/bootstrap.sh' "${file} should describe install/bootstrap.sh"
   check_contains "${path}" 'cargo test -p omd' "${file} should include omd test command"
+done
+
+for file in README.md Readme.osc.md docs/guide.md docs/guide.zh-CN.md DEVELOPMENT.md AGENTS.md CLAUDE.md; do
+  path="${repo_root}/${file}"
   check_absent "${path}" 'IMAGE_VERSION' "${file} should not describe IMAGE_VERSION"
   check_absent "${path}" 'ghcr\.io/zhangdw156' "${file} should not advertise GHCR images"
   check_absent "${path}" 'docker compose' "${file} should not advertise docker compose"

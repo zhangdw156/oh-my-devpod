@@ -44,6 +44,10 @@ versions.env               vendored 工具版本真源
 Linuxbrew 才能运行，但本项目通过 Linuxbrew 安装 Git，因此 Linuxbrew
 属于 `install_requires`。
 
+`provider` 指定组件的安装提供者，也是 TUI 默认的父节点。对于配置项，可用
+`display_parent` 指定一个已声明的直接依赖，例如 LazyVim 的 Neovim。安装计划
+始终解析完整依赖。
+
 新增组件时必须同时增加模块、清单项和测试。模块路径必须位于
 `modules/` 内，并具备可执行权限。
 
@@ -67,8 +71,8 @@ uninstall [--dry-run]
 
 Linuxbrew 固定在当前用户的 `~/.linuxbrew`。模块仅从此处定位 Brew，
 公式的所有权记录仍位于用户的 OMD state 目录，安装、更新、卸载与换源
-均使用自己的前缀。安装所需的系统工具由主机管理员预先提供。Zsh 模块
-写入用户配置，用户可自行启动 Zsh。
+均使用自己的前缀。安装所需的系统工具由主机管理员预先提供。托管 Zsh 和配置均安装后，当前账号的交互式
+SSH Bash 登录会进入其个人 Zsh。登录文件的选择与卸载见[多人服务器指南](./docs/guide.zh-CN.md#多人服务器)。
 
 ## 镜像配置
 
@@ -127,6 +131,14 @@ runtime；npm 渠道不得执行内建 `omd --update`，必须提示使用
 维护者的构建基线是 Ubuntu 20.04 x86_64，并显式使用 Python 3.12 工具链。
 构建得到的同一份 Linux x86_64 二进制必须兼容 Ubuntu 20.04、22.04、24.04 和 26.04。
 Python 3.12 是维护者构建与测试的工具链要求，不要求安装用户替换系统 Python。
+
+生成 release archive 和 npm 包：
+
+```bash
+bash build/build-omd-linux.sh
+bash build/package-omd.sh
+bash build/package-npm.sh dist/omd-x86_64-unknown-linux-gnu.tar.gz
+```
 
 release archive 必须包含：
 

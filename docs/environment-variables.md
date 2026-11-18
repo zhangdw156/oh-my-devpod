@@ -42,7 +42,8 @@ The `cn` profile exports:
 ```text
 HOMEBREW_BREW_GIT_REMOTE=https://mirrors.ustc.edu.cn/brew.git
 HOMEBREW_CORE_GIT_REMOTE=https://mirrors.ustc.edu.cn/homebrew-core.git
-HOMEBREW_BOTTLE_DOMAIN=https://mirrors.ustc.edu.cn/homebrew-bottles
+HOMEBREW_ARTIFACT_DOMAIN=https://mirrors.ustc.edu.cn/homebrew-bottles
+HOMEBREW_ARTIFACT_DOMAIN_NO_FALLBACK=1
 HOMEBREW_API_DOMAIN=https://mirrors.ustc.edu.cn/homebrew-bottles/api
 PIP_INDEX_URL=https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
 CONDA_CHANNELS=conda-forge
