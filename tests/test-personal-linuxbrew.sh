@@ -33,6 +33,10 @@ cat > "${source_brew}/bin/brew" <<'BREW'
 set -euo pipefail
 prefix="$(cd "$(dirname "$0")/.." && pwd -P)"
 [[ -z "${HOMEBREW_PREFIX:-}${HOMEBREW_CACHE:-}" ]]
+if IFS= read -r line; then
+  printf 'Homebrew unexpectedly received caller input: %s\n' "${line}" >&2
+  exit 2
+fi
 case "$1" in
   update) touch "${prefix}/updated" ;;
   install) mkdir -p "${prefix}/Cellar/$2/1.0" ;;
@@ -57,7 +61,11 @@ run_as() {
 }
 
 run_as "${user_a}" "${linuxbrew}" install
-run_as "${user_a}" "${tool}" install
+run_as "${user_a}" bash -c '
+  "$1" install
+  IFS= read -r line
+  [[ "${line}" == "keep this input" ]]
+' _ "${tool}" <<< 'keep this input'
 if run_as "${user_b}" "${linuxbrew}" status || run_as "${user_b}" "${tool}" status; then
   fail "a Brew inherited on PATH is not an installation for the current account"
 fi
