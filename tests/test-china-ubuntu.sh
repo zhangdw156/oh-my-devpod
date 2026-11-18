@@ -103,13 +103,28 @@ test ! -e /usr/local/bin/brew
 printf 'Ubuntu %s: domestic-only Gitee installation passed\n' "${VERSION_ID}"
 CONTAINER
 
-for version in "$@"; do
+run_version() {
+  local version="$1"
   case "${version}" in 20.04|22.04|24.04|26.04) ;; *) exit 2 ;; esac
   docker run --rm --platform linux/amd64 --network "${network}" \
     --mount "type=bind,src=${tmp},dst=/fixtures,readonly" \
-    "ubuntu:${version}" bash /fixtures/container.sh "${version}" | tee "${tmp}/${version}.log"
+    "ubuntu:${version}" bash /fixtures/container.sh "${version}" 2>&1 |
+    tee "${tmp}/${version}.log" | sed -u "s/^/[${version}] /"
   grep -Fqx "Ubuntu ${version}: domestic-only Gitee installation passed" "${tmp}/${version}.log"
+}
+
+pids=()
+failed=0
+for version in "$@"; do
+  run_version "${version}" &
+  pids+=("$!")
+  if (( ${#pids[@]} == 2 )); then
+    for pid in "${pids[@]}"; do wait "${pid}" || failed=1; done
+    pids=()
+  fi
 done
+for pid in "${pids[@]}"; do wait "${pid}" || failed=1; done
+(( failed == 0 ))
 if docker logs "${proxy}" | grep '^DENIED '; then
   printf 'Gitee installation attempted a connection outside the domestic mirror list.\n' >&2
   exit 1
