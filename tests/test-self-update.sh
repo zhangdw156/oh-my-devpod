@@ -6,6 +6,7 @@ unset XDG_CACHE_HOME XDG_CONFIG_HOME XDG_DATA_HOME XDG_STATE_HOME
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 bootstrap="${repo_root}/install/bootstrap.sh"
 tmp_dir="$(mktemp -d)"
+tmp_dir="$(cd "${tmp_dir}" && pwd -P)"
 trap 'rm -rf "${tmp_dir}"' EXIT
 
 fail() {
@@ -48,11 +49,8 @@ make_bundle() {
   install -m 0755 "${repo_root}/install/bootstrap.sh" "${payload_root}/install/bootstrap.sh"
   install -m 0755 "${repo_root}/install/update.sh" "${payload_root}/install/update.sh"
   install -m 0755 "${repo_root}/modules/lib/common.sh" "${payload_root}/modules/lib/common.sh"
-  install -m 0755 "${repo_root}/modules/lib/shared-linuxbrew.sh" "${payload_root}/modules/lib/shared-linuxbrew.sh"
   install -m 0755 "${repo_root}/modules/lib/postflight.sh" "${payload_root}/modules/lib/postflight.sh"
   install -m 0755 "${repo_root}/modules/lib/source-config.sh" "${payload_root}/modules/lib/source-config.sh"
-  install -m 0755 "${repo_root}/build/omd-brew-gateway.sh" "${payload_root}/build/omd-brew-gateway.sh"
-  install -m 0755 "${repo_root}/build/omd-brew-provisioner.sh" "${payload_root}/build/omd-brew-provisioner.sh"
   cat > "${payload_root}/components.toml" <<'EOF'
 schema_version = 1
 
@@ -174,42 +172,10 @@ if [[ "\${OHMYDEVPOD_TEST_FAIL_ACTIVATION:-0}" == "1" && "\${destination}" == */
 fi
 exec "${real_mv}" "\$@"
 EOF
-cat > "${fake_bin}/id" <<EOF
-#!/usr/bin/env bash
-case "\${1:-}" in
-  -u)
-    [[ -z "\${OMD_TEST_ID_UID:-}" ]] || { printf '%s\n' "\${OMD_TEST_ID_UID}"; exit 0; }
-    ;;
-  -un)
-    [[ -z "\${OMD_TEST_ID_USER:-}" ]] || { printf '%s\n' "\${OMD_TEST_ID_USER}"; exit 0; }
-    ;;
-esac
-exec "${real_id}" "\$@"
-EOF
-cat > "${fake_bin}/sudo" <<'EOF'
-#!/usr/bin/env bash
-set -euo pipefail
-printf '%s\n' "$*" >> "${OMD_TEST_SUDO_LOG}"
-case "${1:-}" in
-  tee)
-    shift
-    exec tee "$@"
-    ;;
-  chsh) exit 0 ;;
-  *) exit 2 ;;
-esac
-EOF
-cat > "${fake_bin}/zsh" <<'EOF'
-#!/usr/bin/env bash
-exit 0
-EOF
 chmod +x \
   "${fake_bin}/uname" \
   "${fake_bin}/curl" \
   "${fake_bin}/mv" \
-  "${fake_bin}/id" \
-  "${fake_bin}/sudo" \
-  "${fake_bin}/zsh"
 
 ubuntu_release="${tmp_dir}/ubuntu-os-release"
 cat > "${ubuntu_release}" <<'EOF'
@@ -294,34 +260,6 @@ assert_contains \
   'Successfully updated omd to 1.2.4' \
   "${candidate_bootstrap_output}"
 
-shell_repair_home="${tmp_dir}/shell-repair-home"
-shell_repair_log="${tmp_dir}/shell-repair.log"
-shell_repair_output="${tmp_dir}/shell-repair.out"
-shell_repair_sudo_log="${tmp_dir}/shell-repair-sudo.log"
-shell_repair_shells="${tmp_dir}/shell-repair-shells"
-install_fixture github "${shell_repair_home}"
-mkdir -p "${shell_repair_home}/.local/state/oh-my-devpod/managed"
-cat > "${shell_repair_home}/.local/state/oh-my-devpod/managed/zsh-config" <<'EOF'
-managed_by=oh-my-devpod
-component=zsh-config
-kind=configuration
-artifact=/tmp/test-zshrc
-EOF
-: > "${shell_repair_sudo_log}"
-: > "${shell_repair_shells}"
-OMD_TEST_ID_UID=1002 \
-  OMD_TEST_ID_USER=bywei \
-  OMD_TEST_SUDO_LOG="${shell_repair_sudo_log}" \
-  SUDO_USER=zhangdw \
-  OHMYDEVPOD_CURRENT_SHELL=/bin/bash \
-  OHMYDEVPOD_SHELLS_FILE="${shell_repair_shells}" \
-  OHMYDEVPOD_SUDO_BIN="${fake_bin}/sudo" \
-  run_update "${shell_repair_home}" "${shell_repair_log}" >"${shell_repair_output}" 2>&1
-assert_contains "tee -a ${shell_repair_shells}" "${shell_repair_sudo_log}"
-assert_contains "chsh -s ${fake_bin}/zsh bywei" "${shell_repair_sudo_log}"
-assert_absent "chsh -s ${fake_bin}/zsh zhangdw" "${shell_repair_sudo_log}"
-assert_contains 'Successfully updated omd to 1.2.4' "${shell_repair_output}"
-
 saved_github_home="${tmp_dir}/saved-github-home"
 saved_github_log="${tmp_dir}/saved-github.log"
 install_fixture github "${saved_github_home}"
@@ -405,7 +343,7 @@ printf 'preserve me\n' > "${switch_home}/.config/oh-my-devpod/custom.conf"
 mkdir -p "${switch_home}/.cache/oh-my-devpod" "${switch_home}/.local/state/oh-my-devpod"
 printf 'cache\n' > "${switch_home}/.cache/oh-my-devpod/preserved-cache"
 printf 'login\n' > "${switch_home}/.local/state/oh-my-devpod/preserved-login"
-brew_repo="${tmp_dir}/managed-brew"
+brew_repo="${switch_home}/.linuxbrew"
 git init -q "${brew_repo}"
 mkdir -p "${brew_repo}/bin"
 printf '#!/usr/bin/env bash\nexit 0\n' > "${brew_repo}/bin/brew"
@@ -557,57 +495,6 @@ fi
 [[ ! -s "${switch_log}" ]] || fail "invalid source flags must fail before network access"
 assert_source_profile "${switch_home}" gitee cn
 
-legacy_home="${tmp_dir}/legacy-home"
-legacy_log="${tmp_dir}/legacy.log"
-legacy_brew="${tmp_dir}/legacy-brew"
-legacy_core="${legacy_brew}/Library/Taps/homebrew/homebrew-core"
-brew_source="${tmp_dir}/brew-source"
-brew_remote="${tmp_dir}/brew-remote.git"
-install_fixture github "${legacy_home}"
-git init -q "${brew_source}"
-mkdir -p "${brew_source}/bin"
-printf '#!/usr/bin/env bash\nexit 0\n' > "${brew_source}/bin/brew"
-chmod +x "${brew_source}/bin/brew"
-git -C "${brew_source}" add bin/brew
-git -C "${brew_source}" \
-  -c user.name=oh-my-devpod \
-  -c user.email=oh-my-devpod@example.invalid \
-  commit -qm initial
-git clone -q --bare "${brew_source}" "${brew_remote}"
-mkdir -p "${legacy_brew}/bin" "${legacy_brew}/Cellar/preserved/1.0"
-printf '#!/usr/bin/env bash\nexit 0\n' > "${legacy_brew}/bin/brew"
-chmod +x "${legacy_brew}/bin/brew"
-git init -q "${legacy_core}"
-git -C "${legacy_core}" remote add origin https://github.com/Homebrew/homebrew-core.git
-mkdir -p "${legacy_home}/.local/state/oh-my-devpod/managed"
-cat > "${legacy_home}/.local/state/oh-my-devpod/managed/linuxbrew" <<EOF
-managed_by=oh-my-devpod
-component=linuxbrew
-kind=directory
-artifact=${legacy_brew}
-EOF
-PATH="${fake_bin}:/usr/bin:/bin:/usr/sbin:/sbin" \
-  HOME="${legacy_home}" \
-  OHMYDEVPOD_VERSION="v1.2.3" \
-  OHMYDEVPOD_GITEE_BREW_REMOTE="${brew_remote}" \
-  OHMYDEVPOD_TEST_CURL_LOG="${legacy_log}" \
-  OHMYDEVPOD_TEST_LATEST_VERSION="1.2.3" \
-  "${legacy_home}/.local/bin/omd" --update --gitee >/dev/null
-[[ -d "${legacy_brew}/.git" ]] ||
-  fail "legacy managed Homebrew should gain Git metadata during a source switch"
-assert_equal \
-  "${brew_remote}" \
-  "$(git -C "${legacy_brew}" remote get-url origin)" \
-  "legacy managed Homebrew remote"
-assert_equal \
-  'https://mirrors.ustc.edu.cn/homebrew-core.git' \
-  "$(git -C "${legacy_core}" remote get-url origin)" \
-  "legacy managed Homebrew core remote"
-grep -Fq 'exit 0' "${legacy_brew}/bin/brew" ||
-  fail "legacy Homebrew source switching must not update component files"
-[[ -d "${legacy_brew}/Cellar/preserved/1.0" ]] ||
-  fail "legacy Homebrew migration must preserve installed formulae"
-
 ownership_home="${tmp_dir}/ownership-home"
 ownership_log="${tmp_dir}/ownership.log"
 install_fixture github "${ownership_home}"
@@ -688,7 +575,7 @@ activation_failure_home="${tmp_dir}/activation-failure-home"
 activation_failure_log="${tmp_dir}/activation-failure.log"
 install_fixture gitee "${activation_failure_home}"
 activation_failure_link="$(readlink "${activation_failure_home}/.local/bin/omd")"
-activation_brew_repo="${tmp_dir}/activation-managed-brew"
+activation_brew_repo="${activation_failure_home}/.linuxbrew"
 git init -q "${activation_brew_repo}"
 mkdir -p "${activation_brew_repo}/bin"
 printf '#!/usr/bin/env bash\nexit 0\n' > "${activation_brew_repo}/bin/brew"
@@ -725,7 +612,7 @@ source_only_home="${tmp_dir}/source-only-home"
 source_only_log="${tmp_dir}/source-only.log"
 source_only_output="${tmp_dir}/source-only.out"
 install_fixture github "${source_only_home}"
-source_only_brew="${tmp_dir}/source-only-brew"
+source_only_brew="${source_only_home}/.linuxbrew"
 source_only_core="${source_only_brew}/Library/Taps/homebrew/homebrew-core"
 mkdir -p \
   "${source_only_brew}/bin" \
@@ -752,12 +639,12 @@ managed_by=oh-my-devpod
 component=${component}
 kind=brew-formula
 artifact=${component}
+brew_prefix=${source_only_brew}
 EOF
 done
 : > "${source_only_log}"
 PATH="${fake_bin}:/usr/bin:/bin:/usr/sbin:/sbin" \
   HOME="${source_only_home}" \
-  OHMYDEVPOD_BREW_BIN="${source_only_brew}/bin/brew" \
   OHMYDEVPOD_TEST_CURL_LOG="${source_only_log}" \
   "${source_only_home}/.local/bin/omd" --source gitee > "${source_only_output}"
 assert_source_profile "${source_only_home}" gitee cn
@@ -791,7 +678,6 @@ assert_equal \
 
 PATH="${fake_bin}:/usr/bin:/bin:/usr/sbin:/sbin" \
   HOME="${source_only_home}" \
-  OHMYDEVPOD_BREW_BIN="${source_only_brew}/bin/brew" \
   OHMYDEVPOD_TEST_CURL_LOG="${source_only_log}" \
   "${source_only_home}/.local/bin/omd" --source github >/dev/null
 assert_source_profile "${source_only_home}" github upstream
@@ -816,7 +702,7 @@ assert_equal \
 
 native_failure_home="${tmp_dir}/native-failure-home"
 native_failure_log="${tmp_dir}/native-failure.log"
-native_failure_brew="${tmp_dir}/native-failure-brew"
+native_failure_brew="${native_failure_home}/.linuxbrew"
 install_fixture github "${native_failure_home}"
 mkdir -p "${native_failure_brew}/bin" "${native_failure_brew}/Cellar/uv/1.0"
 printf '#!/usr/bin/env bash\nexit 0\n' > "${native_failure_brew}/bin/brew"
@@ -831,17 +717,17 @@ component=linuxbrew
 kind=directory
 artifact=${native_failure_brew}
 EOF
-cat > "${native_failure_managed}/uv" <<'EOF'
+cat > "${native_failure_managed}/uv" <<EOF
 managed_by=oh-my-devpod
 component=uv
 kind=brew-formula
 artifact=uv
+brew_prefix=${native_failure_brew}
 EOF
 printf 'user-owned blocker\n' > "${native_failure_home}/.config/uv"
 : > "${native_failure_log}"
 if PATH="${fake_bin}:/usr/bin:/bin:/usr/sbin:/sbin" \
   HOME="${native_failure_home}" \
-  OHMYDEVPOD_BREW_BIN="${native_failure_brew}/bin/brew" \
   OHMYDEVPOD_TEST_CURL_LOG="${native_failure_log}" \
   "${native_failure_home}/.local/bin/omd" --source gitee >/dev/null 2>&1; then
   fail "native source write failure should fail the source switch"

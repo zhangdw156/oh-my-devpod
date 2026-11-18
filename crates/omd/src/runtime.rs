@@ -160,13 +160,11 @@ impl RuntimePaths {
             .unwrap_or_else(|| home.join(".local/share"));
         let prefix = env::var_os("OHMYDEVPOD_PREFIX")
             .map(PathBuf::from)
-            .or_else(|| installed_prefix(&root))
             .or_else(|| configured_path(&config_dir.join("install-prefix")))
             .unwrap_or_else(|| data_home.join("oh-my-devpod"));
         let bin_dir = env::var_os("OHMYDEVPOD_BIN_DIR")
             .map(PathBuf::from)
             .or_else(|| configured_path(&config_dir.join("bin-dir")))
-            .or_else(active_bin_dir)
             .unwrap_or_else(|| home.join(".local/bin"));
         let cache_dir = env::var_os("OHMYDEVPOD_CACHE_DIR")
             .map(PathBuf::from)
@@ -587,40 +585,10 @@ fn validate_root(root: PathBuf) -> Result<PathBuf, Box<dyn Error>> {
     Ok(root)
 }
 
-fn installed_prefix(root: &Path) -> Option<PathBuf> {
-    let releases_dir = root.parent()?;
-    if releases_dir.file_name()? != "releases" {
-        return None;
-    }
-    releases_dir.parent().map(Path::to_path_buf)
-}
-
 fn configured_path(path: &Path) -> Option<PathBuf> {
     let value = fs::read_to_string(path).ok()?;
     let path = PathBuf::from(value.trim());
     path.is_absolute().then_some(path)
-}
-
-fn active_bin_dir() -> Option<PathBuf> {
-    let current = env::current_exe().ok()?.canonicalize().ok()?;
-    let argument = env::args_os().next().map(PathBuf::from);
-    if let Some(path) = argument.filter(|path| path.components().count() > 1) {
-        let candidate = if path.is_absolute() {
-            path
-        } else {
-            env::current_dir().ok()?.join(path)
-        };
-        if candidate.canonicalize().ok().as_ref() == Some(&current) {
-            return candidate.parent().map(Path::to_path_buf);
-        }
-    }
-
-    env::var_os("PATH")
-        .into_iter()
-        .flat_map(|paths| env::split_paths(&paths).collect::<Vec<_>>())
-        .map(|directory| directory.join("omd"))
-        .find(|candidate| candidate.canonicalize().ok().as_ref() == Some(&current))
-        .and_then(|candidate| candidate.parent().map(Path::to_path_buf))
 }
 
 #[cfg(test)]

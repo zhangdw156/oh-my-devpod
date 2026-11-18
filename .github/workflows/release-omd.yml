@@ -17,7 +17,6 @@ permissions:
 
 jobs:
   build-linux-x86_64:
-    # Ubuntu 22.04 supplies the glibc baseline for every supported LTS.
     runs-on: ubuntu-22.04
     permissions:
       contents: write
@@ -68,11 +67,8 @@ jobs:
                   )
           PY
 
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
       - name: Build omd
-        run: cargo build --release -p omd
+        run: bash build/build-omd-linux.sh
 
       - name: Package omd
         run: |

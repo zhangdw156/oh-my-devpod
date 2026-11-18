@@ -33,7 +33,7 @@ assert_contains '/releases/' "${bootstrap}"
 assert_contains 'previous_dir=""' "${bootstrap}"
 
 # Platform checks must agree with the npm distribution.
-for version in 22.04 24.04 26.04; do
+for version in 20.04 22.04 24.04 26.04; do
   os_release="${tmp_dir}/ubuntu-${version}"
   printf 'ID=ubuntu\nVERSION_ID="%s"\n' "${version}" > "${os_release}"
   detected="$(OHMYDEVPOD_BOOTSTRAP_LIB_ONLY=1 bash -c '
@@ -43,7 +43,7 @@ for version in 22.04 24.04 26.04; do
   [[ "${detected}" == "ubuntu-${version}" ]] || fail "Ubuntu ${version} should be supported"
 done
 
-for distribution in ubuntu:20.04 ubuntu:24.10 ubuntu:26.10 ubuntu:28.04 debian:12 linuxmint:22 ubuntu:; do
+for distribution in ubuntu:18.04 ubuntu:24.10 ubuntu:26.10 ubuntu:28.04 debian:12 linuxmint:22 ubuntu:; do
   os_release="${tmp_dir}/unsupported-os-release"
   printf 'ID=%s\nVERSION_ID="%s"\nID_LIKE=ubuntu\n' \
     "${distribution%%:*}" "${distribution#*:}" > "${os_release}"
@@ -53,7 +53,7 @@ for distribution in ubuntu:20.04 ubuntu:24.10 ubuntu:26.10 ubuntu:28.04 debian:1
   ' _ "${bootstrap}" "${os_release}" >"${tmp_dir}/platform.out" 2>&1; then
     fail "${distribution} should be rejected"
   fi
-  assert_contains 'Ubuntu 22.04, 24.04, and 26.04' "${tmp_dir}/platform.out"
+  assert_contains 'Ubuntu 20.04, 22.04, 24.04, and 26.04' "${tmp_dir}/platform.out"
 done
 
 payload_root="${tmp_dir}/payload/oh-my-devpod"
@@ -78,9 +78,6 @@ printf 'schema_version = 1\n' > "${payload_root}/components.toml"
 printf '1.2.3\n' > "${payload_root}/VERSION"
 printf 'TEST_VERSION=1\n' > "${payload_root}/versions.env"
 printf 'module\n' > "${payload_root}/modules/marker"
-install -m 0755 "${repo_root}/modules/lib/shared-linuxbrew.sh" "${payload_root}/modules/lib/shared-linuxbrew.sh"
-install -m 0755 "${repo_root}/build/omd-brew-gateway.sh" "${payload_root}/build/omd-brew-gateway.sh"
-install -m 0755 "${repo_root}/build/omd-brew-provisioner.sh" "${payload_root}/build/omd-brew-provisioner.sh"
 printf 'build\n' > "${payload_root}/build/marker"
 printf 'config\n' > "${payload_root}/config/marker"
 printf 'vendor\n' > "${payload_root}/vendor/marker"
@@ -175,14 +172,10 @@ run_bootstrap() {
   OHMYDEVPOD_TEST_CHECKSUM="${checksum_file}" \
   OHMYDEVPOD_TEST_CURL_LOG="${log}" \
   OHMYDEVPOD_TEST_FAIL_GITHUB="${fail_github}" \
-  OHMYDEVPOD_SHARED_BREW_TEST_MODE="${OHMYDEVPOD_SHARED_BREW_TEST_MODE:-0}" \
-  OHMYDEVPOD_SHARED_BREW_PREFIX="${OHMYDEVPOD_SHARED_BREW_PREFIX:-}" \
-  OHMYDEVPOD_SHARED_BREW_STATE_DIR="${OHMYDEVPOD_SHARED_BREW_STATE_DIR:-}" \
-  OHMYDEVPOD_SHARED_BREW_LIBEXEC_DIR="${OHMYDEVPOD_SHARED_BREW_LIBEXEC_DIR:-}" \
     bash "${bootstrap}"
 }
 
-for version in 22.04 26.04; do
+for version in 20.04 22.04 26.04; do
   for source in github gitee; do
     platform_home="${tmp_dir}/${source}-${version}-home"
     platform_log="${tmp_dir}/${source}-${version}-curl.log"
@@ -203,24 +196,6 @@ if run_bootstrap github "${rejected_home}" "${rejected_log}" \
 fi
 [[ ! -e "${rejected_log}" && ! -e "${rejected_home}/.local/bin/omd" ]] ||
   fail "unsupported platforms must not download or install omd"
-
-external_home="${tmp_dir}/external-brew-home"
-external_log="${tmp_dir}/external-brew-curl.log"
-external_prefix="${tmp_dir}/external-brew-prefix"
-external_state="${tmp_dir}/external-brew-state"
-external_libexec="${tmp_dir}/external-brew-libexec"
-mkdir -p "${external_prefix}/bin"
-printf '#!/usr/bin/env bash\nexit 0\n' > "${external_prefix}/bin/brew"
-chmod +x "${external_prefix}/bin/brew"
-OHMYDEVPOD_SHARED_BREW_TEST_MODE=1 \
-OHMYDEVPOD_SHARED_BREW_PREFIX="${external_prefix}" \
-OHMYDEVPOD_SHARED_BREW_STATE_DIR="${external_state}" \
-OHMYDEVPOD_SHARED_BREW_LIBEXEC_DIR="${external_libexec}" \
-  run_bootstrap github "${external_home}" "${external_log}"
-[[ ! -e "${external_state}/manifest" ]] ||
-  fail "bootstrap must not take over an external Linuxbrew installation"
-[[ ! -e "${external_libexec}/brew-provisioner" ]] ||
-  fail "bootstrap must not install shared Brew controllers for external Linuxbrew"
 
 github_home="${tmp_dir}/github-home"
 github_log="${tmp_dir}/github-curl.log"

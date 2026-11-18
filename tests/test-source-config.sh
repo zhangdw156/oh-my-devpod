@@ -3,6 +3,7 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 tmp_dir="$(mktemp -d)"
+tmp_dir="$(cd "${tmp_dir}" && pwd -P)"
 trap 'rm -rf "${tmp_dir}"' EXIT
 
 fail() {
@@ -19,7 +20,7 @@ home="${tmp_dir}/home"
 config_home="${tmp_dir}/config"
 state_dir="${tmp_dir}/state"
 managed_dir="${state_dir}/managed"
-brew_prefix="${tmp_dir}/linuxbrew"
+brew_prefix="${home}/.linuxbrew"
 mkdir -p \
   "${home}" \
   "${config_home}" \
@@ -42,13 +43,13 @@ managed_by=oh-my-devpod
 component=${component}
 kind=brew-formula
 artifact=${component}
+brew_prefix=${brew_prefix}
 EOF
 done
 
 export HOME="${home}"
 export XDG_CONFIG_HOME="${config_home}"
 export OHMYDEVPOD_STATE_DIR="${state_dir}"
-export OHMYDEVPOD_BREW_BIN="${brew_prefix}/bin/brew"
 
 # shellcheck source=../modules/lib/source-config.sh
 source "${repo_root}/modules/lib/source-config.sh"
@@ -121,7 +122,7 @@ symlink_home="${tmp_dir}/symlink-home"
 symlink_config="${tmp_dir}/symlink-config"
 symlink_external="${tmp_dir}/symlink-external"
 symlink_state="${tmp_dir}/symlink-state"
-symlink_brew="${tmp_dir}/symlink-brew"
+symlink_brew="${symlink_home}/.linuxbrew"
 mkdir -p \
   "${symlink_home}" \
   "${symlink_config}" \
@@ -141,7 +142,6 @@ EOF
 ln -s "${symlink_external}" "${symlink_config}/uv"
 if HOME="${symlink_home}" \
   XDG_CONFIG_HOME="${symlink_config}" \
-  OHMYDEVPOD_BREW_BIN="${symlink_brew}/bin/brew" \
   OHMYDEVPOD_STATE_DIR="${symlink_state}" \
   bash -c '
     source "$1"

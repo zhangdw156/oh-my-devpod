@@ -20,12 +20,7 @@ binary_matches_marker() {
 }
 
 status() {
-  if marked; then
-    [[ -f "${bin_path}" && -x "${bin_path}" ]]
-  else
-    command -v gitee >/dev/null 2>&1 ||
-      [[ -f "${bin_path}" && -x "${bin_path}" ]]
-  fi
+  [[ -f "${bin_path}" && -x "${bin_path}" ]]
 }
 
 managed() {

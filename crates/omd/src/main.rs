@@ -1,4 +1,4 @@
-use std::{env, error::Error, fs, process::ExitCode};
+use std::{env, error::Error, process::ExitCode};
 
 mod components;
 mod planner;
@@ -235,55 +235,17 @@ fn print_components(catalog: &Catalog) {
 fn print_status(catalog: &Catalog, runner: &Runner) -> Result<(), Box<dyn Error>> {
     let states = runner.inventory(catalog)?;
     for component in catalog.components() {
-        let shared_details = if component.id == "linuxbrew" {
-            shared_brew_status_details()
-                .map(|details| format!("\t{details}"))
-                .unwrap_or_default()
-        } else {
-            String::new()
-        };
         println!(
-            "{}\t{}\tscope={}{}",
+            "{}\t{}\tscope={}",
             component.id,
             states
                 .get(&component.id)
                 .copied()
                 .unwrap_or(planner::ComponentState::Missing),
-            component.scope(),
-            shared_details
+            component.scope()
         );
     }
     Ok(())
-}
-
-fn shared_brew_status_details() -> Option<String> {
-    let state_dir = if env::var("OHMYDEVPOD_SHARED_BREW_TEST_MODE").as_deref() == Ok("1") {
-        env::var("OHMYDEVPOD_SHARED_BREW_STATE_DIR")
-            .unwrap_or_else(|_| "/var/lib/oh-my-devpod/linuxbrew".to_string())
-    } else {
-        "/var/lib/oh-my-devpod/linuxbrew".to_string()
-    };
-    let source = fs::read_to_string(format!("{state_dir}/manifest")).ok()?;
-    let value = |key: &str| {
-        source.lines().find_map(|line| {
-            line.strip_prefix(key)
-                .filter(|value| {
-                    !value.is_empty()
-                        && value
-                            .chars()
-                            .all(|character| !character.is_control() && character != '\t')
-                })
-                .map(str::to_owned)
-        })
-    };
-    Some(format!(
-        "prefix={}\tservice_user={}\tmanager_group={}\tmirror_profile={}\tschema_version={}",
-        value("prefix=")?,
-        value("service_user=")?,
-        value("manager_group=")?,
-        value("mirror_profile=")?,
-        value("schema_version=")?
-    ))
 }
 
 fn print_plan(catalog: &Catalog, plan: &planner::Plan) -> Result<(), Box<dyn Error>> {

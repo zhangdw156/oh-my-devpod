@@ -24,7 +24,7 @@ assert_not_contains() {
 }
 
 [[ -f "${workflow}" ]] || fail "missing release workflow: ${workflow}"
-assert_contains 'cargo build --release -p omd'
+assert_contains 'bash build/build-omd-linux.sh'
 assert_contains 'omd-x86_64-unknown-linux-gnu.tar.gz'
 assert_contains 'softprops/action-gh-release'
 assert_contains 'tar -czf'
@@ -52,12 +52,13 @@ import re
 import sys
 
 root = pathlib.Path(sys.argv[1])
+assert "ubuntu:20.04" in (root / "build/build-omd-linux.sh").read_text()
 for filename, job in [("ci.yml", "test"), ("release-omd.yml", "build-linux-x86_64")]:
     workflow = (root / ".github/workflows" / filename).read_text()
     match = re.search(rf"^  {job}:\n(.*?)(?=^  \S|\Z)", workflow, re.M | re.S)
     assert match, f"missing build job in {filename}"
     build = match[1]
-    assert "runs-on: ubuntu-22.04" in build, f"{filename} must build on the oldest supported LTS"
+    assert "bash build/build-omd-linux.sh" in build, f"{filename} must use the shared Linux build"
     assert "actions/setup-python@" in build and "python-version: '3.12'" in build, (
         f"{filename} needs Python with tomllib for tests and packaging"
     )
@@ -115,11 +116,8 @@ for expected in \
   oh-my-devpod/install/update.sh \
   oh-my-devpod/modules/ \
   oh-my-devpod/modules/lib/source-config.sh \
-  oh-my-devpod/modules/lib/shared-linuxbrew.sh \
   oh-my-devpod/build/ \
   oh-my-devpod/build/install-gitee-cli.sh \
-  oh-my-devpod/build/omd-brew-gateway.sh \
-  oh-my-devpod/build/omd-brew-provisioner.sh \
   oh-my-devpod/config/ \
   oh-my-devpod/vendor/ \
   oh-my-devpod/VERSION \

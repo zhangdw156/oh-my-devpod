@@ -96,53 +96,23 @@ OMD_UPDATE_BREW_PREFIX=""
 OMD_UPDATE_BREW_REMOTE=""
 OMD_UPDATE_BREW_REMOTE_PRESENT=0
 OMD_UPDATE_BREW_REMOTE_CHANGED=0
-OMD_UPDATE_BREW_LEGACY=0
 OMD_UPDATE_BREW_CORE_PREFIX=""
 OMD_UPDATE_BREW_CORE_REMOTE=""
 OMD_UPDATE_BREW_CORE_REMOTE_PRESENT=0
 OMD_UPDATE_BREW_CORE_REMOTE_CHANGED=0
-OMD_UPDATE_BREW_SHARED=0
-OMD_UPDATE_BREW_SHARED_PROFILE=""
-OMD_UPDATE_BREW_SHARED_CHANGED=0
 
 omd_update_capture_brew_remote() {
-  local marker_prefix core_prefix
-  omd_module_is_managed linuxbrew || return 0
-  if omd_shared_linuxbrew_managed; then
-    OMD_UPDATE_BREW_SHARED=1
-    OMD_UPDATE_BREW_PREFIX="$(omd_shared_linuxbrew_prefix)"
-    OMD_UPDATE_BREW_SHARED_PROFILE="$(omd_shared_linuxbrew_manifest_value mirror_profile || true)"
-    case "${OMD_UPDATE_BREW_SHARED_PROFILE}" in upstream|cn) return 0 ;; *) return 1 ;; esac
-  fi
-  marker_prefix="$(omd_module_marker_value linuxbrew artifact || true)"
-  [[ -n "${marker_prefix}" && -d "${marker_prefix}" && -x "${marker_prefix}/bin/brew" ]] || {
-    omd_warn "Managed Homebrew prefix is missing or invalid: ${marker_prefix:-<empty>}"
-    return 1
-  }
-  marker_prefix="$(cd "${marker_prefix}" 2>/dev/null && pwd -P)" || return 1
-  omd_module_brew_cmd_matches_prefix "${marker_prefix}/bin/brew" "${marker_prefix}" || {
-    omd_warn "Managed Homebrew command does not belong to its recorded prefix"
-    return 1
-  }
-  command -v git >/dev/null 2>&1 || {
-    omd_warn "Git is required to switch the managed Homebrew remote"
-    return 1
-  }
-
-  OMD_UPDATE_BREW_PREFIX="${marker_prefix}"
-  if [[ ! -d "${marker_prefix}/.git" ]]; then
-    OMD_UPDATE_BREW_LEGACY=1
-  else
-    if OMD_UPDATE_BREW_REMOTE="$(git -C "${marker_prefix}" remote get-url origin 2>/dev/null)"; then
-      OMD_UPDATE_BREW_REMOTE_PRESENT=1
-    else
-      OMD_UPDATE_BREW_REMOTE=""
-      OMD_UPDATE_BREW_REMOTE_PRESENT=0
-    fi
+  local core_prefix
+  omd_module_marker_matches linuxbrew "${HOME}/.linuxbrew" || return 0
+  OMD_UPDATE_BREW_PREFIX="$(omd_module_brew_prefix)" || return 1
+  if OMD_UPDATE_BREW_REMOTE="$(git -C "${OMD_UPDATE_BREW_PREFIX}" remote get-url origin 2>/dev/null)"; then
+    OMD_UPDATE_BREW_REMOTE_PRESENT=1
   fi
 
-  core_prefix="${marker_prefix}/Library/Taps/homebrew/homebrew-core"
+  omd_source_config_path_is_safe "${OMD_UPDATE_BREW_PREFIX}/.git/config" "${OMD_UPDATE_BREW_PREFIX}" || return 1
+  core_prefix="${OMD_UPDATE_BREW_PREFIX}/Library/Taps/homebrew/homebrew-core"
   if [[ -d "${core_prefix}/.git" ]]; then
+    omd_source_config_path_is_safe "${core_prefix}/.git/config" "${OMD_UPDATE_BREW_PREFIX}" || return 1
     OMD_UPDATE_BREW_CORE_PREFIX="${core_prefix}"
     if OMD_UPDATE_BREW_CORE_REMOTE="$(git -C "${core_prefix}" remote get-url origin 2>/dev/null)"; then
       OMD_UPDATE_BREW_CORE_REMOTE_PRESENT=1
@@ -154,32 +124,15 @@ omd_update_capture_brew_remote() {
 }
 
 omd_update_apply_brew_remote() {
-  local source="$1" target_remote target_core_remote target_profile
+  local source="$1" target_remote target_core_remote
   [[ -n "${OMD_UPDATE_BREW_PREFIX}" ]] || return 0
-  if [[ "${OMD_UPDATE_BREW_SHARED}" == "1" ]]; then
-    target_profile="$(omd_source_mirror_profile "${source}")" || return 1
-    if [[ "${target_profile}" != "${OMD_UPDATE_BREW_SHARED_PROFILE}" ]]; then
-      omd_shared_linuxbrew_set_profile "${target_profile}" || return 1
-      OMD_UPDATE_BREW_SHARED_CHANGED=1
-    fi
-    return 0
-  fi
   target_remote="$(omd_source_brew_remote "${source}")" || return 1
-  if [[ "${OMD_UPDATE_BREW_LEGACY}" == "1" ]]; then
-    git -C "${OMD_UPDATE_BREW_PREFIX}" init -q || return 1
-    OMD_UPDATE_BREW_REMOTE_CHANGED=1
+  if [[ "${OMD_UPDATE_BREW_REMOTE_PRESENT}" == "0" ]]; then
     git -C "${OMD_UPDATE_BREW_PREFIX}" remote add origin "${target_remote}" || return 1
-  else
-    if [[ "${OMD_UPDATE_BREW_REMOTE_PRESENT}" == "1" ]]; then
-      if [[ "${OMD_UPDATE_BREW_REMOTE}" != "${target_remote}" ]]; then
-        git -C "${OMD_UPDATE_BREW_PREFIX}" remote set-url origin "${target_remote}" ||
-          return 1
-        OMD_UPDATE_BREW_REMOTE_CHANGED=1
-      fi
-    else
-      git -C "${OMD_UPDATE_BREW_PREFIX}" remote add origin "${target_remote}" || return 1
-      OMD_UPDATE_BREW_REMOTE_CHANGED=1
-    fi
+    OMD_UPDATE_BREW_REMOTE_CHANGED=1
+  elif [[ "${OMD_UPDATE_BREW_REMOTE}" != "${target_remote}" ]]; then
+    git -C "${OMD_UPDATE_BREW_PREFIX}" remote set-url origin "${target_remote}" || return 1
+    OMD_UPDATE_BREW_REMOTE_CHANGED=1
   fi
 
   [[ -n "${OMD_UPDATE_BREW_CORE_PREFIX}" ]] || return 0
@@ -199,10 +152,6 @@ omd_update_apply_brew_remote() {
 
 omd_update_restore_brew_remote() {
   local rollback_failed=0
-  if [[ "${OMD_UPDATE_BREW_SHARED_CHANGED}" == "1" ]]; then
-    omd_shared_linuxbrew_set_profile "${OMD_UPDATE_BREW_SHARED_PROFILE}" || rollback_failed=1
-    return "${rollback_failed}"
-  fi
   if [[ "${OMD_UPDATE_BREW_CORE_REMOTE_CHANGED}" == "1" ]]; then
     if [[ "${OMD_UPDATE_BREW_CORE_REMOTE_PRESENT}" == "1" ]]; then
       git -C "${OMD_UPDATE_BREW_CORE_PREFIX}" remote set-url origin "${OMD_UPDATE_BREW_CORE_REMOTE}" ||
@@ -213,9 +162,7 @@ omd_update_restore_brew_remote() {
     fi
   fi
   if [[ "${OMD_UPDATE_BREW_REMOTE_CHANGED}" == "1" ]]; then
-    if [[ "${OMD_UPDATE_BREW_LEGACY}" == "1" ]]; then
-      rm -rf "${OMD_UPDATE_BREW_PREFIX}/.git" || rollback_failed=1
-    elif [[ "${OMD_UPDATE_BREW_REMOTE_PRESENT}" == "1" ]]; then
+    if [[ "${OMD_UPDATE_BREW_REMOTE_PRESENT}" == "1" ]]; then
       git -C "${OMD_UPDATE_BREW_PREFIX}" remote set-url origin "${OMD_UPDATE_BREW_REMOTE}" ||
         rollback_failed=1
     else
@@ -277,6 +224,8 @@ omd_update_main() {
   local target prefix bin_dir cache_dir config_dir archive checksum archive_version installed_version
   local snapshot_dir="" source_changed=0 configure_source=0 manage_source=0 source_only=0
   local install_channel="${OHMYDEVPOD_INSTALL_CHANNEL:-bootstrap}"
+
+  [[ "${EUID}" -ne 0 ]] || omd_error "Update OMD from your own account, without sudo."
 
   case "$#" in
     0) ;;

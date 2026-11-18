@@ -51,19 +51,9 @@ if [[ -f "${OHMYDEVPOD_CONFIG_DIR}/env" ]]; then
   source "${OHMYDEVPOD_CONFIG_DIR}/env"
   set +a
 fi
-omd_brew_gateway_dir="/usr/local/libexec/oh-my-devpod/bin"
-if [[ -x "${omd_brew_gateway_dir}/brew" ]]; then
-  export PATH="${omd_brew_gateway_dir}:${PATH}"
+if [[ -x "$HOME/.linuxbrew/bin/brew" && ! -L "$HOME/.linuxbrew" ]]; then
+  export PATH="$HOME/.linuxbrew/bin:$HOME/.linuxbrew/sbin:$PATH"
 fi
-if command -v brew >/dev/null 2>&1; then
-  eval "$(brew shellenv)"
-elif [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
-  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-fi
-if [[ -x "${omd_brew_gateway_dir}/brew" ]]; then
-  export PATH="${omd_brew_gateway_dir}:${PATH}"
-fi
-unset omd_brew_gateway_dir
 export PATH="$HOME/.local/bin:$PATH"
 omd_mamba_hook=""
 if command -v mamba >/dev/null 2>&1; then
@@ -82,7 +72,7 @@ EOF
 }
 
 install_or_update() {
-  local action="$1" backup_dir="" backup_parent zsh_path
+  local action="$1" backup_dir="" backup_parent
   shift
   omd_module_reject_unknown_flags "$@" || return
   if status && ! managed; then
@@ -94,7 +84,7 @@ install_or_update() {
     return 1
   fi
   if omd_module_dry_run "$@"; then
-    omd_module_info plan "${action} managed Zsh assets, ~/.zshrc, Powerlevel10k, and the login shell"
+    omd_module_info plan "${action} managed Zsh assets, ~/.zshrc, and Powerlevel10k"
     return 0
   fi
 
@@ -124,8 +114,6 @@ install_or_update() {
     "backup_dir=${backup_dir}" \
     "zshrc_sha256=$(omd_module_sha256_file "${zshrc}")" \
     "p10k_sha256=$(omd_module_sha256_file "${p10k}")"
-  zsh_path="$(omd_module_zsh_path)"
-  omd_module_set_login_shell "${zsh_path}"
 }
 
 uninstall() {
