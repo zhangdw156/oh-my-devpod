@@ -1,4 +1,10 @@
-use std::{env, error::Error, process::ExitCode};
+use std::{
+    collections::HashMap,
+    env,
+    error::Error,
+    io::{self, Write},
+    process::ExitCode,
+};
 
 mod components;
 mod planner;
@@ -6,7 +12,7 @@ mod runtime;
 mod tui;
 
 use components::Catalog;
-use planner::{assumed_states, plan, Action};
+use planner::{assumed_states, plan, Action, ComponentState};
 use runtime::{Runner, RuntimePaths};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -79,16 +85,12 @@ where
             Ok(())
         }
         [flag] if flag == "--version" || flag == "-V" => {
-            println!("omd {}", paths.version);
-            Ok(())
+            finish_output(writeln!(io::stdout().lock(), "omd {}", paths.version))
         }
-        [flag] if flag == "--list-components" => {
-            print_components(&catalog);
-            Ok(())
-        }
+        [flag] if flag == "--list-components" => finish_output(print_components(&catalog)),
         [flag] if flag == "--status" => {
-            print_status(&catalog, &runner)?;
-            Ok(())
+            let states = runner.inventory(&catalog)?;
+            finish_output(print_status(&catalog, &states))
         }
         [flag] if flag == "--dry-run" => {
             let requested = catalog
@@ -107,14 +109,14 @@ where
             let requested = ids.to_vec();
             let states = assumed_states(&catalog, action);
             let plan = plan(&catalog, action, &requested, &states)?;
-            print_plan(&catalog, &plan)
+            finish_output(print_plan(&catalog, &plan))
         }
         [flag, action, ids @ ..] if flag == "--plan-current" => {
             let action = action.parse::<Action>()?;
             let requested = ids.to_vec();
             let states = runner.inventory(&catalog)?;
             let plan = plan(&catalog, action, &requested, &states)?;
-            print_plan(&catalog, &plan)
+            finish_output(print_plan(&catalog, &plan))
         }
         [flag, action, ids @ ..] if flag == "--execute" => {
             let action = action.parse::<Action>()?;
@@ -125,37 +127,43 @@ where
             runner.execute_confirmed_plan(&catalog, &plan)
         }
         [flag] if flag == "--help" || flag == "-h" => {
-            print_help();
-            Ok(())
+            finish_output(io::stdout().lock().write_all(HELP.as_bytes()))
         }
         [unknown, ..] => Err(format!("unknown argument: {unknown}").into()),
     }
 }
 
-fn print_help() {
-    println!("omd - oh-my-devpod productivity tool manager");
-    println!();
-    println!("Usage:");
-    println!("  omd");
-    println!("  omd --list-components");
-    println!("  omd --status");
-    println!("  omd --plan <install|update|uninstall> <component>...");
-    println!("  omd --plan-current <install|update|uninstall> <component>...");
-    println!("  omd --execute <install|update|uninstall> <component>...");
-    println!("  omd --dry-run");
-    println!("  omd --update [--github|--gitee]");
-    println!("  omd --source <github|gitee>");
-    println!("  omd --version");
-    println!();
-    println!("Self-update:");
-    println!("  --update           update from the saved source (default: GitHub)");
-    println!("  --update --github  update from GitHub and switch managed sources upstream");
-    println!("  --update --gitee   update from Gitee and switch managed sources to China mirrors");
-    println!();
-    println!("Source switching:");
-    println!("  --source github    switch installed managed tools and future operations upstream");
-    println!("  --source gitee     switch installed managed tools and future operations to China mirrors");
+// A read-only pipeline is complete when its consumer has all the output it needs.
+fn finish_output(result: io::Result<()>) -> Result<(), Box<dyn Error>> {
+    match result {
+        Err(error) if error.kind() == io::ErrorKind::BrokenPipe => Ok(()),
+        result => result.map_err(Into::into),
+    }
 }
+
+const HELP: &str = "omd - oh-my-devpod productivity tool manager
+
+Usage:
+  omd
+  omd --list-components
+  omd --status
+  omd --plan <install|update|uninstall> <component>...
+  omd --plan-current <install|update|uninstall> <component>...
+  omd --execute <install|update|uninstall> <component>...
+  omd --dry-run
+  omd --update [--github|--gitee]
+  omd --source <github|gitee>
+  omd --version
+
+Self-update:
+  --update           update from the saved source (default: GitHub)
+  --update --github  update from GitHub and switch managed sources upstream
+  --update --gitee   update from Gitee and switch managed sources to China mirrors
+
+Source switching:
+  --source github    switch installed managed tools and future operations upstream
+  --source gitee     switch installed managed tools and future operations to China mirrors
+";
 
 fn parse_update_request(args: &[String]) -> Result<Option<UpdateRequest>, Box<dyn Error>> {
     if args.first().map(String::as_str) != Some("--update") {
@@ -203,7 +211,8 @@ fn reject_npm_self_update(
     Ok(())
 }
 
-fn print_components(catalog: &Catalog) {
+fn print_components(catalog: &Catalog) -> io::Result<()> {
+    let mut out = io::stdout().lock();
     for component in catalog.components() {
         let requires = if component.requires.is_empty() {
             "-".to_string()
@@ -215,7 +224,8 @@ fn print_components(catalog: &Catalog) {
         } else {
             component.install_requires.join(",")
         };
-        println!(
+        writeln!(
+            out,
             "{}\t{}\trequires={}\tinstall_requires={}\tscope={}\t{}\t{}",
             component.id,
             component.category,
@@ -228,40 +238,46 @@ fn print_components(catalog: &Catalog) {
                 "protected"
             },
             component.module
-        );
+        )?;
     }
+    Ok(())
 }
 
-fn print_status(catalog: &Catalog, runner: &Runner) -> Result<(), Box<dyn Error>> {
-    let states = runner.inventory(catalog)?;
+fn print_status(catalog: &Catalog, states: &HashMap<String, ComponentState>) -> io::Result<()> {
+    let mut out = io::stdout().lock();
     for component in catalog.components() {
-        println!(
+        writeln!(
+            out,
             "{}\t{}\tscope={}",
             component.id,
             states
                 .get(&component.id)
                 .copied()
-                .unwrap_or(planner::ComponentState::Missing),
+                .unwrap_or(ComponentState::Missing),
             component.scope()
-        );
+        )?;
     }
     Ok(())
 }
 
-fn print_plan(catalog: &Catalog, plan: &planner::Plan) -> Result<(), Box<dyn Error>> {
-    println!("omd plan");
+fn print_plan(catalog: &Catalog, plan: &planner::Plan) -> io::Result<()> {
+    let mut out = io::stdout().lock();
+    writeln!(out, "omd plan")?;
     for step in &plan.steps {
-        let component = catalog.require(&step.component_id)?;
-        println!(
+        let component = catalog
+            .require(&step.component_id)
+            .map_err(io::Error::other)?;
+        writeln!(
+            out,
             "{}\t{}\t{}\tscope={}",
             step.action,
             component.id,
             component.name,
             component.scope()
-        );
+        )?;
     }
     for id in &plan.skipped {
-        println!("skip\t{id}");
+        writeln!(out, "skip\t{id}")?;
     }
     Ok(())
 }

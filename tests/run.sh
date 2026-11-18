@@ -14,6 +14,7 @@ bash "${repo_root}/tests/test-gitee-cli.sh"
 bash "${repo_root}/tests/test-source-config.sh"
 bash "${repo_root}/tests/test-uv-config-discovery.sh"
 bash "${repo_root}/tests/test-shell-activation.sh"
+bash "${repo_root}/tests/test-ssh-login.sh"
 if command -v cargo >/dev/null 2>&1; then
   (cd "${repo_root}" && cargo test -p omd)
   bash "${repo_root}/tests/test-component-plans.sh"

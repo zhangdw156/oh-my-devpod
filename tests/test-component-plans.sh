@@ -64,6 +64,13 @@ assert_contains "${micromamba_plan}" linuxbrew
 assert_contains "${micromamba_plan}" micromamba
 assert_before "${micromamba_plan}" linuxbrew micromamba
 
+dust_plan="$("${omd}" --plan install dust)"
+assert_before "${dust_plan}" linuxbrew dust
+zsh_plan="$("${omd}" --plan install zsh-config)"
+if grep -q 'dust' <<<"${zsh_plan}"; then
+  fail "installing Zsh configuration should leave dust optional"
+fi
+
 unknown_output="$(run_expect_failure "unknown component" "${omd}" --plan install no-such-component)"
 grep -Eiq 'unknown|not found' <<<"${unknown_output}" \
   || fail "unknown component error should be actionable: ${unknown_output}"
@@ -118,6 +125,35 @@ for component in components:
     path.chmod(0o755)
 PY
 
+OHMYDEVPOD_BUNDLE_ROOT="${fixture}" OHMYDEVPOD_STATE_DIR="${tmp_dir}/pipe-state" \
+  python3 - "${omd}" <<'PY'
+import os
+import pathlib
+import subprocess
+import sys
+
+def run(args, output):
+    return subprocess.run([sys.argv[1], *args], stdout=output, stderr=subprocess.PIPE)
+
+# Close the reader before starting OMD so the test cannot race the pipe buffer.
+reader, writer = os.pipe()
+os.close(reader)
+with os.fdopen(writer, "wb") as pipe:
+    for args in (["--status"], ["--list-components"], ["--plan", "install", "lazyvim"],
+                 ["--plan-current", "install", "lazyvim"], ["--version"], ["--help"]):
+        result = run(args, pipe)
+        if result.returncode or result.stderr:
+            raise SystemExit(f"closed stdout for {args}: {result.returncode} {result.stderr!r}")
+    result = run(["--execute", "install", "lazyvim"], pipe)
+    if result.returncode != 1 or pathlib.Path(os.environ["OHMYDEVPOD_STATE_DIR"]).exists():
+        raise SystemExit("execution must stop before locking or applying an unwritable plan")
+
+if pathlib.Path("/dev/full").exists():
+    with open("/dev/full", "wb") as full:
+        if run(["--list-components"], full).returncode != 1:
+            raise SystemExit("a stdout write to a full device must fail")
+PY
+
 uninstall_plan="$(
   OHMYDEVPOD_BUNDLE_ROOT="${fixture}" \
     "${omd}" --plan uninstall lazyvim neovim git
@@ -149,6 +185,15 @@ broken_plan="$(
 )"
 grep -Eq '^update[[:space:]]+lazyvim' <<<"${broken_plan}" \
   || fail "managed but missing LazyVim should be repaired with update: ${broken_plan}"
+
+# When several read-only module probes fail, report the first in catalog order.
+for module in core/linuxbrew.sh tools/yazi.sh; do
+  printf '#!/usr/bin/env bash\nexit 23\n' > "${fixture}/modules/${module}"
+done
+invalid_output="$(run_expect_failure "invalid probe result" \
+  env OHMYDEVPOD_BUNDLE_ROOT="${fixture}" "${omd}" --status)"
+[[ "${invalid_output}" == *"module linuxbrew returned invalid status code 23 for managed"* ]] \
+  || fail "unexpected inventory error: ${invalid_output}"
 
 cycle_fixture="${tmp_dir}/cycle-bundle"
 cp -R "${fixture}" "${cycle_fixture}"

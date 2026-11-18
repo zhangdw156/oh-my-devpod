@@ -186,6 +186,17 @@ install_requires = ["linuxbrew"]
 uninstall = true
 
 [[component]]
+id = "dust"
+name = "dust"
+description = "Show disk usage as a directory tree"
+category = "terminal"
+module = "modules/tools/dust.sh"
+provider = "linuxbrew"
+requires = []
+install_requires = ["linuxbrew"]
+uninstall = true
+
+[[component]]
 id = "witr"
 name = "witr"
 description = "Trace processes, ports, containers, and files to their launch chain"
@@ -213,6 +224,7 @@ name = "LazyVim"
 description = "Managed Neovim configuration"
 category = "editor"
 module = "modules/tools/lazyvim.sh"
+display_parent = "neovim"
 requires = ["git", "neovim"]
 install_requires = []
 uninstall = true
@@ -223,6 +235,7 @@ name = "Zsh productivity configuration"
 description = "Oh My Zsh, Powerlevel10k, completion, history, and fuzzy-search integration"
 category = "configuration"
 module = "modules/tools/zsh-config.sh"
+display_parent = "zsh"
 requires = ["zsh", "fzf", "atuin"]
 install_requires = []
 uninstall = true

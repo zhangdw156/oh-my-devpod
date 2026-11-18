@@ -73,7 +73,7 @@ bundle_version="$(tr -d '[:space:]' < "${bundle_root}/VERSION")"
 
 cp -R "${repo_root}/npm/." "${package_dir}/"
 cp "${repo_root}/LICENSE" "${package_dir}/LICENSE"
-cp -R "${bundle_root}" "${package_dir}/runtime"
+mv "${bundle_root}" "${package_dir}/runtime"
 chmod 0755 "${package_dir}/bin/omd" "${package_dir}/lib/postinstall.js"
 
 pack_output="$(

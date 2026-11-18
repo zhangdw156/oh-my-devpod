@@ -70,7 +70,13 @@ cp -R "${repo_root}/vendor/releases/antidote" "${bundle_root}/vendor/releases/an
 cp -R "${repo_root}/vendor/nvim" "${bundle_root}/vendor/nvim"
 cp -R "${repo_root}/vendor/zsh" "${bundle_root}/vendor/zsh"
 
-tar -czf "${dist_dir}/${archive_name}" -C "${staging_dir}" oh-my-devpod
+# Keep the offline plugins and themes, omit their upstream CI and test fixtures.
+zsh_snapshots="oh-my-devpod/vendor/zsh"
+tar -czf "${dist_dir}/${archive_name}" \
+  --exclude="${zsh_snapshots}/*/.github" --exclude="${zsh_snapshots}/*/.devcontainer" \
+  --exclude="${zsh_snapshots}/*/tests" --exclude="${zsh_snapshots}/*/spec" \
+  --exclude="${zsh_snapshots}/*/test-data" \
+  -C "${staging_dir}" oh-my-devpod
 (
   cd "${dist_dir}"
   sha256sum "${archive_name}" > "${archive_name}.sha256"

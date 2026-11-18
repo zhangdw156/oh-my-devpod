@@ -110,7 +110,7 @@ for command_name in bash date dirname env grep head mkdir mv pwd readlink rm sed
   ln -s "$(command -v "${command_name}")" "${isolated_bin}/${command_name}"
 done
 
-for component in yq gh witr; do
+for component in yq gh witr dust; do
   module="${repo_root}/modules/tools/${component}.sh"
   formula_home="${tmp_dir}/${component}-home"
   formula_brew="${formula_home}/.linuxbrew"
@@ -138,11 +138,13 @@ for component in yq gh witr; do
   grep -Fqx "brew_prefix=${resolved_formula_brew}" "${marker}" ||
     fail "${component} marker should record the owning Homebrew prefix"
 
-  env \
-    HOME="${formula_home}" \
-    PATH="${isolated_bin}" \
-    OHMYDEVPOD_TEST_BREW_STATE="${formula_state}" \
-    "${module}" managed
+  for action in status managed update; do
+    env \
+      HOME="${formula_home}" \
+      PATH="${isolated_bin}" \
+      OHMYDEVPOD_TEST_BREW_STATE="${formula_state}" \
+      "${module}" "${action}"
+  done
 
   env \
     HOME="${formula_home}" \
@@ -257,6 +259,16 @@ grep -Fqx \
   "brew_prefix=$(cd "${symlink_prefix}" && pwd -P)" \
   "${symlink_home}/.local/state/oh-my-devpod/managed/yq" ||
   fail "formula marker should record brew --prefix rather than the resolved brew script directory"
+
+formula_marker="${symlink_home}/.local/state/oh-my-devpod/managed/yq"
+marker_contents="$(cat "${formula_marker}")"
+printf 'kind=\n%s\n' "${marker_contents}" > "${formula_marker}"
+if env HOME="${symlink_home}" "${repo_root}/modules/tools/yq.sh" managed; then
+  fail "a later field must not override a mismatched first marker field"
+fi
+printf '%s' "${marker_contents}" > "${formula_marker}"
+env HOME="${symlink_home}" "${repo_root}/modules/tools/yq.sh" managed ||
+  fail "a marker without a trailing newline should retain ownership"
 
 hijack_home="${tmp_dir}/hijack-home"
 hijack_prefix="${hijack_home}/.linuxbrew"

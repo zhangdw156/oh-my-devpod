@@ -7,14 +7,13 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/source-config.sh"
 
 component="uv"
 formula="uv"
-command_name="uv"
 
-status() { omd_module_formula_status "${formula}" "${command_name}"; }
+status() { omd_module_formula_status "${formula}"; }
 managed() { omd_module_formula_managed "${component}" "${formula}"; }
 install_or_update() {
   local action="$1"
   shift
-  omd_module_formula_install_or_update "${component}" "${formula}" "${command_name}" "${action}" "$@"
+  omd_module_formula_install_or_update "${component}" "${formula}" "${action}" "$@"
 }
 uninstall() {
   if omd_module_dry_run "$@"; then

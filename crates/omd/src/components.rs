@@ -40,6 +40,8 @@ pub struct Component {
     pub module: String,
     #[serde(default)]
     pub provider: Option<String>,
+    #[serde(default)]
+    display_parent: Option<String>,
     pub requires: Vec<String>,
     pub install_requires: Vec<String>,
     pub uninstall: bool,
@@ -52,6 +54,10 @@ impl Component {
 
     pub fn provider(&self) -> Option<&str> {
         self.provider.as_deref()
+    }
+
+    pub fn display_parent(&self) -> Option<&str> {
+        self.display_parent.as_deref().or(self.provider())
     }
 }
 
@@ -318,6 +324,15 @@ fn validate_component(component: &Component) -> Result<(), CatalogError> {
             return Err(CatalogError::new(format!(
                 "component {} declares duplicate dependency {}",
                 component.id, dependency
+            )));
+        }
+    }
+
+    if let Some(parent) = &component.display_parent {
+        if !dependencies.contains(parent) {
+            return Err(CatalogError::new(format!(
+                "component {} display parent {} is not a direct dependency",
+                component.id, parent
             )));
         }
     }
