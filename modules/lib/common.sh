@@ -194,12 +194,6 @@ omd_module_brew_formula_installed_at() {
   return 1
 }
 
-omd_module_brew_formula_installed() {
-  local formula="$1" prefix
-  prefix="$(omd_module_brew_prefix)" || return 1
-  omd_module_brew_formula_installed_at "${prefix}" "${formula}"
-}
-
 omd_module_brew_prefix() {
   omd_module_brew_cmd >/dev/null &&
     (cd "${HOME}/.linuxbrew" && pwd -P)
@@ -219,21 +213,28 @@ omd_module_brew_exec() {
 }
 
 omd_module_formula_status() {
-  local formula="$1" command_name="$2" prefix
-  if [[ -n "${component:-}" ]] && omd_module_formula_managed "${component}" "${formula}"; then
-    prefix="$(omd_module_formula_marker_prefix "${component}" "${formula}")" || return 1
-    omd_module_brew_formula_installed_at "${prefix}" "${formula}"
-    return
-  fi
-  omd_module_brew_formula_installed "${formula}"
+  local formula="$1" prefix
+  prefix="$(omd_module_brew_prefix)" || return 1
+  omd_module_brew_formula_installed_at "${prefix}" "${formula}"
 }
 
 omd_module_formula_managed() {
-  local component="$1" formula="$2" prefix="${HOME}/.linuxbrew"
-  omd_module_marker_matches "${component}" "${formula}" &&
-    [[ "$(omd_module_marker_value "${component}" kind)" == "brew-formula" ]] &&
-    [[ "$(omd_module_marker_value "${component}" brew_prefix)" == "$(cd "${prefix}" 2>/dev/null && pwd -P)" ]] &&
-    omd_module_brew_prefix_is_personal "${prefix}"
+  local component="$1" formula="$2" prefix="${HOME}/.linuxbrew" marker line
+  local owned=0 artifact="" kind="" recorded_prefix=""
+  marker="$(omd_module_marker_path "${component}")" || return 1
+  [[ -f "${marker}" ]] || return 1
+  # Read one marker snapshot, preserving the first value of each metadata field.
+  while IFS= read -r line || [[ -n "${line}" ]]; do
+    case "${line}" in
+      managed_by=oh-my-devpod) owned=1 ;;
+      artifact=*) artifact="${artifact:-${line}}" ;;
+      kind=*) kind="${kind:-${line}}" ;;
+      brew_prefix=*) recorded_prefix="${recorded_prefix:-${line}}" ;;
+    esac
+  done < "${marker}"
+  [[ "${owned}" == 1 && "${artifact}" == "artifact=${formula}" && "${kind}" == kind=brew-formula ]] &&
+    omd_module_brew_prefix_is_personal "${prefix}" &&
+    [[ "${recorded_prefix}" == "brew_prefix=$(cd "${prefix}" && pwd -P)" ]]
 }
 
 omd_module_formula_marker_prefix() {
@@ -245,11 +246,11 @@ omd_module_formula_brew_cmd() {
 }
 
 omd_module_formula_install_or_update() {
-  local component="$1" formula="$2" command_name="$3" action="$4" brew brew_prefix brew_action=install
-  shift 4
+  local component="$1" formula="$2" action="$3" brew brew_prefix brew_action=install
+  shift 3
   omd_module_reject_unknown_flags "$@" || return
 
-  if omd_module_formula_status "${formula}" "${command_name}" &&
+  if omd_module_formula_status "${formula}" &&
     ! omd_module_formula_managed "${component}" "${formula}"; then
     omd_module_info notice "preserving external ${component} installation"
     return 0
@@ -355,4 +356,20 @@ omd_module_require_managed_uninstall() {
   omd_module_dry_run "$@" && return 0
   "${managed_function}" ||
     omd_module_refuse_unmanaged "${component}" || return
+}
+
+# Entry point for components managed entirely as a Homebrew formula.
+omd_module_formula() {
+  local component="$1" action="${2:-}"
+  shift
+  case "${action}" in
+    status) omd_module_formula_status "${component}" ;;
+    managed) omd_module_formula_managed "${component}" "${component}" ;;
+    install|update)
+      shift
+      omd_module_formula_install_or_update "${component}" "${component}" "${action}" "$@"
+      ;;
+    uninstall) shift; omd_module_formula_uninstall "${component}" "${component}" "$@" ;;
+    *) omd_module_unknown_action "${action}" ;;
+  esac
 }
