@@ -8,6 +8,7 @@ shift
 archive="$(cd "$(dirname "${archive}")" && pwd)/$(basename "${archive}")"
 [[ -f "${archive}" && -f "${archive}.sha256" ]]
 tmp="$(mktemp -d)"
+chmod 0755 "${tmp}"
 proxy="omd-china-proxy-$$"
 network="omd-china-test-$$"
 
