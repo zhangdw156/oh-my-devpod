@@ -7,6 +7,9 @@ fi
 
 export ZSH=/opt/vendor/zsh/ohmyzsh
 ZSH_DISABLE_COMPFIX=false
+# Old compinit -u dumps can pass compinit's file-count check after a package update.
+: ${ZSH_COMPDUMP:="${ZDOTDIR:-$HOME}/.zcompdump-${HOST%%.*}-$ZSH_VERSION"}
+[[ $ZSH_COMPDUMP == *.omd-audited ]] || ZSH_COMPDUMP+=.omd-audited
 export DISABLE_AUTO_UPDATE=true
 ZSH_THEME=""
 plugins=(git extract z)

@@ -183,17 +183,40 @@ if [[ -z "$skip_global_compinit" ]]; then
   compinit
 fi
 ZPROFILE
-for login in 1 2; do
+completion_login() {
   HOME="${tmp_dir}/home" ZDOTDIR="${tmp_dir}/home" PATH="${fake_bin}:${PATH}" \
+    ZSH_COMPDUMP="${dump_override}" OMD_TEST_ZSH_ASSETS="${managed_zsh_dir}" \
     OMD_TEST_COMPLETIONS="${tmp_dir}/completion" OMD_TEST_MAMBA_LOG="${mamba_log}" \
-    zsh -dlic '
-      [[ ${_comps[omd-trusted]-} == _omd_trusted && -z ${_comps[omd-unsafe]-} &&
-         ${OMD_TEST_MAMBA_HOOK:-} == loaded && ${OMD_TEST_USER_SETTING:-} == preserved ]]
-    ' </dev/null >"${tmp_dir}/login.log" 2>&1 ||
-    { cat "${tmp_dir}/login.log" >&2; fail "login ${login} lost trusted completions or loaded unsafe ones"; }
+    zsh -dlic "$1" </dev/null >"${tmp_dir}/login.log" 2>&1 || {
+      cat "${tmp_dir}/login.log" >&2
+      fail "login completion check failed"
+    }
   if grep -Eq 'abort compinit|initialization aborted|not interactive and can.t open terminal' "${tmp_dir}/login.log"; then
-    fail "login ${login} attempted an interactive completion permission prompt"
+    fail "login attempted an interactive completion permission prompt"
   fi
+}
+cp "${managed_zshrc}" "${tmp_dir}/current.zshrc"
+for dump_override in '' "${tmp_dir}/custom.zcompdump"; do
+  # The previous managed configuration used the same plugins but trusted all of fpath.
+  cat > "${managed_zshrc}" <<'LEGACY'
+export ZSH="$OMD_TEST_ZSH_ASSETS/ohmyzsh"
+export DISABLE_AUTO_UPDATE=true ZSH_DISABLE_COMPFIX=true
+ZSH_THEME=""
+plugins=(git extract z)
+source "$ZSH/oh-my-zsh.sh"
+LEGACY
+  completion_login '[[ ${_comps[omd-trusted]-} == _omd_trusted &&
+      ${_comps[omd-unsafe]-} == _omd_unsafe && -s $ZSH_COMPDUMP ]]'
+  # A package update adds a trusted completion as the audit drops one unsafe entry.
+  # The file count in the old dump still matches the audited set.
+  printf '#compdef omd-new\n' > "${tmp_dir}/completion/trusted/_omd_new"
+  cp "${tmp_dir}/current.zshrc" "${managed_zshrc}"
+  for login in 1 2; do
+    completion_login '[[ ${_comps[omd-trusted]-} == _omd_trusted && -z ${_comps[omd-unsafe]-} &&
+        ${_comps[omd-new]-} == _omd_new && ${OMD_TEST_MAMBA_HOOK:-} == loaded &&
+        ${OMD_TEST_USER_SETTING:-} == preserved && -s $ZSH_COMPDUMP ]]'
+  done
+  rm "${tmp_dir}/completion/trusted/_omd_new"
 done
 
 PATH="${fake_bin}:${PATH}" \
