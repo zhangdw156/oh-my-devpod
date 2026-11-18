@@ -65,6 +65,10 @@ if [[ "$1" == all ]]; then
   for command in uv micromamba git gh gitee rg fzf bat fd yq atuin zellij yazi btop witr nvim zsh; do
     "${command}" --version
   done
+  mkdir -p "${HOME}/disk-probe/example"
+  printf 'disk usage probe\n' > "${HOME}/disk-probe/example/sample.txt"
+  (cd "${HOME}/disk-probe" && dust .) > "${HOME}/dust.out"
+  grep -Fq 'example' "${HOME}/dust.out"
   uv venv --python 3.12.12 "${HOME}/.venvs/mirror-probe"
   uv pip install --python "${HOME}/.venvs/mirror-probe/bin/python" idna
   "${HOME}/.venvs/mirror-probe/bin/python" -c 'import idna'
@@ -98,7 +102,7 @@ done
 apt_options=(-o Acquire::Retries=2 -o Acquire::https::CaInfo=/fixtures/ca-certificates.crt)
 apt-get "${apt_options[@]}" -o APT::Update::Error-Mode=any update -qq
 DEBIAN_FRONTEND=noninteractive apt-get "${apt_options[@]}" install -y -qq --no-install-recommends \
-  build-essential ca-certificates curl file git procps sudo > /tmp/test-dependencies.log 2>&1 || {
+  build-essential ca-certificates curl file git openssh-client openssh-server procps sudo > /tmp/test-dependencies.log 2>&1 || {
   cat /tmp/test-dependencies.log >&2
   exit 1
 }
@@ -106,11 +110,42 @@ test "$(curl -sS --max-time 10 --noproxy '*' -o /dev/null -w '%{http_code}' http
 mkdir -p /tmp/omd-bundle
 tar -xzf /fixtures/omd.tar.gz -C /tmp/omd-bundle
 curl -fsSL --retry 2 https://gitee.com/api/v5/repos/zhangdw156/oh-my-devpod/releases/latest | grep '"tag_name"' >/dev/null
-useradd -m -G sudo mirror-a
-useradd -m -G sudo mirror-b
+useradd -m -s /bin/bash -G sudo mirror-a
+useradd -m -s /bin/bash -G sudo mirror-b
 chmod 0700 /home/mirror-a /home/mirror-b
 runuser -u mirror-a -- bash /fixtures/account.sh all
 runuser -u mirror-b -- bash /fixtures/account.sh peer
+
+# Exercise real SSH login, remote commands and file transfer in the two disposable accounts.
+mkdir -p /run/sshd
+ssh-keygen -q -t ed25519 -N '' -f /tmp/omd-client-key
+for account in mirror-a mirror-b; do
+  install -d -m 0700 -o "${account}" -g "${account}" "/home/${account}/.ssh"
+  install -m 0600 -o "${account}" -g "${account}" /tmp/omd-client-key.pub "/home/${account}/.ssh/authorized_keys"
+done
+/usr/sbin/sshd -p 2222 -o ListenAddress=127.0.0.1 -o PasswordAuthentication=no -o AuthenticationMethods=publickey
+ssh_options=(-i /tmp/omd-client-key -o Port=2222 -o BatchMode=yes -o StrictHostKeyChecking=accept-new)
+check_login() {
+  local account="$1" expected="$2" log="/tmp/login-$1.log"
+  if ! TERM=xterm timeout 45 ssh -tt "${ssh_options[@]}" "${account}@127.0.0.1" >"${log}" 2>&1 <<'PROBE'
+if test -n "${ZSH_VERSION:-}" && test -r "${ZSH:-/missing}/oh-my-zsh.sh" && test "$HOME/.linuxbrew/bin/zsh" -ef /proc/$$/exe; then active=zsh; elif test -n "${BASH_VERSION:-}"; then active=bash; else active=unknown; fi
+printf '\nOMD-LOGIN=%s,%s\n' "$active" "$SHELL"
+exit
+PROBE
+  then
+    cat "${log}"
+    return 1
+  fi
+  grep -Fq "OMD-LOGIN=${expected},/bin/bash" "${log}" || { cat "${log}"; return 1; }
+}
+check_login mirror-a zsh
+check_login mirror-b bash
+ssh "${ssh_options[@]}" mirror-a@127.0.0.1 'test -n "$BASH_VERSION" && test -z "${ZSH_VERSION:-}"'
+sftp -b - "${ssh_options[@]}" mirror-a@127.0.0.1 <<< 'get .profile /tmp/received-profile'
+cmp /tmp/received-profile /home/mirror-a/.profile
+runuser -u mirror-a -- /home/mirror-a/.local/bin/omd --execute uninstall zsh-config
+check_login mirror-a bash
+check_login mirror-b bash
 runuser -u mirror-a -- /home/mirror-a/.linuxbrew/bin/jq -en '2 + 2 == 4'
 test ! -e /usr/local/bin/brew
 printf 'Ubuntu %s: domestic-only Gitee installation passed\n' "${VERSION_ID}"
