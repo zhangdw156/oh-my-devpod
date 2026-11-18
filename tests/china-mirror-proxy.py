@@ -18,6 +18,19 @@ async def relay(source, target):
         await target.drain()
 
 
+async def connect_to_mirror(host):
+    for attempt in range(3):
+        try:
+            return await asyncio.wait_for(
+                asyncio.open_connection(host, 443, happy_eyeballs_delay=0.25),
+                timeout=6,
+            )
+        except (OSError, asyncio.TimeoutError):
+            if attempt == 2:
+                raise
+            await asyncio.sleep(attempt + 1)
+
+
 async def proxy(client, client_writer):
     remote_writer = None
     directions = []
@@ -33,9 +46,13 @@ async def proxy(client, client_writer):
             return
         while await client.readline() not in (b"\r\n", b""):
             pass
-        remote, remote_writer = await asyncio.wait_for(
-            asyncio.open_connection(host, 443), timeout=20
-        )
+        try:
+            remote, remote_writer = await connect_to_mirror(host)
+        except (OSError, asyncio.TimeoutError) as error:
+            print(f"UPSTREAM {authority}: {type(error).__name__}: {error}", flush=True)
+            client_writer.write(b"HTTP/1.1 502 Bad Gateway\r\nConnection: close\r\n\r\n")
+            await client_writer.drain()
+            return
         client_writer.write(b"HTTP/1.1 200 Connection established\r\n\r\n")
         await client_writer.drain()
         directions = [

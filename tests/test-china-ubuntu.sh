@@ -46,6 +46,8 @@ set -euo pipefail
 export OHMYDEVPOD_SOURCE=gitee
 export OHMYDEVPOD_OMD_ARCHIVE=/fixtures/omd.tar.gz
 export OHMYDEVPOD_BOOTSTRAP_NO_RUN=1
+# Both containers send their traffic through one proxy and mirror.
+export HOMEBREW_DOWNLOAD_CONCURRENCY=4
 bash /tmp/omd-bundle/oh-my-devpod/install/bootstrap.sh
 omd="${HOME}/.local/bin/omd"
 [[ "$(cat "${HOME}/.config/oh-my-devpod/source")" == gitee ]]
