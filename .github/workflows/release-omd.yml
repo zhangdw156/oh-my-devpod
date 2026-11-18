@@ -93,6 +93,9 @@ jobs:
             "dist/${ARCHIVE}" \
             "dist/npm/oh-my-devpod-$(cat VERSION).tgz"
 
+      - name: Verify Gitee with domestic-only network access
+        run: bash tests/test-china-ubuntu.sh "dist/${ARCHIVE}"
+
       - name: Upload workflow artifacts
         uses: actions/upload-artifact@v4
         with:

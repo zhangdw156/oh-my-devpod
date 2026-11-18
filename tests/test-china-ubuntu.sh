@@ -58,7 +58,8 @@ if [[ "$1" == all ]]; then
   "${HOME}/.venvs/mirror-probe/bin/python" -c 'import idna'
   micromamba create --quiet --yes --prefix "${HOME}/.local/share/mamba-probe" --override-channels -c conda-forge zlib
   nvim --headless '+lua if type(LazyVim) ~= "table" then vim.cmd("cquit") end' +qa
-  zsh -ic '[[ "$POWERLEVEL9K_DISABLE_GITSTATUS" == true ]]'
+  script -qec "zsh -ic '[[ \${POWERLEVEL9K_DISABLE_GITSTATUS:-} == true ]]'" /dev/null
+  "${omd}" --execute update linuxbrew gitee lazyvim zsh-config
   "${omd}" --update
 else
   "${omd}" --execute update jq
