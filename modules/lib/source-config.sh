@@ -131,7 +131,7 @@ omd_source_config_file_is_managed() {
       expected="$(printf '%s\n' "${expected}" | sed '/^HOMEBREW_ARTIFACT_DOMAIN_NO_FALLBACK=/d; /^HOMEBREW_NO_/d; s/^HOMEBREW_ARTIFACT_DOMAIN=/HOMEBREW_BOTTLE_DOMAIN=/')"
       ;;
     uv)
-      expected="$(printf '%s\n' "${expected}" | sed '/^python-install-mirror=/d; /^python-install-mirror = /d; /^$/d')"
+      expected="$(printf '%s\n' "${expected}" | sed '/^python-install-mirror = /d; /^$/d')"
       ;;
   esac
   [[ "${actual}" == "${expected}" ]]

@@ -70,7 +70,7 @@ export https_proxy=http://china-proxy:8080
 export http_proxy="${https_proxy}"
 export HTTPS_PROXY="${https_proxy}"
 export HTTP_PROXY="${https_proxy}"
-install -m 0644 /fixtures/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+install -Dm 0644 /fixtures/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 shopt -s nullglob
 for sources in /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
   [[ -f "${sources}" ]] || continue
