@@ -4,7 +4,7 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 archive="${1:?usage: $0 <release.tar.gz> [Ubuntu version ...]}"
 shift
-[[ $# -gt 0 ]] || set -- 20.04 22.04 24.04 26.04
+[[ $# -gt 0 ]] || set -- 24.04 20.04 22.04 26.04
 archive="$(cd "$(dirname "${archive}")" && pwd)/$(basename "${archive}")"
 [[ -f "${archive}" && -f "${archive}.sha256" ]]
 tmp="$(mktemp -d)"
@@ -12,11 +12,16 @@ proxy="omd-china-proxy-$$"
 network="omd-china-test-$$"
 
 cleanup() {
+  if [[ "$?" != 0 ]]; then
+    docker logs "${proxy}" >&2 || true
+  fi
   docker rm -f "${proxy}" >/dev/null 2>&1 || true
   docker network rm "${network}" >/dev/null 2>&1 || true
   rm -rf "${tmp}"
 }
 trap cleanup EXIT
+cp "${archive}" "${tmp}/omd.tar.gz"
+cp "${archive}.sha256" "${tmp}/omd.tar.gz.sha256"
 docker network create --internal "${network}" >/dev/null
 docker run --detach --name "${proxy}" \
   --mount "type=bind,src=${repo_root}/tests/china-mirror-proxy.py,dst=/proxy.py,readonly" \
@@ -100,8 +105,6 @@ for version in "$@"; do
   case "${version}" in 20.04|22.04|24.04|26.04) ;; *) exit 2 ;; esac
   docker run --rm --platform linux/amd64 --network "${network}" \
     --mount "type=bind,src=${tmp},dst=/fixtures,readonly" \
-    --mount "type=bind,src=${archive},dst=/fixtures/omd.tar.gz,readonly" \
-    --mount "type=bind,src=${archive}.sha256,dst=/fixtures/omd.tar.gz.sha256,readonly" \
     "ubuntu:${version}" bash /fixtures/container.sh "${version}" | tee "${tmp}/${version}.log"
   grep -Fqx "Ubuntu ${version}: domestic-only Gitee installation passed" "${tmp}/${version}.log"
 done
