@@ -123,6 +123,40 @@ grep -Fqx 'plugins=(git extract z)' "${managed_zshrc}" ||
 [[ -f "${managed_zsh_dir}/ohmyzsh/plugins/z/z.plugin.zsh" ]] ||
   fail "managed Zsh assets should include the built-in z plugin"
 
+# Control which optional tools a fresh shell finds, regardless of the host's PATH.
+shell_bin="${tmp_dir}/shell-bin"
+zsh_bin="$(command -v zsh)"
+mkdir -p "${shell_bin}" "${tmp_dir}/last directory"
+for utility in cat chmod date env git grep hostname ls mkdir mktemp mv rm sed sort tee tr uname wc; do
+  ln -s "$(command -v "${utility}")" "${shell_bin}/${utility}"
+done
+optional_tools_login() {
+  local check="$1"
+  shift
+  env -u EDITOR -u VISUAL HOME="${tmp_dir}/home" ZDOTDIR="${tmp_dir}/home" \
+    PATH="${shell_bin}" OMD_TEST_LAST_DIR="${tmp_dir}/last directory" "$@" \
+    "${zsh_bin}" -dic "${check}"
+}
+ln -s "$(type -P true)" "${shell_bin}/nvim"
+ln -s "$(type -P true)" "${shell_bin}/zellij"
+cat > "${shell_bin}/yazi" <<'YAZI'
+#!/bin/sh
+[ "$1" = --chooser ] && printf '%s\n' "$OMD_TEST_LAST_DIR" > "${2#--cwd-file=}"
+YAZI
+chmod +x "${shell_bin}/yazi"
+optional_tools_login '
+  [[ $EDITOR == nvim && $VISUAL == nvim && ${aliases[zj]-} == zellij ]] &&
+    y --chooser && [[ $PWD == "$OMD_TEST_LAST_DIR" ]]
+' || fail "installed optional tools should enable the editor, zj, and Yazi directory switching"
+optional_tools_login '[[ $EDITOR == vim && -z ${VISUAL+x} ]]' EDITOR=vim ||
+  fail "a user-selected EDITOR must retain precedence"
+optional_tools_login '[[ $VISUAL == nano && -z ${EDITOR+x} ]]' VISUAL=nano ||
+  fail "a user-selected VISUAL must retain precedence"
+rm "${shell_bin}/nvim" "${shell_bin}/zellij" "${shell_bin}/yazi"
+optional_tools_login '
+  [[ -z ${EDITOR+x} && -z ${VISUAL+x} && ${+aliases[zj]} == 0 && ${+functions[y]} == 0 ]]
+' || fail "absent optional tools should leave editor settings and shortcuts unset"
+
 ZSHZ_DATA="${tmp_dir}/z-data" \
   PATH="${fake_bin}:${PATH}" \
   HOME="${tmp_dir}/home" \

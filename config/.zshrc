@@ -47,8 +47,9 @@ if command -v atuin >/dev/null 2>&1; then
   eval "$(atuin init zsh --disable-up-arrow)"
 fi
 
-export EDITOR=nvim
-export VISUAL=nvim
+if [[ -z "${EDITOR:-}" && -z "${VISUAL:-}" ]] && command -v nvim >/dev/null 2>&1; then
+  export EDITOR=nvim VISUAL=nvim
+fi
 if command -v bat >/dev/null 2>&1; then
   export MANPAGER="sh -c 'col -bx | bat -l man -p'"
 fi
@@ -57,12 +58,17 @@ fi
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
 alias cc=clear
-alias zj=zellij
+if command -v zellij >/dev/null 2>&1; then
+  alias zj=zellij
+fi
 
-function y() {
-  local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
-  command yazi "$@" --cwd-file="$tmp"
-  cwd="$(command cat -- "$tmp" 2>/dev/null)"
-  [ "$cwd" != "$PWD" ] && [ -d "$cwd" ] && builtin cd -- "$cwd"
-  rm -f -- "$tmp"
-}
+if command -v yazi >/dev/null 2>&1; then
+  function y() {
+    local tmp cwd
+    tmp="$(mktemp -t "yazi-cwd.XXXXXX")" || return 1
+    command yazi "$@" --cwd-file="$tmp"
+    cwd="$(command cat -- "$tmp" 2>/dev/null)"
+    [[ -d "$cwd" && "$cwd" != "$PWD" ]] && builtin cd -- "$cwd"
+    rm -f -- "$tmp"
+  }
+fi

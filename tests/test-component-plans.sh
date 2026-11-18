@@ -64,6 +64,13 @@ assert_contains "${micromamba_plan}" linuxbrew
 assert_contains "${micromamba_plan}" micromamba
 assert_before "${micromamba_plan}" linuxbrew micromamba
 
+dust_plan="$("${omd}" --plan install dust)"
+assert_before "${dust_plan}" linuxbrew dust
+zsh_plan="$("${omd}" --plan install zsh-config)"
+if grep -q 'dust' <<<"${zsh_plan}"; then
+  fail "installing Zsh configuration should leave dust optional"
+fi
+
 unknown_output="$(run_expect_failure "unknown component" "${omd}" --plan install no-such-component)"
 grep -Eiq 'unknown|not found' <<<"${unknown_output}" \
   || fail "unknown component error should be actionable: ${unknown_output}"
