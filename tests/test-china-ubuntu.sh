@@ -4,7 +4,7 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 archive="${1:?usage: $0 <release.tar.gz> [Ubuntu version ...]}"
 shift
-[[ $# -gt 0 ]] || set -- 24.04 20.04 22.04 26.04
+[[ $# -gt 0 ]] || set -- 26.04 20.04 22.04 24.04
 archive="$(cd "$(dirname "${archive}")" && pwd)/$(basename "${archive}")"
 [[ -f "${archive}" && -f "${archive}.sha256" ]]
 tmp="$(mktemp -d)"
@@ -83,8 +83,9 @@ for sources in /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sou
   [[ -f "${sources}" ]] || continue
   sed -Ei 's@https?://([[:alnum:].-]+\.)?ubuntu\.com/ubuntu/?@https://mirrors.ustc.edu.cn/ubuntu/@g' "${sources}"
 done
-apt-get -o Acquire::Retries=2 update -qq
-DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::Retries=2 install -y -qq --no-install-recommends \
+apt_options=(-o Acquire::Retries=2 -o Acquire::https::CaInfo=/fixtures/ca-certificates.crt)
+apt-get "${apt_options[@]}" -o APT::Update::Error-Mode=any update -qq
+DEBIAN_FRONTEND=noninteractive apt-get "${apt_options[@]}" install -y -qq --no-install-recommends \
   build-essential ca-certificates curl file git procps sudo > /tmp/test-dependencies.log 2>&1 || {
   cat /tmp/test-dependencies.log >&2
   exit 1
