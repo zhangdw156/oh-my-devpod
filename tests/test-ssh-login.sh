@@ -12,6 +12,7 @@ mkdir -p "${prefix}/bin"
 cat > "${prefix}/bin/zsh" <<'STUB'
 #!/usr/bin/env bash
 printf '%s\n' "$1" "${PROFILE_SETTING}" >> "$HOME/zsh-entered"
+printenv SHELL >> "$HOME/zsh-entered"
 STUB
 chmod +x "${prefix}/bin/zsh"
 printf 'export PROFILE_SETTING=user' > "${HOME}/.profile"
@@ -38,6 +39,7 @@ import subprocess
 
 home = pathlib.Path.home()
 marker = home / "zsh-entered"
+inherited_shell = home / "shell-after-profile"
 for flags, ssh, expect_zsh in [
     (["-il"], True, True),
     (["-il"], False, False),
@@ -47,8 +49,8 @@ for flags, ssh, expect_zsh in [
 ]:
     master, slave = pty.openpty()
     try:
-        env = dict(os.environ, SSH_TTY=os.ttyname(slave) if ssh else "", PS1="")
-        command = '. "$HOME/.profile"\nexit\n'
+        env = dict(os.environ, SSH_TTY=os.ttyname(slave) if ssh else "", PS1="", SHELL="/bin/bash")
+        command = '. "$HOME/.profile"\nprintenv SHELL > "$HOME/shell-after-profile"\nexit\n'
         args = ["bash", "--noprofile", "--norc", *flags]
         if "-c" in flags:
             args.append(command)
@@ -58,12 +60,22 @@ for flags, ssh, expect_zsh in [
             assert shell.wait(timeout=10) == 0
         assert marker.exists() == expect_zsh, (flags, ssh, (home / ".profile").read_text())
         if expect_zsh:
-            assert marker.read_text() == "-l\nuser\n"
+            assert marker.read_text() == f"-l\nuser\n{home}/.linuxbrew/bin/zsh\n", marker.read_text()
             marker.unlink()
+        else:
+            assert inherited_shell.read_text() == "/bin/bash\n"
+            inherited_shell.unlink()
     finally:
         os.close(slave)
         os.close(master)
 PY
+
+# The command shown after installation must activate the same shell for children.
+activation_command="$(sed -n 's/^notice: To use Zsh in this terminal, run: //p' "${tmp_dir}/install.out")"
+[[ -n "${activation_command}" ]]
+SHELL=/bin/bash PROFILE_SETTING=manual bash --noprofile --norc -c "${activation_command}"
+cmp "${HOME}/zsh-entered" <(printf '%s\n' '-l' manual "${prefix}/bin/zsh")
+rm "${HOME}/zsh-entered"
 
 # Bash now picks a different startup file. Restore the original .profile byte for byte.
 touch "${HOME}/.bash_login"

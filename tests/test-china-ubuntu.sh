@@ -126,21 +126,24 @@ done
 /usr/sbin/sshd -p 2222 -o ListenAddress=127.0.0.1 -o PasswordAuthentication=no -o AuthenticationMethods=publickey
 ssh_options=(-i /tmp/omd-client-key -o Port=2222 -o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 check_login() {
-  local account="$1" expected="$2" log="/tmp/login-$1.log"
+  local account="$1" expected="$2" log="/tmp/login-$1.log" expected_shell=/bin/bash
+  if [[ "${expected}" == zsh ]]; then
+    expected_shell="/home/${account}/.linuxbrew/bin/zsh"
+  fi
   if ! TERM=xterm timeout 45 ssh -tt "${ssh_options[@]}" "${account}@127.0.0.1" >"${log}" 2>&1 <<'PROBE'
 if test -n "${ZSH_VERSION:-}" && test -r "${ZSH:-/missing}/oh-my-zsh.sh" && test "$HOME/.linuxbrew/bin/zsh" -ef /proc/$$/exe; then active=zsh; elif test -n "${BASH_VERSION:-}"; then active=bash; else active=unknown; fi
-printf '\nOMD-LOGIN=%s,%s\n' "$active" "$SHELL"
+printf '\nOMD-LOGIN=%s,%s\n' "$active" "$(printenv SHELL)"
 exit
 PROBE
   then
     cat "${log}"
     return 1
   fi
-  grep -Fq "OMD-LOGIN=${expected},/bin/bash" "${log}" || { cat "${log}"; return 1; }
+  grep -Fq "OMD-LOGIN=${expected},${expected_shell}" "${log}" || { cat "${log}"; return 1; }
 }
 check_login mirror-a zsh
 check_login mirror-b bash
-ssh "${ssh_options[@]}" mirror-a@127.0.0.1 'test -n "$BASH_VERSION" && test -z "${ZSH_VERSION:-}"'
+ssh "${ssh_options[@]}" mirror-a@127.0.0.1 'test -n "$BASH_VERSION" && test -z "${ZSH_VERSION:-}" && test "$(printenv SHELL)" = /bin/bash'
 sftp -b - "${ssh_options[@]}" mirror-a@127.0.0.1 <<< 'get .profile /tmp/received-profile'
 cmp /tmp/received-profile /home/mirror-a/.profile
 runuser -u mirror-a -- /home/mirror-a/.local/bin/omd --execute uninstall zsh-config

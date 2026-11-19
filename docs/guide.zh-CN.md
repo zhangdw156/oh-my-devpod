@@ -122,9 +122,11 @@ npm 安装的用户运行 `npm update --global oh-my-devpod`。npm 管理包版�
 
 ### SSH 登录与托管 Zsh
 
-如果升级 OMD 之前已经托管 Zsh 和配置，请执行一次 `omd --execute update zsh-config`，为现有配置加入登录入口。
+如果升级 OMD 之前已经托管 Zsh 和配置，请执行一次 `omd --execute update zsh-config`，更新配置和登录入口。
 
-安装 OMD 托管的 Zsh 和 `zsh-config` 后，用 Bash 账号新建交互式 SSH 会话会自动进入 `~/.linuxbrew/bin/zsh`，并加载托管的 `~/.zshrc`。远程命令和文件传输继续走原有流程。`echo "$ZSH_VERSION"` 显示当前 Zsh 进程的版本，`$SHELL` 表示账号设置的登录 shell，可能仍是 `/bin/bash`。要立即在当前终端使用 Zsh，可运行 `exec "$HOME/.linuxbrew/bin/zsh" -l`。
+安装 OMD 托管的 Zsh 和 `zsh-config` 后，用 Bash 账号新建交互式 SSH 会话会自动进入 `~/.linuxbrew/bin/zsh`，并加载托管的 `~/.zshrc`。该会话将 `SHELL` 导出为托管 Zsh 路径，使 `zj` / Zellij 默认启动 Zsh 并加载 `gst` 等 alias；显式配置的 Zellij `default_shell` 仍优先。远程命令和文件传输继续走原有流程，账号设置的登录 shell 保持不变。
+
+`echo "$ZSH_VERSION"` 显示当前 Zsh 进程的版本，`getent passwd "$USER" | cut -d: -f7` 可查看账号设置的登录 shell。要立即在当前终端使用 Zsh，可运行 `SHELL="$HOME/.linuxbrew/bin/zsh" exec "$HOME/.linuxbrew/bin/zsh" -l`。更新后请重新登录并新建 Zellij 会话，已有会话仍沿用启动时的 shell 设置。
 
 OMD 按 Bash 的读取顺序，在 `.bash_profile`、`.bash_login`、`.profile` 中第一个适用的启动文件加入入口，卸载配置时移除。软链接和其他账号所有的启动文件会跳过。OMD 在 `~/.zshenv` 中加入一行，补全初始化交给 Oh My Zsh，权限不安全的目录会被排除。`z` 按访问频率和最近使用情况跳转目录。Mamba 的 shell hook 沿用已有 `MAMBA_ROOT_PREFIX`，也支持 Homebrew 安装的 Mamba 使用版本对应的 Cellar 路径。
 
