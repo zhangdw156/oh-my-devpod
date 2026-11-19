@@ -195,6 +195,28 @@ impl App {
             .collect()
     }
 
+    fn checked_ids<'a>(&self, catalog: &'a Catalog) -> HashSet<&'a str> {
+        let mut checked = HashSet::new();
+        for (component, selected) in catalog.components().iter().zip(&self.selected) {
+            if !selected {
+                continue;
+            }
+            checked.insert(component.id.as_str());
+            if self.action == Action::Install {
+                let mut ancestor = component.display_parent();
+                while let Some(parent) = ancestor {
+                    if !checked.insert(parent) {
+                        break;
+                    }
+                    ancestor = catalog
+                        .get(parent)
+                        .and_then(|component| component.display_parent());
+                }
+            }
+        }
+        checked
+    }
+
     fn build_preview(&mut self, catalog: &Catalog) {
         let requested = self.requested(catalog);
         self.preview = Some(
@@ -360,10 +382,11 @@ fn draw(frame: &mut Frame<'_>, catalog: &Catalog, app: &App) {
     } else {
         String::new()
     };
+    let checked = app.checked_ids(catalog);
     let title = Paragraph::new(format!(
         "Action: {}  ·  selected: {}{}",
         app.action,
-        app.selected.iter().filter(|selected| **selected).count(),
+        checked.len(),
         search_status
     ))
     .block(Block::default().borders(Borders::ALL).title("oh-my-devpod"));
@@ -383,7 +406,7 @@ fn draw(frame: &mut Frame<'_>, catalog: &Catalog, app: &App) {
         .enumerate()
         .map(|(visible_index, row)| {
             let component = &catalog.components()[row.component_index];
-            let marker = if app.selected[row.component_index] {
+            let marker = if checked.contains(component.id.as_str()) {
                 "[x]"
             } else {
                 "[ ]"
@@ -679,5 +702,46 @@ uninstall = true
         app.toggle(&catalog);
 
         assert_eq!(app.requested(&catalog), vec!["ripgrep"]);
+        assert_eq!(
+            app.checked_ids(&catalog),
+            HashSet::from(["linuxbrew", "ripgrep"])
+        );
+    }
+
+    #[test]
+    fn install_checks_all_tree_ancestors_until_their_last_selected_child_is_cleared() {
+        let catalog = Catalog::parse(include_str!("../../../components.toml")).unwrap();
+        let mut app = app(&catalog);
+        let ids = visible_ids(&app, &catalog);
+        let zsh_config = ids.iter().position(|&id| id == "zsh-config").unwrap();
+        let lazyvim = ids.iter().position(|&id| id == "lazyvim").unwrap();
+
+        app.cursor = zsh_config;
+        app.toggle(&catalog);
+        assert_eq!(
+            app.checked_ids(&catalog),
+            HashSet::from(["linuxbrew", "zsh", "zsh-config"])
+        );
+        app.build_preview(&catalog);
+        let preview = app.preview.as_ref().unwrap().as_ref().unwrap();
+        assert_eq!(preview.requested, ["zsh-config"]);
+        assert!(preview.steps.iter().any(|step| step.component_id == "zsh"));
+
+        app.cursor = lazyvim;
+        app.toggle(&catalog);
+        app.cursor = zsh_config;
+        app.toggle(&catalog);
+        assert_eq!(
+            app.checked_ids(&catalog),
+            HashSet::from(["linuxbrew", "neovim", "lazyvim"])
+        );
+        app.cursor = lazyvim;
+        app.toggle(&catalog);
+        assert!(app.checked_ids(&catalog).is_empty());
+
+        app.cycle_action();
+        app.cycle_action();
+        app.toggle(&catalog);
+        assert_eq!(app.checked_ids(&catalog), HashSet::from(["lazyvim"]));
     }
 }
