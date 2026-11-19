@@ -8,9 +8,9 @@
 
 [Quick start](#quick-start) · [Switch sources](./docs/guide.md#switch-sources) · [Update OMD](./docs/guide.md#update) · [Shared servers](./docs/guide.md#shared-servers)
 
-![OMD selects LazyVim and shows its installation plan with Neovim before LazyVim](./docs/assets/omd-demo.gif)
+![Selecting LazyVim automatically checks Neovim and Linuxbrew before reviewing the installation plan](./docs/assets/omd-demo.gif)
 
-Select LazyVim with `Space` and press `Enter` to review the plan. Neovim comes first because LazyVim configures it. Press `Esc` to go back or `Enter` again to install.
+Select LazyVim with `Space`; OMD also checks its parent components, Neovim and Linuxbrew. Press `Enter` to review the full dependency plan: Linuxbrew, Git, Neovim, then LazyVim on a fresh account. Press `Esc` to go back or `Enter` again to install.
 
 ## Quick start
 

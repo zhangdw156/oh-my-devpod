@@ -8,9 +8,9 @@
 
 [快速开始](#快速开始) · [切换软件源](./docs/guide.zh-CN.md#切换软件源) · [更新 OMD](./docs/guide.zh-CN.md#更新) · [多人服务器](./docs/guide.zh-CN.md#多人服务器)
 
-![在 OMD 中选中 LazyVim，打开计划查看 Neovim 先于 LazyVim 安装](./docs/assets/omd-demo.gif)
+![在 OMD 中选中 LazyVim 后自动勾选 Neovim 和 Linuxbrew，再查看完整安装计划](./docs/assets/omd-demo.gif)
 
-用空格选中 LazyVim，按 `Enter` 查看计划。LazyVim 为 Neovim 提供配置，所以 Neovim 排在前面。此时按 `Esc` 可以返回，再按一次 `Enter` 才会安装。
+用空格选中 LazyVim，OMD 会自动勾选它的父级组件 Neovim 和 Linuxbrew。按 `Enter` 查看完整依赖计划：新账号依次安装 Linuxbrew、Git、Neovim 和 LazyVim。此时按 `Esc` 可以返回，再按一次 `Enter` 才会安装。
 
 ## 快速开始
 
