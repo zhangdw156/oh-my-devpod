@@ -219,7 +219,7 @@ install_or_update() {
     "zshrc_sha256=$(omd_module_sha256_file "${zshrc}")" \
     "p10k_sha256=$(omd_module_sha256_file "${p10k}")"
   if [[ -x "${HOME}/.linuxbrew/bin/zsh" ]]; then
-    omd_module_info notice 'To use Zsh in this terminal, run: exec "$HOME/.linuxbrew/bin/zsh" -l'
+    omd_module_info notice 'To use Zsh in this terminal, run: SHELL="$HOME/.linuxbrew/bin/zsh" exec "$HOME/.linuxbrew/bin/zsh" -l'
   fi
 }
 

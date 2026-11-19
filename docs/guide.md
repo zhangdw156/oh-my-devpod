@@ -124,9 +124,11 @@ Each account installs its own OMD. Choose Linuxbrew in the TUI or run `omd --exe
 
 ### SSH and managed Zsh
 
-If Zsh and its configuration were already managed before upgrading OMD, run `omd --execute update zsh-config` once to install the new login hook.
+If Zsh and its configuration were already managed before upgrading OMD, run `omd --execute update zsh-config` once to refresh the configuration and login hook.
 
-With OMD-managed Zsh and `zsh-config` installed, a new interactive SSH login through Bash starts `~/.linuxbrew/bin/zsh` and loads the managed `~/.zshrc`. Remote commands and file transfers keep their usual shell. `echo "$ZSH_VERSION"` identifies the running Zsh. `$SHELL` reports the account’s configured login shell, which can still be `/bin/bash`. To enter Zsh immediately, run `exec "$HOME/.linuxbrew/bin/zsh" -l`.
+With OMD-managed Zsh and `zsh-config` installed, a new interactive SSH login through Bash starts `~/.linuxbrew/bin/zsh` and loads the managed `~/.zshrc`. The session exports `SHELL` as the managed Zsh path so `zj` / Zellij starts Zsh by default and loads aliases such as `gst`; an explicit Zellij `default_shell` still takes precedence. Remote commands and file transfers keep their usual shell, and the account’s configured login shell stays unchanged.
+
+`echo "$ZSH_VERSION"` identifies the running Zsh; `getent passwd "$USER" | cut -d: -f7` shows the account’s configured login shell. To enter Zsh immediately, run `SHELL="$HOME/.linuxbrew/bin/zsh" exec "$HOME/.linuxbrew/bin/zsh" -l`. After updating, log in again and create a new Zellij session; existing sessions retain their startup shell settings.
 
 OMD adds a hook to the first applicable Bash login profile (`.bash_profile`, `.bash_login` or `.profile`) and removes it when uninstalling the configuration. It skips linked or unowned startup files. The managed `~/.zshenv` line lets Oh My Zsh initialize trusted completions after excluding insecure paths. The `z` command jumps to frequently visited directories. The Mamba hook respects `MAMBA_ROOT_PREFIX`, including the versioned Cellar root chosen by Homebrew-installed Mamba.
 

@@ -108,11 +108,6 @@ omd_release_url() {
   esac
 }
 
-omd_download_file() {
-  local url="$1" dest="$2"
-  curl -fL --connect-timeout 10 --max-time 300 "${url}" -o "${dest}"
-}
-
 omd_verify_checksum() {
   local archive="$1" checksum_file="$2" expected actual
   if [[ ! -f "${checksum_file}" ]]; then
@@ -246,8 +241,9 @@ omd_download_release() {
   archive_url="${OHMYDEVPOD_OMD_URL:-$(omd_release_url "${source}" "${resolved_version}" "${target}")}"
 
   omd_info "Downloading ${archive_name} from ${source}"
-  omd_download_file "${archive_url}" "${archive}" || return 1
-  omd_download_file "${OHMYDEVPOD_OMD_CHECKSUM_URL:-${archive_url}.sha256}" "${checksum}" || return 1
+  curl -fL --connect-timeout 10 --max-time 300 "${archive_url}" -o "${archive}" || return 1
+  curl -fsSL --connect-timeout 10 --max-time 300 \
+    "${OHMYDEVPOD_OMD_CHECKSUM_URL:-${archive_url}.sha256}" -o "${checksum}" || return 1
   omd_verify_checksum "${archive}" "${checksum}" || return 1
 
   OMD_DOWNLOADED_ARCHIVE="${archive}"

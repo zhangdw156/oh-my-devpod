@@ -90,6 +90,22 @@ checksum="${tmp_dir}/omd-x86_64-unknown-linux-gnu.tar.gz.sha256"
   sha256sum "$(basename "${archive}")" > "$(basename "${checksum}")"
 )
 
+# Exercise real curl locally so archive progress and checksum errors stay visible.
+download_cache="${tmp_dir}/download-cache"
+mkdir -p "${download_cache}"
+OHMYDEVPOD_BOOTSTRAP_LIB_ONLY=1 OHMYDEVPOD_OMD_URL="file://${archive}" \
+  bash -c 'source "$1"; omd_download_release gitee v1.2.3 x86_64-unknown-linux-gnu "$2"' \
+  _ "${bootstrap}" "${download_cache}" >"${tmp_dir}/download.out" 2>&1
+[[ "$(grep -c '% Total' "${tmp_dir}/download.out")" == 1 ]] ||
+  fail "only the release archive should display curl download progress"
+if OHMYDEVPOD_BOOTSTRAP_LIB_ONLY=1 OHMYDEVPOD_OMD_URL="file://${archive}" \
+  OHMYDEVPOD_OMD_CHECKSUM_URL="file://${tmp_dir}/missing.sha256" \
+  bash -c 'source "$1"; omd_download_release gitee v1.2.3 x86_64-unknown-linux-gnu "$2"' \
+  _ "${bootstrap}" "${download_cache}" >"${tmp_dir}/download-failure.out" 2>&1; then
+  fail "a checksum download failure should fail the release download"
+fi
+assert_contains 'curl:' "${tmp_dir}/download-failure.out"
+
 fake_bin="${tmp_dir}/fake-bin"
 mkdir -p "${fake_bin}"
 ubuntu_release="${tmp_dir}/ubuntu-os-release"
@@ -331,9 +347,10 @@ bad_checksum="${tmp_dir}/bad.sha256"
 printf '%064d  %s\n' 0 "$(basename "${archive}")" > "${bad_checksum}"
 bad_home="${tmp_dir}/bad-home"
 bad_log="${tmp_dir}/bad-curl.log"
-if run_bootstrap github "${bad_home}" "${bad_log}" "${bad_checksum}" >/dev/null 2>&1; then
+if run_bootstrap github "${bad_home}" "${bad_log}" "${bad_checksum}" >"${tmp_dir}/bad-checksum.out" 2>&1; then
   fail "bootstrap should reject an archive with a mismatched checksum"
 fi
+assert_contains 'SHA256 verification failed' "${tmp_dir}/bad-checksum.out"
 [[ ! -e "${bad_home}/.local/bin/omd" ]] \
   || fail "checksum failure must not activate omd"
 
